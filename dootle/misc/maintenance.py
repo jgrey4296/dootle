@@ -33,13 +33,12 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import doot
-from doit.exceptions import TaskError
-from doot import globber, tasker
+from doot.control import globber, tasker
 from doot.mixins.delayed import DelayedMixin
 from doot.mixins.targeted import TargetedMixin
 from doot.mixins.filer import FilerMixin
 from doot.mixins.commander import CommanderMixin
-from doot.tasker import DootTasker
+from doot.control.tasker import DootTasker
 
 mbsync  = shutil.which("mbsync")
 rustup  = shutil.which("rustup")

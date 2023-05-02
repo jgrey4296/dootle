@@ -1,9 +1,9 @@
 [project]
 name            = "dootle"
-version         = "0.0.1"
+version         = "0.1.0"
 description     = ""
 readme          = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license         = {file = "LICENSE"}
 keywords        = []
 authors         = [
@@ -14,7 +14,33 @@ classifiers     = [
   "Programming Language :: Python"
 ]
 
-dependencies   = []
+dependencies   = [
+    "doot @ git+https://github.com/jgrey4296/doot.git"
+    "Pillow",
+    "PyYAML",
+    "Requests",
+    "beautifulsoup4",
+    "bibtexparser",
+    "itemadapter",
+    "mastodon.py",
+    "matplotlib",
+    "networkx",
+    "numpy",
+    "pandas",
+    "pdfrw",
+    "pony",
+    "pylatexenc",
+    "pypandoc",
+    "pypandoc",
+    "scikit-learn",
+    "scrapy",
+    "seaborn",
+    "twitter",
+    "w3lib",
+    "wordcloud",
+    "xsdata",
+    "xsdata",
+]
 
 [project.optional-dependencies]
 docs = [ "sphinx" ]
@@ -59,6 +85,8 @@ include    = ["dootle*"]
 [tool.setuptools.exclude-package-data]
 
 ##-- end build-system
+
+# Tools #######################################################################
 
 ##-- pyright
 [tool.pyright]

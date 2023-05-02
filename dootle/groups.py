@@ -20,9 +20,9 @@ from weakref import ref
 
 from tomler import TomlAccessError
 import doot
-from doot.core.task.task_group import TaskGroup
+from doot.control.group import TaskGroup
 
-from doot.tasks import project_init
+from dootle.tasks import project_init
 from doot.errors import DootDirAbsent
 ##-- end imports
 
