@@ -74,7 +74,7 @@ class MastodonMixin:
             return { "toot_result": True }
         except mastodon.MastodonAPIError as err:
             general, errcode, form, detail = err.args
-            resolution = RESOLUTION_RE.match(detail)
+            resolution = RESOLUTION_RE.match(detail) if detail else None
             if resolution and resolution in self.resolution_blacklist:
                 pass
             elif errcode == 422 and form == "Unprocessable Entity" and resolution:

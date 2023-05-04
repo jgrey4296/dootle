@@ -117,7 +117,7 @@ class NoScriptMerge(tasker.DootTasker, CommanderMixin, FilerMixin):
                 case bool(), bool():
                     pass
 
-class TwitterAccess(tasker.DootTasker, TwitterMixin): # TweepyMixin):
+class TwitterAccess(tasker.DootTasker, TwitterMixin):
 
     def __init__(self, name="twitter::access", locs=None):
         super().__init__(name, locs)

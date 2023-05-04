@@ -22,7 +22,6 @@ import doot
 from doot.mixins.batch import BatchMixin
 import tomler
 import twitter as tw
-import tweepy
 
 tweet_size         : Final[int] = doot.config.on_fail(250, int).twitter.tweet_size()
 tweet_img_types    : Final[list] = doot.config.on_fail([".jpg", ".png", ".gif"], list).twitter.image_types()

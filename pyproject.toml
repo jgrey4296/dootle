@@ -7,22 +7,22 @@ requires-python = ">=3.11"
 license         = {file = "LICENSE"}
 keywords        = []
 authors         = [
-  {name  = "John Grey"}
-  {email = "jgrey.n.plus.one at gmail.com"},
+  {name  = "John Grey", email = "jgrey.n.plus.one@gmail.com"},
 ]
+
 classifiers     = [
   "Programming Language :: Python"
 ]
 
 dependencies   = [
-    "doot @ git+https://github.com/jgrey4296/doot.git"
+    "doot @ git+https://github.com/jgrey4296/doot.git",
     "Pillow",
     "PyYAML",
     "Requests",
     "beautifulsoup4",
     "bibtexparser",
     "itemadapter",
-    "mastodon.py",
+    "mastodon.py>=1.8",
     "matplotlib",
     "networkx",
     "numpy",
@@ -35,7 +35,7 @@ dependencies   = [
     "scikit-learn",
     "scrapy",
     "seaborn",
-    "twitter",
+    "python-twitter==3.4.2",
     "w3lib",
     "wordcloud",
     "xsdata",
@@ -43,8 +43,7 @@ dependencies   = [
 ]
 
 [project.optional-dependencies]
-docs = [ "sphinx" ]
-dev  = [ "https://github.com/jgrey4296/doot", "pipreqs" ]
+dev  = [ "doot@git+https://github.com/jgrey4296/doot.git", "pipreqs", "sphinx" ]
 test = [ "pytest < 5.0.0" ]
 
 ##-- urls
