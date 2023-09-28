@@ -290,7 +290,7 @@ class BibPathCleanMixin:
         while hexed.exists():
             logging.debug("Finding a unique non-existent path")
             hex_val     = str(uuid4().hex)[:5]
-            hexed       = proposed.with_stem(f"_{hex_val}")
+            hexed       = proposed.with_stem(f"{proposed.stem}_{hex_val}")
 
         return hexed
 

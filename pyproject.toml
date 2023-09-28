@@ -15,36 +15,23 @@ classifiers     = [
 ]
 
 dependencies   = [
-    "doot @ git+https://github.com/jgrey4296/doot.git",
-    "Pillow",
-    "PyYAML",
-    "Requests",
-    "beautifulsoup4",
-    "bibtexparser",
+    "doot @ git+https://github.com/jgrey4296/doot.git , python_version >= 3.10 ",
     "itemadapter",
-    "mastodon.py>=1.8",
-    "matplotlib",
-    "networkx",
-    "numpy",
-    "pandas",
-    "pdfrw",
-    "pony",
-    "pylatexenc",
-    "pypandoc",
-    "pypandoc",
-    "scikit-learn",
-    "scrapy",
-    "seaborn",
-    "python-twitter==3.4.2",
     "w3lib",
-    "wordcloud",
-    "xsdata",
-    "xsdata",
 ]
 
 [project.optional-dependencies]
-dev  = [ "doot@git+https://github.com/jgrey4296/doot.git", "pipreqs", "sphinx" ]
-test = [ "pytest < 5.0.0" ]
+dev      = [ "doot@git+https://github.com/jgrey4296/doot.git", "pipreqs", "sphinx" ]
+test     = [ "pytest > 7.0" ]
+database = [ "pony, python_version <= 3.10" ]
+image    = ["Pillow"]
+net      = ["Requests", "beautifulsoup4", "scrapy"]
+bibtex   = ["bibtexparser", "pylatexenc"]
+social   = ["mastodon.py>=1.8"]
+data     = ["PyYAML", "pandas", "numpy", "scikit-learn", "xsdata", "networkx"]
+visual   = ["matplotlib", "seaborn", "wordcloud"]
+pdf      = ["pdfrw", "pypandoc"]
+
 
 ##-- urls
 [project.urls]

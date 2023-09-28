@@ -1,4 +1,3 @@
-# -*- mode:doot; -*-
 #!/usr/bin/env python3
 """
 

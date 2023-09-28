@@ -51,7 +51,7 @@ class DootBasicSpider(scrapy.Spider):
     Basic Doot Spider that stores locs and its parent task
     """
 
-    def __init__(self, name  =None, locs=None, urls=None, domains=None, task=None):
+    def __init__(self, name=None, locs=None, urls=None, domains=None, task=None):
         super().__init__(name)
         self.locs            = locs
         self.task            = task

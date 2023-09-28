@@ -63,9 +63,9 @@ class MastodonMixin:
             # if the_file.stat().st_size > 8_000_000:
                 # the_file = compress_file(the_file)
 
-            assert(the_file.exists())
-            assert(the_file.stat().st_size < 8_000_000)
-            assert(the_file.suffix.lower() in [".jpg", ".png", ".gif"])
+            assert(the_file.exists()), f"File Doesn't Exist {the_file}"
+            assert(the_file.stat().st_size < 8_000_000), "Bad Size"
+            assert(the_file.suffix.lower() in [".jpg", ".png", ".gif"]), "Bad Type"
 
             media_id = self.mastodon.media_post(str(the_file), description=desc)
             # media_id = self.mastodon.media_update(media_id, description=desc)
@@ -81,10 +81,10 @@ class MastodonMixin:
                 with open(RESOLUTION_BLACKLIST, 'a') as f:
                     f.write("\n" + resolution[1])
 
-            logging.warning("Mastodon Resolution Failure: %s", str(err))
+            logging.warning("Mastodon Resolution Failure: %s", repr(err))
             return { "toot_result": False }
         except Exception as err:
-            logging.warning("Mastodon Post Failed: %s", str(err))
+            logging.warning("Mastodon Post Failed: %s", repr(err))
             return { "toot_result": False }
 
     def handle_resolution(self, task):
