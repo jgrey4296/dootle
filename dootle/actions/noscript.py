@@ -117,23 +117,3 @@ class NoScriptMerge(tasker.DootTasker, CommanderMixin, FilerMixin):
                 case bool(), bool():
                     pass
 
-class TwitterAccess(tasker.DootTasker, TwitterMixin):
-
-    def __init__(self, name="twitter::access", locs=None):
-        super().__init__(name, locs)
-        self.twitter = None
-        self.locs.ensure("secrets", task=name)
-
-    def task_detail(self, task):
-        task.update({
-            "actions": [(self.setup_twitter, [self.locs.secrets]),
-                        self.pause,
-                        ],
-            "verbosity": 2,
-        })
-        return task
-
-    def pause(self):
-        logging.info("Pausing")
-        breakpoint()
-        pass

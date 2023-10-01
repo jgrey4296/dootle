@@ -1,19 +1,34 @@
+#!/usr/bin/env python3
+"""
 
+"""
 ##-- imports
 from __future__ import annotations
 
+import abc
 import logging as logmod
-from collections import defaultdict
-from importlib.resources import files
-from string import Template, ascii_uppercase
+import pathlib as pl
+from copy import deepcopy
+from dataclasses import InitVar, dataclass, field
+from re import Pattern
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
+                    Iterable, Iterator, Mapping, Match, MutableMapping,
+                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
+                    cast, final, overload, runtime_checkable)
+from uuid import UUID, uuid1
+from weakref import ref
 
-# from instal.defaults import STATE_HOLDSAT_GROUPS, TEX_loc
-# from instal.interfaces.reporter import InstalReporter_i
+import doot
+from doot.control import globber
+from doot.control.tasker import DootTasker
 
 ##-- end imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
+# If CLI:
+# logging = logmod.root
+# logging.setLevel(logmod.NOTSET)
 ##-- end logging
 
 ##-- data
@@ -44,6 +59,12 @@ TERM            = Template((tex_path / "term.tex").read_text())
 TERM_BODY       = Template((tex_path / "term_body.tex").read_text())
 TRACE           = Template((tex_path / "trace.tex").read_text())
 ##-- end data
+from string import Template, ascii_uppercase
+from importlib.resources import files
+from doot.mixins.delayed import DelayedMixin
+from doot.mixins.targeted import TargetedMixin
+from doot.mixins.commander import CommanderMixin
+from dootle.mixins.latex import LatexMixin
 
 BOLD  : Final[str] =  r"\textbf"
 SOUT  : Final[str] =  r"\sout"
@@ -58,6 +79,34 @@ def macro_key(num):
     digits = str(num)
     letters = [ascii_uppercase[int(x)] for x in digits]
     return "".join(letters)
+
+def task_latex_docs():
+    """ run texdoc  """
+    return {
+        "basename" : "tex::docs",
+        "actions" : ["texdoc {package}"],
+        "params" : [ { "name" : "package", "long" : "package", "short" : "p", "type" : str, "default" : "--help",}],
+    }
+
+class LatexCheckSweep(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, LatexMixin):
+    """
+    ([src] -> temp) Run a latex pass, but don't produce anything,
+    just check the syntax
+    """
+
+    def __init__(self, name="tex::check", locs:DootLocData=None, roots:list[pl.Path]=None, rec=True):
+        super().__init__(name, locs, roots or [locs.src], exts=['.tex'], rec=rec)
+        self.locs.ensure("temp", task=name)
+
+    def set_params(self):
+        return self.target_params() + self.latex_params()
+
+    def subtask_detail(self, task, fpath=None):
+        task.update({
+            "file_dep" : [ fpath ],
+            "actions"  : [ self.make_cmd(self.latex_check, fpath) ]
+        })
+        return task
 
 class LatexCompilerBase:
     _compiled_text = []
@@ -91,7 +140,6 @@ class LatexCompilerBase:
         formatting it with kwargs.
         """
         self._compiled_text.append(self.expand(pattern, **kwargs))
-
 
     def latex_check (self, fpath) -> list:
         return ["pdflatex",

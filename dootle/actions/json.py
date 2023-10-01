@@ -5,35 +5,56 @@
 ##-- imports
 from __future__ import annotations
 
-import types
-import abc
-import datetime
-import enum
-import functools as ftz
-import itertools as itz
-import logging as logmod
 import pathlib as pl
-import re
-import time
-from copy import deepcopy
-from dataclasses import InitVar, dataclass, field
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable)
-from uuid import UUID, uuid1
-from weakref import ref
-import json
+import shutil
+from functools import partial
+import shlex
+
+from functools import partial
+from itertools import cycle, chain
+
+import doot
+from doot import globber, tasker
 
 ##-- end imports
 
-##-- logging
-logging = logmod.getLogger(__name__)
-##-- end logging
+from doot.mixins.commander import CommanderMixin
+from doot.mixins.filer import FilerMixin
+from doot.mixins.delayed import DelayedMixin
+from doot.mixins.targeted import TargetedMixin
+from doot.mixins.json import JsonMixin
 
 from xsdata.formats.dataclass.context import XmlContext
 from xsdata.formats.dataclass.parsers import JsonParser
 from typing import List
+
+class JsonFormatTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, FilerMixin, CommanderMixin, JsonMixin):
+    """
+    ([data] -> data) Lint Json files with jq *inplace*
+    """
+
+    def __init__(self, name="json::format.inplace", locs:DootLocData=None, roots:list[pl.Path]=None, rec=True):
+        super().__init__(name, locs, roots or [locs.data], exts=[".json"], rec=rec)
+
+    def set_params(self):
+        return self.target_params()
+
+    def filter(self, fpath):
+        if fpath.is_file() and fpath.suffix in self.exts:
+            return self.globc.yes
+        return self.globc.noBut
+
+    def subtask_detail(self, task, fpath=None):
+        task.update({
+            "uptodate" : [False],
+            "actions" : [
+                self.make_cmd(self.json_filter, [fpath], save="formatted"),
+                (self.write_to, [fpath, "formatted"]),
+                ],
+            })
+        return task
+
+
 
 class JsonMixin:
 

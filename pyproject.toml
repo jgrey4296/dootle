@@ -1,7 +1,7 @@
 [project]
 name            = "dootle"
 version         = "0.1.0"
-description     = ""
+description     = "A Library of extensions for Doot task running"
 readme          = "README.md"
 requires-python = ">=3.11"
 license         = {file = "LICENSE"}
@@ -15,7 +15,8 @@ classifiers     = [
 ]
 
 dependencies   = [
-    "doot @ git+https://github.com/jgrey4296/doot.git , python_version >= 3.10 ",
+    "doot @ git+https://github.com/jgrey4296/doot.git",
+    "python_version >= 3.10 ",
     "itemadapter",
     "w3lib",
 ]
@@ -23,7 +24,7 @@ dependencies   = [
 [project.optional-dependencies]
 dev      = [ "doot@git+https://github.com/jgrey4296/doot.git", "pipreqs", "sphinx" ]
 test     = [ "pytest > 7.0" ]
-database = [ "pony, python_version <= 3.10" ]
+database = [ "pony", "python_version <= 3.10" ]
 image    = ["Pillow"]
 net      = ["Requests", "beautifulsoup4", "scrapy"]
 bibtex   = ["bibtexparser", "pylatexenc"]
@@ -31,7 +32,6 @@ social   = ["mastodon.py>=1.8"]
 data     = ["PyYAML", "pandas", "numpy", "scikit-learn", "xsdata", "networkx"]
 visual   = ["matplotlib", "seaborn", "wordcloud"]
 pdf      = ["pdfrw", "pypandoc"]
-
 
 ##-- urls
 [project.urls]
@@ -46,6 +46,12 @@ changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md" # TODO
 [project.scripts]
 
 ##-- end scripts
+
+##-- entry-points
+[project.entry-points."doot.plugins.command"]
+example = "dootle.cmds.example_cmd:ExampleCmd"
+
+##-- end entry-points
 
 ##-- build-system
 [build-system]
@@ -74,39 +80,6 @@ include    = ["dootle*"]
 
 # Tools #######################################################################
 
-##-- pyright
-[tool.pyright]
-# strict = dootle.*
-verboseOutput               = true
-typeCheckingMode            = "strict"
-pythonVersion               = "3.10"
-
-reportUnusedImport          = false
-reportAssertAlwaysTrue      = "information"
-reportMissingParameterType  = "warning"
-reportMissingTypeArgument   = "warning"
-reportMissingTypeStubs      = "warning"
-reportUnknownMemberType     = "warning"
-reportUnknownParameterType  = "information"
-reportUnknownVariableType   = "warning"
-reportUnnecessaryCast       = "information"
-reportUnnecessaryIsInstance = "warning"
-
-##-- end pyright
-
-##-- mypy
-# https://mypy.readthedocs.io/en/stable/config_file.html#config-file
-[mypy]
-python_version      = 3.10
-warn_return_any     = true
-warn_unused_configs = true
-
-# Per-module options:
-[mypy-pyparsing]
-ignore_missing_imports = true
-
-##-- end mypy
-
 ##-- pytest
 [tool.pytest.ini_options]
 log_cli       = false
@@ -114,34 +87,3 @@ log_level     = "DEBUG"
 log_cli_level = "DEBUG"
 
 ##-- end pytest
-
-##-- sphinx
-[tool.sphinx]
-author     = "John Grey"
-copyright  = "2023-05-02"
-extensions = ['sphinx.ext.doctest', 'sphinx.ext.autodoc', 'sphinx.ext.autosummary', 'sphinx.ext.napoleon']
-templates  = ['_templates']
-exclude    = ['**/flycheck_*.py']
-
-[tool.sphinx.autosummary]
-generate = true
-
-[tool.sphinx.autodoc]
-add_module_names   = false
-inherit_docstrings = true
-
-[tool.sphinx.autodoc.defaults]
-members           = true
-undoc-members     = true
-private-members   = false
-special-members   = false
-inherited-members = true
-show-inheritance  = true
-
-[tool.sphinx.html]
-theme       = 'alabaster'
-static      = ['_static']
-
-[tool.sphinx.html.options]
-
-##-- end sphinx

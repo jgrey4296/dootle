@@ -60,7 +60,6 @@ class CSVSummaryXMLTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, C
         super().__init__(name, locs, roots or [locs.data], exts=[".csv"], rec=rec)
         self.report_name = self.locs.build / "csv.xml"
 
-
     def set_params(self):
         return self.target_params()
 
@@ -105,3 +104,21 @@ class CSVSummaryXMLTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, C
         cmds.append(self.report_name)
         # total_cmd      = f"xml ed -L {cmd} {self.report_name}"
         return cmds
+
+class CSVMixin:
+
+    def csv_summary(self, fpath) -> dict:
+        text        = fpath.read_text().split("\n")
+        columns     = len(text[0].split(","))
+        report = [
+            f"--- {fpath} : (Rows: {len(text)})",
+            "Header Line: {text[0].strip()}",
+            ""
+            ]
+
+        return {
+            "report"  : "\n".join(report),
+            "rows"    :  len(text),
+            "columns" :  columns,
+            "header"  : text[0].strip(),
+            }
