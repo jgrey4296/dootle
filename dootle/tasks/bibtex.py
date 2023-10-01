@@ -27,23 +27,6 @@ from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
 from uuid import UUID, uuid1
 from weakref import ref
 
-import doot
-from doot import globber, tasker
-from doot.control.tasker import DootTasker
-from doot.mixins.batch import BatchMixin
-from doot.mixins.commander import CommanderMixin
-from doot.mixins.delayed import DelayedMixin
-from doot.mixins.filer import FilerMixin
-from doot.mixins.targeted import TargetedMixin
-
-from dootle.mixins.bibtex import clean as bib_clean
-from dootle.mixins.bibtex import utils as bib_utils
-from dootle.mixins.bibtex.load_save import BibLoadSaveMixin
-from dootle.mixins.pdf import PdfMixin
-from dootle.mixins.web import WebMixin
-from dootle.tasks.files.backup import BackupTask
-from dootle.utils.formats.timelinefile import TimelineFile
-
 ##-- end imports
 
 ##-- logging
@@ -51,35 +34,43 @@ logging = logmod.getLogger(__name__)
 logmod.getLogger('bibtexparser').setLevel(logmod.CRITICAL)
 ##-- end logging
 
-min_tag_timeline     : Final[int] = doot.config.on_fail(10, int).bibtex.min_timeline()
-stub_exts            : Final[list] = doot.config.on_fail([".pdf", ".epub", ".djvu", ".ps"], list).bibtex.stub_exts()
+printer = logmod.getLogger("doot._printer")
+
+import tomler
+import doot
+from doot.tasks.base_task import DootTask
+from doot.structs import DootActionSpec
+
+from dootle.actions.bibtex_io import BibtexInitAction, BibtexToStrAction, BibtexEntryTransformer
+from dootle.utils.bibtex.field_cleaner import BibFieldCleanMixin
+from dootle.utils.bibtex.path_cleaner import BibPathCleanMixin
+
 clean_in_place       : Final[bool] = doot.config.on_fail(False, bool).bibtex.clean_in_place()
 wayback_wait         : Final[int] = doot.config.on_fail(10, int).bibtex.wayback_wait()
 acceptible_responses : Final[list] = doot.config.on_fail(["200"], list).bibtex.accept_wayback()
 ENT_const            : Final[str] = 'ENTRYTYPE'
 
-class LibDirClean(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, FilerMixin):
+class BibtexBase(DootTask):
+
+    @property
+    def actions(self):
+        yield BibtexInitAction(tomler.Tomler())
+        yield from super().actions
+
+class LibDirClean(FilerMixin):
     """
     Clean the directories of the bibtex library
     """
-
-    def __init__(self, name="pdflib::clean", locs=None, roots=None, rec=True, exts=None):
-        super().__init__(name, locs, roots or [locs.pdfs], rec=False, exts=exts)
-
-    def set_params(self):
-        return self.target_params()
 
     def filter(self, fpath):
         if fpath.is_dir() and not bool(list(fpath.iterdir())):
             return self.globc.keep
         return self.globc.discard
 
-    def subtask_detail(self, task, fpath):
-        task.update({
-            "actions": [ (self.rmdirs, [fpath]) ],
-        })
+    def actions(self, task_state_copy):
+        yield DootActionSpec(fun=self.rmdirs)
 
-class BibtexClean(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, bib_clean.BibFieldCleanMixin, bib_clean.BibPathCleanMixin, BibLoadSaveMixin, BatchMixin, FilerMixin):
+class BibtexClean(BibFieldCleanMixin, BibPathCleanMixin, FilerMixin):
     """
     (src -> src) Clean all bib files
     formatting, fixing paths, etc
@@ -87,65 +78,12 @@ class BibtexClean(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, bib_cle
     wrong_year_msg = " : Wrong Year: (Bibfile: {target}) != ({actual} : Entry)"
     bad_file_msg   = " : File Does Not Exist : {file}"
 
-    def __init__(self, name="bibtex::clean", locs=None, roots=None, rec=True):
-        super().__init__(name, locs, roots or [locs.bibtex], exts=[".bib"], rec=rec)
-        self.current_db   = None
-        self.current_year = None
-        self.issues       = []
-        self.locs.ensure("build", "temp", "bibtex", "pdfs", task=name)
+    def actions(self):
+        yield DootActionSpec(fun=lambda x: {"target": task_state_copy['file'] if self.clean_in_place else self.locs.temp / task_state_copy['file'].name})
+        yield DootActionSpec(fun=BibtexEntryTransformer, args=tomler.Tomler({"args": [self.on_parse_check_entry]}))
+        yield DootActionSpec(fun=BibtexEntryTransformer, args=tomler.Tomler({"args": [self.loaded_clean_entry]}))
 
-    def filter(self, fpath):
-        if fpath.is_dir():
-            return self.control.discard
-        return self.control.accept
-
-    @property
-    def clean_in_place(self):
-        return self.args['clean-in-place'] or self.args['move-files']
-
-    def set_params(self):
-        return [
-            { "name": "move-files", "long": "move-files", "type": bool, "default": False },
-            { "name": "clean-in-place", "short": "i", "type": bool, "default": clean_in_place},
-        ] + self.target_params()
-
-    def task_detail(self, task):
-        issue_report = self.locs.build / "bib_clean_issues.report"
-        task.update({
-            "actions" : [
-                lambda: { "key_max" : max((len(x[0]) for x in self.issues), default=1) },
-                lambda task: { "issues" : "\n".join(f"{x[0]:<{task.values['key_max']}} {x[1]}" for x in self.issues) },
-                (self.write_to, [issue_report, "issues"]),
-                ],
-            "targets" : [issue_report],
-        })
-        return task
-
-    def subtask_detail(self, task, fpath):
-        target = fpath if self.clean_in_place else self.locs.temp / fpath.name
-        task.update({
-            "actions" : [
-                (self.load_and_clean, [fpath]), # -> cleaned
-                self.db_to_str, # -> db
-                (self.write_to, [target, "db"]),
-            ],
-        })
-        return task
-
-    def db_to_str(self):
-        return {
-            "db" : self.bc_db_to_str(self.current_db, self.locs.pdfs)
-        }
-
-    def load_and_clean(self, fpath):
-        logging.info("Cleaning: %s", fpath)
-        self.current_year = fpath.stem
-        self.current_db   = self.bc_load_db([fpath], fn=self.on_parse_check_entry)
-        # Everything loaded, crossrefs resolved
-        for entry in self.current_db.entries:
-            self.loaded_clean_entry(entry)
-
-    def on_parse_check_entry(self, entry) -> dict:
+    def on_parse_check_entry(self, entry):
         # Preprocess
         self.bc_lowercase_keys(entry)
         self.bc_tag_split(entry)
@@ -174,9 +112,7 @@ class BibtexClean(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, bib_cle
             self.issues.append((e_id, msg))
             logging.warning(e_id + msg)
 
-        return entry
-
-    def loaded_clean_entry(self, entry) -> None:
+    def loaded_clean_entry(self, entry):
         assert('crossref' not in entry or '_FROM_CROSSREF' in entry), entry
         self.bc_split_names(entry)
         self.bc_title_split(entry)
@@ -214,31 +150,32 @@ class BibtexClean(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, bib_cle
                 logging.info("Proposed Directory Cleanup: %s", parent)
             ##-- end parent path cleanup
 
-class BibtexStub(DelayedMixin, globber.DootEagerGlobber):
+class BibtexStub(DootTaask):
     """
     (src -> data) Create basic stubs for found pdfs and epubs
     """
     stub_t     = Template("@misc{stub_key_$id,\n  author = {},\n  title = {$title},\n  year = {$year},\n  file = {$file}\n}")
 
-    def __init__(self, name="bibtex::stub", locs=None, roots=None, rec=False, exts=None):
-        super().__init__(name, locs, roots or [locs.downloads, locs.desktop, locs.dropbox], rec=rec, exts=exts or stub_exts)
-        self.source_file_set = set()
-        self.max_stub_id      = 0
-        self.stubs            = []
+    def filter(self, fpath):
+        if fpath.is_file() and fpath.name not in self.source_file_set:
+            return self.globc.accept
+        return self.globc.discard
 
-    def setup_detail(self, task):
-        task.update({
-            "actions": [
-                self.read_stub_contents
-            ]
-        })
-        return task
+    @properties
+    def actions(self):
+        yield DootActionSpec(fun=self.read_stub_contents)
+        yield DootActionSpec(fun=self.move_to_workdir)
+        yield DootActionSpec(fun=self.stub_all)
 
-    def read_stub_contents(self):
-        source_text = self.locs.bib_stub_file.read_text()
-        file_re = re.compile(r"\s*file\s*=\s*{(.+)}")
-        stub_re = re.compile(r"^@.+?{stub_key_(\d+),$")
-        stub_ids = [0]
+    def read_stub_contents(self, task_state_copy):
+        if "existing_stubs" in task_state_copy:
+            return True
+
+        source_text     = self.locs.bib_stub_file.read_text()
+        file_re         = re.compile(r"\s*file\s*=\s*{(.+)}")
+        stub_re         = re.compile(r"^@.+?{stub_key_(\d+),$")
+        stub_ids        = [0]
+        source_file_set = set()
         for line in source_text.split("\n"):
             file_match = file_re.match(line)
             key_match  = stub_re.match(line)
@@ -247,50 +184,30 @@ class BibtexStub(DelayedMixin, globber.DootEagerGlobber):
                 stub_ids.append(int(key_match[1]))
 
             if file_match is not None:
-                self.source_file_set.add(pl.Path(file_match[1]).name)
+                source_file_set.add(pl.Path(file_match[1]).name)
 
-        self.max_stub_id = max(stub_ids)
-        logging.debug("Found %s existing stubs", len(self.source_file_set))
+        max_stub_id = max(stub_ids)
+        logging.debug("Found %s existing stubs", len(source_file_set))
+        return {"existing_stubs" : source_file_set}
 
-    def filter(self, fpath):
-        if fpath.is_file() and fpath.name not in self.source_file_set:
-            return self.globc.accept
-        return self.globc.discard
-
-    def task_detail(self, task):
-        task.update({
-            "actions" : [
-                self.stub_all,
-                self.append_stubs
-            ],
-        })
-        return task
-
-    def subtask_detail(self, task, fpath):
-        task.update({
-            "actions" : [
-                (self.move_to_workdir, [fpath]), # locs.src/fpath -> moved_to: locs.data/fpath
-            ],
-        })
-        return task
-
-    def move_to_workdir(self, fpath):
-        src = fpath
-        dst = self.locs.bibtex_working / fpath.name
+    def move_to_workdir(self, task_state_copy):
+        src = task_state_copy['target']
+        dst = self.locs.bibtex_working / src.name
         if dst.exists():
             src.rename(src.with_stem(f"exists_{src.stem}"))
-            return None
+            return True
 
         shutil.move(str(src), str(dst))
         # src.rename(dst)
-        return { "moved_to" : str(dst)}
+        return { "moved_to" : str(dst) }
 
-    def stub_all(self):
-        wd = self.locs.bibtex_working
+    def stub_all(self, task_state_copy):
+        task_state_copy['stubs'] = []
+        wd    = self.locs.bibtex_working
         for fpath in itertools.chain(wd.glob("*.pdf"), wd.glob("*.epub")):
             if fpath.name in self.source_file_set:
                 continue
-            if "_refiled" in fpath.name:
+            if fpath.name.startswith("_refiled"):
                 continue
 
             self.max_stub_id += 1
@@ -298,52 +215,26 @@ class BibtexStub(DelayedMixin, globber.DootEagerGlobber):
                                                     title=fpath.stem,
                                                     year=datetime.datetime.now().year,
                                                     file=str(fpath.expanduser().resolve()))
-            self.stubs.append(stub_str)
+            task_state_copy['stubs'].append(stub_str)
 
-    def append_stubs(self):
-        if not bool(self.stubs):
-            return
+        if bool(task_state_copy['stubs']):
+            self.append_stubs(task_state_copy)
 
+        return True
+
+    def append_stubs(self, task_state_copy):
         logging.info(f"Adding {len(self.stubs)} stubs")
         with open(self.locs.bib_stub_file, 'a') as f:
             f.write("\n")
-            f.write("\n\n".join(self.stubs))
+            f.write("\n\n".join(task_state_copy['stubs']))
 
-class BibtexWaybacker(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, bib_clean.BibFieldCleanMixin, bib_clean.BibPathCleanMixin, BibLoadSaveMixin, BatchMixin, FilerMixin, WebMixin):
+class BibtexWaybacker(BibFieldCleanMixin, WebMixin):
     """
     get all urls from bibtexs,
     then check they are in wayback machine,
     or add them to it
     then add the wayback urls to the relevant bibtex entry
     """
-
-    def __init__(self, name="bibtex::wayback", locs=None, roots=None, exts=None):
-        super().__init__(name, locs, roots or [locs.bibtex], rec=True, exts=exts or [".bib"])
-        self.current_db   = None
-        self.current_year = None
-
-    def set_params(self):
-        return self.target_params()
-
-    def subtask_detail(self, task, fpath):
-        task.update({
-            "actions" : [
-                (self.load_and_clean, [fpath]), # -> cleaned
-                self.db_to_str, # -> db
-                (self.write_to, [fpath, "db"]),
-            ],
-        })
-        return task
-
-    def db_to_str(self):
-        return {
-            "db" : self.bc_db_to_str(self.current_db, self.locs.pdfs)
-        }
-
-    def load_and_clean(self, fpath):
-        logging.info("Cleaning: %s", fpath)
-        self.current_year = fpath.stem
-        self.current_db   = self.bc_load_db([fpath], fn=self.on_parse_check_entry)
 
     def on_parse_check_entry(self, entry) -> dict:
         url_keys = [k for k in entry.keys() if "url" in k]
@@ -381,61 +272,11 @@ class BibtexWaybacker(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, bib
         if closest is not None and closest['status'] in acceptible_responses and closest.get('available', False):
             return closest["url"]
 
-class BibtexCompile(DelayedMixin, TargetedMixin, globber.DootEagerGlobber):
+class BibtexCompile():
     """
-    Compile individual bibtex files into pdfs
-    then combine them together into decades and total
-    """
-
-    def __init__(self, name="bibtex::compile", locs=None, roots=None, output=None):
-        super().__init__(name, locs, roots or [locs.bibtex], rec=False, exts=[".bib"])
-        self.output = output or locs.pdf_summary
-        self.locs.ensure("temp", task=name)
-
-    def subtask_detail(self, task, fpath):
-        task.update({
-            "actions" : [
-                # create tex wrapper in temp
-                # compile bs
-            ],
-        })
-        return task
-
-class TimelineCompile(DelayedMixin, TargetedMixin, globber.DootEagerGlobber):
-    """
-    take a timeline and create a pdf of the citations,
-    and the combined pdfs
+    Compile individual bibtex file into pdf
     """
 
-    def __init__(self, name="timeline::compile", locs=None, roots=None, exts=None, output=None):
-        super().__init__(name, locs, roots or [locs.timelines], exts=exts or [".tag_timeline"])
-        self.output = output or self.locs.build
-
-    def set_params(self):
-        return self.target_params()
-
-    def subtask_detail(self, task, fpath):
-        task.update({
-            "actions" : [
-                # construct tex file
-                # Compile
-                     ],
-        })
-        return task
-
-class TODOHashVerify(DelayedMixin, TargetedMixin, globber.DootEagerGlobber):
-    """
-    Check a random selection of files for hash consistency
-    """
-
-    def __init__(self, name="bibtex::hash.check", locs=None, roots=None, exts=None):
-        super().__init__(name, locs, roots or [locs.bibtex], exts=exts or [".bib"])
-
-    def set_params(self):
-        return self.target_params()
-
-    def subtask_detail(self, task, fpath):
-        task.update({
-            "actions" : [],
-        })
-        return task
+    def actions(self):
+        # config actions to sub filter
+        pass
