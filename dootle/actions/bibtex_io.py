@@ -66,6 +66,7 @@ class BibtexInitAction(Action_p):
 
       pass a callable as the spec.args value tto use in stead of entry_transform
     """
+    outState = ["database"]
 
     def __call__(self, spec, task_state_copy:dict):
         if 'database' in task_state_copy:
@@ -112,6 +113,7 @@ class BibtexInitAction(Action_p):
 
 class BibtexLoadAction(Action_p):
     """ Parse all the bibtext files into a shared database """
+    inState = ["database"]
 
     def __call__(self, spec, task_state_copy:dict):
         try:
@@ -139,6 +141,8 @@ class BibtexToStrAction(Action_p):
     """
       Convert a bib database to a string for writing to a file.
     """
+    inState = ["database"]
+    outState = ["text"]
 
     def __call__(self, spec, task_state_copy):
         db     = task_state_copy['database']
@@ -154,6 +158,7 @@ class BibtexEntryTransformer(Action_p):
       pass a callable in the spec to use that instead
       The callable modifies the entry *in place*
     """
+    inState = ["database"]
 
     def __call__(self, spec, task_state_copy):
         lib_root = task_state_copy.get('lib_root', None) or spec.kwargs.on_fail(None).lib_root or doot.locs.bibtex_lib_root
