@@ -1,0 +1,62 @@
+##-- imports
+from __future__ import annotations
+
+import pathlib as pl
+import shutil
+from typing import Final
+
+##-- end imports
+
+import doot
+from doot.task.group import TaskGroup
+from doot.task.tasker import DootTasker
+from doot.mixins.cleaning import CleanerMixin
+
+__all__ = [
+        "SphinxDocTask", "task_browse",
+]
+
+conf_builder     : Final[str] = doot.config.on_fail("html", str).sphinx.builder()
+conf_verbosity   : Final[int] = doot.config.on_fail(0, int).sphinx.verbosity()
+
+def task_browse() -> dict:
+    """[build] Task definition """
+    doot.locs.ensure("html", task="sphinx::browse")
+    return {
+        "basename"    : "sphinx::browse",
+        "actions"     : [ CommanderMixin.cmd(None, ["open", doot.locs.html ]) ],
+        "task_dep"    : ["sphinx::doc"],
+    }
+
+class SphinxDocTask(DootTasker, CleanerMixin):
+    """([docs] -> build) Build sphinx documentation """
+
+    def __init__(self, name="sphinx::doc", locs:DootLocData=None, builder=None, verbosity:int=None):
+        super().__init__(name, locs)
+        self.builder = builder or conf_builder
+        self.verbosity = verbosity or conf_verbosity
+        self.locs.ensure("docs", "html", "build", task=name)
+
+    def task_detail(self, task:dict) -> dict:
+        task.update({
+            "actions"  : [ self.make_cmd(self.sphinx_command) ],
+            "file_dep" : [ self.locs.docs / "conf.py" ],
+            "targets"  : [ self.locs.html, self.locs.build ],
+            "clean"    : [ self.clean_target_dirs ],
+        })
+        return task
+
+    def sphinx_command(self):
+        args = ["sphinx-build",
+                '-b', self.builder,
+                self.locs.docs,
+                self.locs.build]
+        match self.verbosity:
+            case x if x > 0:
+                args += ["-v" for i in range(x)]
+            case x if x == -1:
+                args.append("-q")
+            case x if x == -2:
+                args.append("-Q")
+
+        return args

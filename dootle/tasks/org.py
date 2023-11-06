@@ -33,13 +33,9 @@ from collections import defaultdict
 
 import doot
 from doit.exceptions import TaskFailed
-from doot.control import globber
-from doot.control.tasker import DootTasker
-from doot.mixins.batch import BatchMixin
-from doot.mixins.commander import CommanderMixin
-from doot.mixins.delayed import DelayedMixin
+from doot.task import globber
+from doot.task .tasker import DootTasker
 from doot.mixins.filer import FilerMixin
-from doot.mixins.targeted import TargetedMixin
 
 tweet_index_file : Final[str] = doot.config.on_fail(".tweets", str).twitter.index()
 file_index_file  : Final[str] = doot.config.on_fail(".files", str).twitter.file_index()
@@ -48,7 +44,7 @@ thread_file      : Final[str] = doot.config.on_fail(".threads", str).twitter.thr
 
 empty_match      : Final[re.Match] = re.match("","")
 
-class TODOOrgCleaner(DelayedMixin, TargetedMixin, globber.DootEagerGlobber):
+class TODOOrgCleaner(globber.DootEagerGlobber):
     """
     Find and format any org files
     """
@@ -65,7 +61,7 @@ class TODOOrgCleaner(DelayedMixin, TargetedMixin, globber.DootEagerGlobber):
         })
         return task
 
-class TODOOrg2Html(DelayedMixin, TargetedMixin, globber.DootEagerGlobber):
+class TODOOrg2Html(globber.DootEagerGlobber):
 
     def __init__(self, name="org::2html", locs=None, roots=None):
         super().__init__(name, locs, roots or [locs.data], rec=True)
@@ -85,7 +81,7 @@ class TODOOrg2Html(DelayedMixin, TargetedMixin, globber.DootEagerGlobber):
     def convert_to_html(self, fpath):
         pass
 
-class ThreadListings(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, BatchMixin):
+class ThreadListings(globber.DootEagerGlobber):
     """
     glob all directories with orgs in,
     and write .tweets and .files listings
@@ -149,7 +145,7 @@ class ThreadListings(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, Batc
 
         return [str(x.relative_to(fpath)) for x in file_dir.iterdir()]
 
-class OrgMultiThreadCount(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, BatchMixin):
+class OrgMultiThreadCount(globber.DootEagerGlobber):
     """
     Count threads in files, make a thread file (default: .threads)
     """
@@ -207,7 +203,7 @@ class OrgMultiThreadCount(DelayedMixin, TargetedMixin, globber.DootEagerGlobber,
         summary = [f"L1: {y[0]} {x}\nL2: {y[1]} {x}" for x,y in counts.items()]
         thread_listing.write_text(f"Total Files: {total_files}\nTotal Threads: {total_threads}\n" + "\n".join(summary))
 
-class ThreadOrganise(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, BatchMixin):
+class ThreadOrganise(globber.DootEagerGlobber):
     """
     move threads in multi thread files to their own separate count
     """
@@ -325,7 +321,7 @@ class ThreadOrganise(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, Batc
         with open(header_file, 'a') as f:
             f.write("\n" + "".join(header_lines))
 
-class ThreadImageOCR(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, BatchMixin):
+class ThreadImageOCR(globber.DootEagerGlobber):
     """
     OCR all files for all thread directories,
     and extract all links into .links files

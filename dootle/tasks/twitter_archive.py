@@ -22,33 +22,23 @@ from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
 from uuid import UUID, uuid1
 from weakref import ref
 
-if TYPE_CHECKING:
-    pass
 ##-- end imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from doot.control import globber
-from doot.mixins.batch import BatchMixin
-from doot.mixins.commander import CommanderMixin
-from doot.mixins.delayed import DelayedMixin
-from doot.mixins.downloader import DownloaderMixin
-from doot.mixins.filer import FilerMixin
-from doot.mixins.targeted import TargetedMixin
-from doot.mixins.zipper import ZipperMixin
-from doot.control.tasker import DootTasker
+import doot
+from doot.task import globber
+from doot.task.tasker import DootTasker
+from doot.mixins.task.filer import FilerMixin
+from doot.mixins.task.zipper import ZipperMixin
 
-from dootle.mixins.apis.twitter import TweepyMixin, TwitterMixin
 from dootle.tasks.files.backup import BackupTask
 from dootle.utils.twitter.org_writer import TwitterTweet
 from dootle.utils.twitter.todo_list import TweetTodoFile
 from dootle.utils.twitter.tweet_graph import TwitterGraph
-import doot
 import dootle.utils.twitter.mixin_passes as passes
-
-import twitter
 
 user_batch_size : Final[int] = doot.config.on_fail(100, int).twitter.user_batch()
 
@@ -77,7 +67,7 @@ class TwitterFull(DootTasker, FilerMixin):
         })
         return task
 
-class TwitterLibTweets(DootTasker, TwitterMixin, FilerMixin, CommanderMixin):
+class TwitterLibTweets(DootTasker, FilerMixin):
     """
     (data -> temp ) download tweets from the library as jsons
     """
@@ -158,7 +148,7 @@ class TwitterLibTweets(DootTasker, TwitterMixin, FilerMixin, CommanderMixin):
             f.write("--------------------\n")
             f.write("\n".join(newly_downloaded))
 
-class TwitterTweets(DootTasker, TwitterMixin, FilerMixin):
+class TwitterTweets(DootTasker, FilerMixin):
     """
     (data -> temp ) download tweets and their thread predecessors using todo file
     """
@@ -252,7 +242,7 @@ class TwitterTweets(DootTasker, TwitterMixin, FilerMixin):
             f.write("--------------------\n")
             f.write("\n".join(newly_downloaded))
 
-class TwitterUserIdentities(DelayedMixin, globber.DootEagerGlobber, BatchMixin, TwitterMixin, FilerMixin):
+class TwitterUserIdentities(globber.DootEagerGlobber, FilerMixin):
     """
     (temp -> temp) download identities of user id's found in tweets
     """
@@ -356,7 +346,7 @@ class TwitterComponentGraph(DootTasker, passes.TwGraphComponentMixin, FilerMixin
 
         logging.info("Graph Built")
 
-class TwitterThreadBuild(DelayedMixin, globber.DootEagerGlobber, BatchMixin, passes.TwThreadBuildMixin, FilerMixin):
+class TwitterThreadBuild(globber.DootEagerGlobber, passes.TwThreadBuildMixin, FilerMixin):
     """
     (components -> threads)
     """
@@ -371,7 +361,7 @@ class TwitterThreadBuild(DelayedMixin, globber.DootEagerGlobber, BatchMixin, pas
         })
         return task
 
-class TwitterThreadWrite(DelayedMixin, globber.DootEagerGlobber, passes.TwThreadWritingMixin, BatchMixin, FilerMixin):
+class TwitterThreadWrite(globber.DootEagerGlobber, passes.TwThreadWritingMixin, FilerMixin):
     """
     (threads -> build) build the org files from threads
     """
@@ -406,7 +396,7 @@ class TwitterThreadWrite(DelayedMixin, globber.DootEagerGlobber, passes.TwThread
         })
         return task
 
-class TwitterDownloadMedia(DelayedMixin, globber.DootEagerGlobber, DownloaderMixin, BatchMixin, FilerMixin):
+class TwitterDownloadMedia(globber.DootEagerGlobber, DownloaderMixin, FilerMixin):
     """
     download media associated with threads
     """
@@ -444,7 +434,7 @@ class TwitterDownloadMedia(DelayedMixin, globber.DootEagerGlobber, DownloaderMix
         # download
         self.download_media(download_to, media)
 
-class TwitterMerge(DelayedMixin, globber.DootEagerGlobber, BatchMixin, FilerMixin):
+class TwitterMerge(globber.DootEagerGlobber, FilerMixin):
     """
     (temp -> data) integrate threads into the library
     """
@@ -525,7 +515,7 @@ class TwitterMerge(DelayedMixin, globber.DootEagerGlobber, BatchMixin, FilerMixi
             for x in list(fdir.glob("*")):
                 self.copy_to(dest, x)
 
-class TwitterArchive(DelayedMixin, globber.DootEagerGlobber, CommanderMixin, BatchMixin, ZipperMixin):
+class TwitterArchive(globber.DootEagerGlobber, ZipperMixin):
     """
     Zip json data for users
 
