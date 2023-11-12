@@ -6,7 +6,7 @@ import pathlib as pl
 import shutil
 ##-- end imports
 
-from doot.task import globber
+from doot.task import dir_walker
 from doot.task.tasker import DootTasker
 
 # https://docs.godotengine.org/en/stable/tutorials/editor/command_line_tutorial.html
@@ -27,7 +27,7 @@ def task_godot_test():
              "actions": []
             }
 
-class GodotRunScene(globber.DootEagerGlobber):
+class GodotRunScene(dir_walker.DootDirWalker):
     """
     ([root]) Globber to allow easy running of scenes
     """
@@ -65,7 +65,7 @@ class GodotRunScene(globber.DootEagerGlobber):
         args.append(self.args['target'])
         return args
 
-class GodotRunScript(globber.EagerFileGlobber):
+class GodotRunScript(dir_walker.DoorDirWalker):
     """
     ([root]) Run a godot script, with debugging or without
     """
@@ -164,7 +164,7 @@ class GodotNewScene(DootTasker):
         })
         return task
 
-class GodotCheckTask(globber.DootEagerGlobber):
+class GodotCheckTask(dir_walker.DootDirWalker):
     """
     ([root]) Lint all gd scripts in the project
     """

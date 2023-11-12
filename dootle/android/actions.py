@@ -37,8 +37,20 @@ import more_itertools as mitz
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
+import doot
+from doot._abstract import Action_p
 
+@doot.check_protocol
+class AndroidRunning(Action_p):
+    pass
 
+@doot.check_protocol
+class AndroidPush(Action_p):
+    pass
+
+@doot.check_protocol
+class AndroidPull(Action_p):
+    pass
 
 
 

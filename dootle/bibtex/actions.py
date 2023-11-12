@@ -87,8 +87,14 @@ class BibtexInitAction(Action_p):
         return { DB_KEY : db }
 
 class BibtexLoadAction(Action_p):
-    """ Parse all the bibtext files into a shared database """
-    inState = [DB_KEY]
+    """ Parse all the bibtext files into a shared database.
+
+      addFn to task_state[`entry_transform`] to use a custom entry transformer,
+      or subclass this and override self.entry_transform.
+
+      """
+    _toml_kwargs = [FILES_KEY, "ignore_nonstandard", "homogenise", "multi_parse", "crossref"]
+    inState      = [DB_KEY]
 
     def __call__(self, spec, task_state:dict):
         try:
@@ -100,7 +106,7 @@ class BibtexLoadAction(Action_p):
                 file_list.append(task_state[spec.kwargs[STATE_KEY]])
 
             db                   = task_state[DB_KEY]
-            bparser              = self._make_parser(spec, db)
+            bparser              = self._make_parser(spec, db, task_state.get("entry_transform", None))
 
             printer.info("Attempting to load files: %s", file_list)
             current_entry_count = len(db.entries)
@@ -140,12 +146,15 @@ class BibtexLoadAction(Action_p):
         entry['__as_unicode'] = True
         return entry
 
-    def _make_parser(self, spec, db):
+    def _make_parser(self, spec, db, transform=None):
+        """
+          Builds a bibtexparser with default settings
+        """
         bparser = BibTexParser(common_strings=False)
-        bparser.customization             = (spec.args or [self.entry_transform])[0]
+        bparser.customization             = transform or self.entry_transform
         bparser.ignore_nonstandard_types  = spec.kwargs.on_fail(False, bool).ignore_nonstandard()
         bparser.homogenise_fields         = spec.kwargs.on_fail(False, bool).homogenise()
-        bparser.expect_multiple_parse     = spec.kwargs.on_fail(True, bool).muli_parse()
+        bparser.expect_multiple_parse     = spec.kwargs.on_fail(True, bool).multi_parse()
         bparser.add_missing_from_crossref = spec.kwargs.on_fail(True, bool).crossref()
         bparser.alt_dict = spec.kwargs.on_fail({
             'authors'  : u'author',
@@ -193,7 +202,15 @@ class BibtexToStrAction(Action_p):
 
 class BibtexEntryTransformer(Action_p):
     """
-      Run a transform over all entries of the database.
+      Runs *IN PLACE*
+      For each state key in spec.args,
+      use that state value as a function to transform each entry.
+
+      transforms should be of the form:
+      def transform(entry:dict, spec, task_state) -> bool
+
+      If a transform returns False, don't run any more transforms and remove that entry from the database
+
       By default, preps for conversion to str with BibtexToStrAction
 
       pass a callable in the spec to use that instead
@@ -202,21 +219,31 @@ class BibtexEntryTransformer(Action_p):
     inState = [DB_KEY]
 
     def __call__(self, spec, task_state):
-        lib_root = task_state.get(LIB_ROOT_KEY, None) or spec.kwargs.on_fail(None)[LIB_ROOT_KEY] or doot.locs.bibtex_lib_root
         db       = task_state[DB_KEY]
-        # TODO use spec.args[0] if callable else self.entry_transform
-        transform = (spec.args or [self.entry_transform])[0]
-        assert(callable(transform))
+        match spec.args:
+            case []:
+                transforms = [self.entry_transform]
+            case [*keys]:
+                transforms = [task_state[key] for key in keys]
+
+        assert(all(callable(x) for x in transforms))
+        printer.debug("Transforming Entries with: %s", spec.args or "default")
+        to_remove = []
         for entry in db.entries:
-            transform(entry, lib_root)
+            for transform in transforms:
+                if not transform(entry, spec, task_state):
+                    to_remove_.append(entry)
+                    break
+
+        map(db.entries.remove, to_remove)
 
         return True
 
-    def entry_transform(self, entry, lib_root) -> None:
+    def entry_transform(self, entry, spec, task_state) -> None:
         """ convert processed __{field}'s into strings in {field},
         removing the the __{field} once processed
         """
-
+        lib_root = task_state.get(LIB_ROOT_KEY, None) or spec.kwargs.on_fail(None)[LIB_ROOT_KEY] or doot.locs.bibtex_lib_root
         delete_fields = set()
         if "_FROM_CROSSREF" in entry:
             delete_fields.update(entry.get('_FROM_CROSSREF', []))
@@ -247,6 +274,8 @@ class BibtexEntryTransformer(Action_p):
             if field == 'author' or field == "year":
                 continue
             del entry[field]
+
+        return True
 
     def _flatten_names(self, names:list[dict]) -> str:
         """ join names to  {von} Last, {Jr,} First and... """
@@ -286,6 +315,7 @@ class BibtexEntryTransformer(Action_p):
 
 
 class BibtexCompileAction(Action_p):
+    """ Run bibtex on a location """
 
     def __call__(self, spec, task_state):
-        pass
+        raise NotImplementedError("TODO")

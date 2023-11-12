@@ -34,14 +34,14 @@ import time
 import sys
 import shutil
 import doot
-from doot import tasker, globber
+from doot import tasker, dir_walker
 from doot.mixins.delayed import DelayedMixin
 from doot.mixins.targeted import TargetedMixin
 
 batch_size       = doot.config.on_fail(10,  int).batch.size()
 sleep_batch      = doot.config.on_fail(2.0, int|float).batch.sleep()
 
-class BackupTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber):
+class BackupTask(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker):
     """
     copy all files to the target if they are newer or don't exist
     # TODO option for backup as zip

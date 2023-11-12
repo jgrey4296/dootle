@@ -57,7 +57,7 @@ class BibtexBase(DootTask):
         yield BibtexInitAction(tomler.Tomler())
         yield from super().actions
 
-class LibDirClean(FilerMixin, DootTask):
+class LibDirClean(DootTask):
     """
     Clean the directories of the bibtex library
     """
@@ -70,7 +70,7 @@ class LibDirClean(FilerMixin, DootTask):
     def actions(self, task_state_copy):
         yield DootActionSpec(fun=self.rmdirs)
 
-class BibtexClean(BibFieldCleanMixin, BibPathCleanMixin, FilerMixin, DootTask):
+class BibtexClean(BibFieldCleanMixin, BibPathCleanMixin, DootTask):
     """
     (src -> src) Clean all bib files
     formatting, fixing paths, etc

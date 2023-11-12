@@ -17,8 +17,7 @@ from bs4 import BeautifulSoup
 ##-- end imports
 
 import doot
-from doot.task import tasker, globber
-from doot.mixins.filer import FilerMixin
+from doot.task import tasker, dir_walker
 from doot.mixins.zipper import ZipperMixin
 
 ##-- logging
@@ -46,7 +45,7 @@ NAV_ENT_T      = Template(data_path.joinpath("epub_nav_entry").read_text())
 
 ws : Final[re.Pattern] = re.compile("\s+")
 
-class EbookGlobberBase(globber.DootEagerGlobber):
+class EbookGlobberBase(dir_walker.DootDirWalker):
 
     marker_file = ".epub"
 
@@ -269,7 +268,7 @@ class EbookManifestTask(EbookGlobberBase):
                                                   )
         manifest.write_text(expanded_template)
 
-class EbookRestructureTask(EbookGlobberBase, FilerMixin):
+class EbookRestructureTask(EbookGlobberBase):
     """
     (GlobDirs: [src] -> src) Reformat working epub locs to the same structure
     *.x?htm?              -> content/
@@ -323,7 +322,7 @@ class EbookRestructureTask(EbookGlobberBase, FilerMixin):
                     moved = True
                     break
 
-class EbookSplitTask(globber.DootEagerGlobber):
+class EbookSplitTask(dir_walker.DootDirWalker):
     """
     (GlobDirs: [data] -> build) split any epubs found in the project data
     """
@@ -340,7 +339,7 @@ class EbookSplitTask(globber.DootEagerGlobber):
         })
         return task
 
-    def is_current(self, task:DoitTask):
+    def is_current(self, task:DootTask):
         return pl.Path(task.targets[0]).exists()
 
     def action_convert(self, dependencies, targets):

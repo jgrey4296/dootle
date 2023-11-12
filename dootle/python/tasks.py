@@ -16,7 +16,6 @@ from doot.task.group import TaskGroup
 
 # pip_version   = CmdTask("pip", "--version", verbosity=2, basename=f"{prefix}::version")
 
-from doot.mixins.filer import FilerMixin
 
 cargo_p : Final[bool] = pl.Path("Cargo.toml").exists()
 
@@ -125,7 +124,7 @@ class PipBuild(DootTasker):
 
         return task
 
-class PipInstall(DootTasker, FilerMixin):
+class PipInstall(DootTasker):
     """
     ([src]) install a package, using pip
     editable by default
@@ -206,7 +205,7 @@ class PipReqs(DootTasker):
         })
         return task
 
-class VenvNew(DootTasker, FilerMixin):
+class VenvNew(DootTasker):
     """
     (-> temp ) create a new venv
     """

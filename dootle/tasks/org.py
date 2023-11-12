@@ -32,10 +32,8 @@ import fileinput
 from collections import defaultdict
 
 import doot
-from doit.exceptions import TaskFailed
-from doot.task import globber
+from doot.task import dir_walker
 from doot.task .tasker import DootTasker
-from doot.mixins.filer import FilerMixin
 
 tweet_index_file : Final[str] = doot.config.on_fail(".tweets", str).twitter.index()
 file_index_file  : Final[str] = doot.config.on_fail(".files", str).twitter.file_index()
@@ -44,7 +42,7 @@ thread_file      : Final[str] = doot.config.on_fail(".threads", str).twitter.thr
 
 empty_match      : Final[re.Match] = re.match("","")
 
-class TODOOrgCleaner(globber.DootEagerGlobber):
+class TODOOrgCleaner(dir_walker.DootDirWalker):
     """
     Find and format any org files
     """
@@ -61,7 +59,7 @@ class TODOOrgCleaner(globber.DootEagerGlobber):
         })
         return task
 
-class TODOOrg2Html(globber.DootEagerGlobber):
+class TODOOrg2Html(dir_walker.DootDirWalker):
 
     def __init__(self, name="org::2html", locs=None, roots=None):
         super().__init__(name, locs, roots or [locs.data], rec=True)
@@ -81,7 +79,7 @@ class TODOOrg2Html(globber.DootEagerGlobber):
     def convert_to_html(self, fpath):
         pass
 
-class ThreadListings(globber.DootEagerGlobber):
+class ThreadListings(dir_walker.DootDirWalker):
     """
     glob all directories with orgs in,
     and write .tweets and .files listings
@@ -145,7 +143,7 @@ class ThreadListings(globber.DootEagerGlobber):
 
         return [str(x.relative_to(fpath)) for x in file_dir.iterdir()]
 
-class OrgMultiThreadCount(globber.DootEagerGlobber):
+class OrgMultiThreadCount(dir_walker.DootDirWalker):
     """
     Count threads in files, make a thread file (default: .threads)
     """
@@ -203,7 +201,7 @@ class OrgMultiThreadCount(globber.DootEagerGlobber):
         summary = [f"L1: {y[0]} {x}\nL2: {y[1]} {x}" for x,y in counts.items()]
         thread_listing.write_text(f"Total Files: {total_files}\nTotal Threads: {total_threads}\n" + "\n".join(summary))
 
-class ThreadOrganise(globber.DootEagerGlobber):
+class ThreadOrganise(dir_walker.DootDirWalker):
     """
     move threads in multi thread files to their own separate count
     """
@@ -321,7 +319,7 @@ class ThreadOrganise(globber.DootEagerGlobber):
         with open(header_file, 'a') as f:
             f.write("\n" + "".join(header_lines))
 
-class ThreadImageOCR(globber.DootEagerGlobber):
+class ThreadImageOCR(dir_walker.DootDirWalker):
     """
     OCR all files for all thread directories,
     and extract all links into .links files

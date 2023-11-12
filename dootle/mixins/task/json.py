@@ -12,11 +12,11 @@ import shlex
 
 from functools import partial
 from itertools import cycle, chain
+##-- end imports
 
 import doot
-from doot import globber, tasker
+from doot import dir_walker, tasker
 
-##-- end imports
 
 from xsdata.formats.dataclass.context import XmlContext
 from xsdata.formats.dataclass.parsers import JsonParser

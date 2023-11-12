@@ -31,7 +31,7 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import doot
-from doot.control import globber
+from doot.control import dir_walker
 from doot.control.tasker import DootTasker
 from dootle.utils.bookmarks import database_fns as db_fns
 from dootle.utils.formats import bookmarks as BC
@@ -97,7 +97,7 @@ class BookmarksUpdate(DootTasker):
             self.total.merge_duplicates()
         logging.info(f"Bookmark Count: {original_amnt} -> {len(self.total)}")
 
-class BookmarksCleaner(DootTasker, FilerMixin):
+class BookmarksCleaner(DootTasker):
     """
     clean bookmarks file, removing duplicates, stripping urls
     """

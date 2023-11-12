@@ -23,7 +23,6 @@ __all__ = [
 
 from doot.mixins.commander import CommanderMixin
 from doot.mixins.cleaning import CleanerMixin
-from doot.mixins.filer import FilerMixin
 
 import yaml
 from importlib.resources import files
@@ -52,7 +51,7 @@ def task_jekyll_install():
         "clean"   : True,
     }
 
-class JekyllBuild(DootTasker, CommanderMixin, FilerMixin):
+class JekyllBuild(DootTasker, CommanderMixin):
     """
     Build the jekyll site, from the source destination,
     into the build destination

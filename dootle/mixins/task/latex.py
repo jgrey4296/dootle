@@ -17,12 +17,12 @@ from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     cast, final, overload, runtime_checkable)
 from uuid import UUID, uuid1
 from weakref import ref
+##-- end imports
 
 import doot
-from doot.control import globber
-from doot.control.tasker import DootTasker
+from doot.task import dir_walker
+from doot.task.tasker import DootTasker
 
-##-- end imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)

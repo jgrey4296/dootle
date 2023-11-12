@@ -14,10 +14,9 @@ from itertools import cycle, chain
 ##-- end imports
 
 import doot
-from doot import tasker, globber
+from doot import tasker, dir_walker
 from doot.tasks.files import hashing
 
-from doot.mixins.task.filer import FilerMixin
 from doot.mixins.task.ocr import OCRMixin
 
 import numpy as np
@@ -53,7 +52,7 @@ def norm_img(img):
     norm_c1 = [x/y for x,y in zip(histograms, sums)]
     return np.array(norm_c1).reshape((1,-1))
 
-class OCRGlobber(globber.DootEagerGlobber, OCRMixin):
+class OCRGlobber(dir_walker.DootDirWalker, OCRMixin):
     """
     ([data] -> data) Run tesseract on applicable files in each found directory
     to make dot txt files of ocr'd text from the image
@@ -182,7 +181,7 @@ class TODOImages2PDF(tasker.DootTasker):
         pages = [x for x in self.locs.temp.iterdir() if x.suffix == ".pdf"]
         return ["pdftk", *pages, "cat", "output", targets[0]]
 
-class TODOImages2Video(globber.DootEagerGlobber):
+class TODOImages2Video(dir_walker.DootDirWalker):
     """
     https://stackoverflow.com/questions/24961127/
     """
@@ -213,7 +212,7 @@ class TODOImages2Video(globber.DootEagerGlobber):
         args.append(targets[0])
         raise NotImplementedError
 
-class TODOPDF2Images(globber.DootEagerGlobber, FilerMixin):
+class TODOPDF2Images(dir_walker.DootDirWalker):
     """
     (src -> temp) Find pdfs and extract images for them for ocr
     """

@@ -33,11 +33,10 @@ logging = logmod.getLogger(__name__)
 from doot.mixins.delayed import DelayedMixin
 from doot.mixins.targeted import TargetedMixin
 from doot.mixins.commander import CommanderMixin
-from doot.mixins.filer import FilerMixin
 from doot.mixins.xml import XMLMixin
 from doot.mixins.plantuml import PlantUMLMixin
 
-class XmlElementsTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, FilerMixin, XMLMixin):
+class XmlElementsTask(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin, XMLMixin):
     """
     ([data] -> elements) xml element retrieval using xml starlet toolkit
     http://xmlstar.sourceforge.net/
@@ -69,7 +68,7 @@ class XmlElementsTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, Com
         })
         return task
 
-class XmlSchemaTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, FilerMixin, XMLMixin):
+class XmlSchemaTask(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin, XMLMixin):
     """
     ([data] -> schema) Generate .xsd's from directories of xml files using trang
     https://relaxng.org/jclark/
@@ -97,7 +96,7 @@ class XmlSchemaTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, Comma
             })
         return task
 
-class XmlPythonSchema(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, FilerMixin):
+class XmlPythonSchema(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin):
     """
     ([data] -> codegen) Generate Python Dataclass bindings based on raw XML data
     """
@@ -125,7 +124,7 @@ class XmlPythonSchema(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, Com
             })
         return task
 
-class XmlSchemaVisualiseTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, FilerMixin, PlantUMLMixin):
+class XmlSchemaVisualiseTask(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin, PlantUMLMixin):
     """
     ([data] -> visual) Generate Plantuml files ready for plantuml to generate images
     """

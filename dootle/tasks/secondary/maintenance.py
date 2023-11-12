@@ -32,8 +32,7 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import doot
-from doot.task import globber, tasker
-from doot.mixins.filer import FilerMixin
+from doot.task import dir_walker, tasker
 
 mbsync  = shutil.which("mbsync")
 rustup  = shutil.which("rustup")
@@ -59,7 +58,7 @@ class CheckMail(DootTasker):
         })
         return task
 
-class MaintainFull(DootTasker, FilerMixin):
+class MaintainFull(DootTasker):
     """
     Run all maintain tasks combined
     """
@@ -84,7 +83,7 @@ class MaintainFull(DootTasker, FilerMixin):
         })
         return task
 
-class RustMaintain(DootTasker, FilerMixin):
+class RustMaintain(DootTasker):
 
     def __init__(self, name="_maintain::rust", locs=None):
         super().__init__(name, locs)
@@ -114,7 +113,7 @@ class RustMaintain(DootTasker, FilerMixin):
         })
         return task
 
-class LatexMaintain(DootTasker, FilerMixin):
+class LatexMaintain(DootTasker):
 
     def __init__(self, name="_maintain::latex", locs=None):
         super().__init__(name, locs)
@@ -149,7 +148,7 @@ class LatexMaintain(DootTasker, FilerMixin):
         })
         return task
 
-class HaskellMaintain(DootTasker, FilerMixin):
+class HaskellMaintain(DootTasker):
 
     def __init__(self, name="_maintain::haskell", locs=None):
         super().__init__(name, locs)
@@ -179,7 +178,7 @@ class HaskellMaintain(DootTasker, FilerMixin):
         })
         return task
 
-class DoomMaintain(DootTasker, FilerMixin):
+class DoomMaintain(DootTasker):
 
     def __init__(self, name="_maintain::doom", locs=None):
         super().__init__(name, locs)
@@ -212,7 +211,7 @@ class DoomMaintain(DootTasker, FilerMixin):
         })
         return task
 
-class BrewMaintain(DootTasker, FilerMixin):
+class BrewMaintain(DootTasker):
 
     def __init__(self, name="_maintain::brew", locs=None):
         super().__init__(name, locs)
@@ -244,7 +243,7 @@ class BrewMaintain(DootTasker, FilerMixin):
         })
         return task
 
-class CondaMaintain(DootTasker,FilerMixin):
+class CondaMaintain(DootTasker):
 
     def __init__(self, name="_maintain::conda", locs=None):
         super().__init__(name, locs)
@@ -285,7 +284,7 @@ class CondaMaintain(DootTasker,FilerMixin):
             export_cmd.execute()
             env.write_text(update_cmd.out + "\n--------------------\n" + export_cmd.out)
 
-class CronMaintain(DootTasker, FilerMixin):
+class CronMaintain(DootTasker):
 
     def __init__(self, name="_maintain::cron", locs=None):
         super().__init__(name, locs)
@@ -313,7 +312,7 @@ class CronMaintain(DootTasker, FilerMixin):
         })
         return task
 
-class GitMaintain(globber.DootEagerGlobber, FilerMixin):
+class GitMaintain(dir_walker.DootDirWalker):
 
     def __init__(self, name="_maintain::git", locs=None, roots=None):
         super().__init__(name, locs, roots or [locs.git_libs.resolve(), locs.github.resolve()], rec=True)

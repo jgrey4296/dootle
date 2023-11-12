@@ -10,9 +10,8 @@ import logging as logmod
 ##-- end imports
 
 import doot
-from doot.task import globber, tasker
+from doot.task import dir_walker, tasker
 from doot.mixins.delayed import DelayedMixin
-from doot.mixins.filer import FilerMixin
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -68,7 +67,7 @@ def task_latex_rebuild():
         ],
     }
 
-class LatexMultiPass(globber.DootEagerGlobber):
+class LatexMultiPass(dir_walker.DootDirWalker):
     """
     ([src] -> build) Trigger both latex passes and the bibtex pass
     """
@@ -87,7 +86,7 @@ class LatexMultiPass(globber.DootEagerGlobber):
         })
         return task
 
-class LatexFirstPass(globber.DootEagerGlobber, FilerMixin):
+class LatexFirstPass(dir_walker.DootDirWalker):
     """
     ([src] -> [temp, build]) First pass of running latex,
     pre-bibliography resolution
@@ -140,7 +139,7 @@ class LatexFirstPass(globber.DootEagerGlobber, FilerMixin):
         first_pass_pdf = self.locs.build / ("1st_pass_" + fpath.with_suffix(".pdf").name)
         return first_pass_pdf
 
-class LatexSecondPass(globber.DootEagerGlobber, FilerMixin):
+class LatexSecondPass(dir_walker.DootDirWalker):
     """
     ([src, temp] -> build) Second pass of latex compiling,
     post-bibliography resolution
@@ -185,7 +184,7 @@ class LatexSecondPass(globber.DootEagerGlobber, FilerMixin):
                 f"-output-directory={self.locs.temp}",
                 fpath.with_suffix("")]
 
-class BibtexBuildPass(globber.DootEagerGlobber):
+class BibtexBuildPass(dir_walker.DootDirWalker):
     """
     ([src] -> temp) Bibliography resolution pass
     """
@@ -283,7 +282,7 @@ class BibtexConcatenateSweep(CalcDepsMixin, tasker.DootTasker):
             for line in fileinput.input(files=self.all_bibs):
                 print(line, end="", file=catbib)
 
-class LatexCheckSweep(globber.DootEagerGlobber, LatexMixin):
+class LatexCheckSweep(dir_walker.DootDirWalker, LatexMixin):
     """
     ([src] -> temp) Run a latex pass, but don't produce anything,
     just check the syntax

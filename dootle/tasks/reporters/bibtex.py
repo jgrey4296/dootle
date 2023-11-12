@@ -27,7 +27,7 @@ from collections import defaultdict
 ##-- end imports
 
 import doot
-from doot.task import globber
+from doot.task import dir_walker
 from doot.control.tasker import DootTasker
 
 from dootle.mixins.bibtex import clean as bib_clean
@@ -48,7 +48,7 @@ wayback_wait         : Final[int] = doot.config.on_fail(10, int).bibtex.wayback_
 acceptible_responses : Final[list] = doot.config.on_fail(["200"], list).bibtex.accept_wayback()
 ENT_const            : Final[str] = 'ENTRYTYPE'
 
-class BibtexReport(globber.DootEagerGlobber, BibLoadSaveMixin, bib_clean.BibFieldCleanMixin, bib_clean.BibPathCleanMixin):
+class BibtexReport(dir_walker.DootDirWalker, BibLoadSaveMixin, bib_clean.BibFieldCleanMixin, bib_clean.BibPathCleanMixin):
     """
     (src -> build) produce reports on the bibs found
     """

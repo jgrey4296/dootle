@@ -31,9 +31,8 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 from doot import tasker
-from doot.mixins.filer import FilerMixin
 
-class DeleterTask(tasker.DootTasker, FilerMixin):
+class DeleterTask(tasker.DootTasker):
     """
     Delete files listed in the target
     """

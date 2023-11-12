@@ -9,18 +9,18 @@ import pathlib as pl
 import shutil
 from functools import partial
 
+##-- end imports
+
 import doot
 from doot.tasks.utils import genx
-from doot import globber, tasker
-##-- end imports
+from doot import dir_walker, tasker
 
 from doot.mixins.delayed import DelayedMixin
 from doot.mixins.targeted import TargetedMixin
-from doot.mixins.filer import FilerMixin
 from doot.mixins.commander import CommanderMixin
 from doot.mixins.csv import CSVMixin
 
-class CSVSummaryTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, FilerMixn, CSVMixin):
+class CSVSummaryTask(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CSVMixin):
     """
     ([data] -> build) Summarise all found csv files,
     grouping those with the same headers,
@@ -49,7 +49,7 @@ class CSVSummaryTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, File
         })
         return task
 
-class CSVSummaryXMLTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, FilerMixin):
+class CSVSummaryXMLTask(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin):
     """
     ([data] -> build) Summarise all found csv files, using xmlstarlet
     grouping those with the same headers,

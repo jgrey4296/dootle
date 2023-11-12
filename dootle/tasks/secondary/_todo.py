@@ -79,7 +79,7 @@ class DotNetVMCompile(tasker.DootTasker):
     """
     pass
 
-class CombinePDFTask(globber.DootEagerGlobber):
+class CombinePDFTask(dir_walker.DootDirWalker):
     """
     Combine pdfs
     For pdfs in directories,
@@ -87,7 +87,7 @@ class CombinePDFTask(globber.DootEagerGlobber):
     """
     pass
 
-class SamplePDFTask(globber.DootEagerGlobber):
+class SamplePDFTask(dir_walker.DootDirWalker):
     """
     sample pdfs
     For PDFs in each directory, get their leading n pages,
@@ -95,7 +95,7 @@ class SamplePDFTask(globber.DootEagerGlobber):
     """
     pass
 
-class PDFMetaData(globber.DootEagerGlobber):
+class PDFMetaData(dir_walker.DootDirWalker):
     """
     pdf metadata
     build metadata summaries of found pdfs

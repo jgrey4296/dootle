@@ -32,9 +32,8 @@ import re
 from collections import defaultdict
 
 import doot
-from doot.task import globber
+from doot.task import dir_walker
 from doot.task.tasker import DootTasker
-from doot.mixins.filer import FilerMixin
 from dootle.utils.formats.tagfile import IndexFile, SubstitutionFile, TagFile
 
 empty_match     : Final[re.Match]   = re.match("","")
@@ -42,7 +41,7 @@ bib_tag_re      : Final[re.Pattern] = re.compile(r"^(\s+tags\s+=)\s+{(.+?)},$")
 org_tag_re      : Final[re.Pattern] = re.compile(r"^(\*\* .+?)\s+:(\S+):$")
 bookmark_tag_re : Final[re.Pattern] = re.compile(r"^(http.+?) : (.+)$")
 
-class TagsCleaner(globber.DootEagerGlobber, FilerMixin):
+class TagsCleaner(dir_walker.DootDirWalker):
     """
     (src -> src) Clean tags in bib, org and bookmarks files,
     using tag substitution files
@@ -141,7 +140,7 @@ class TagsCleaner(globber.DootEagerGlobber, FilerMixin):
                                 err)
                 print(line, end="")
 
-class TagsIndexer(globber.DootEagerGlobber, FilerMixin):
+class TagsIndexer(dir_walker.DootDirWalker):
     """
     extract tags from all globbed bookmarks, orgs, bibtexs
     and index what tags are used in what files
@@ -238,7 +237,7 @@ class TagsIndexer(globber.DootEagerGlobber, FilerMixin):
         new_tags.update(new_bkmk | new_bib | new_org)
         return { "new_tags" : str(new_tags) }
 
-class TODOTagsGrep(DootTasker, FilerMixin):
+class TODOTagsGrep(DootTasker):
     """
     grep directories slowly to build tag indices
     """

@@ -13,7 +13,7 @@ from itertools import cycle, chain
 ##-- end imports
 
 import doot
-from doot.task import tasker, globber
+from doot.task import tasker, dir_walker
 
 src_ext      : Final[str] = doot.config.on_fail(".lp", str).clingo.src_ext()
 out_ext      : Final[str] = doot.config.on_fail(".lp_result", str).clingo.out_ext()
@@ -30,7 +30,7 @@ class TODOClingoCheck:
     """
     pass
 
-class ClingoRunner(globber.DootEagerGlobber):
+class ClingoRunner(dir_walker.DootDirWalker):
     """
     ([src] -> build) Run clingo on ansprolog sources
     """
@@ -56,7 +56,7 @@ class ClingoRunner(globber.DootEagerGlobber):
     def clingo_call(self, fpath):
         return clingo_call + [fpath]
 
-class ClingoDotter(globber.DootEagerGlobber):
+class ClingoDotter(dir_walker.DootDirWalker):
     """
     ([src] -> build) Run specified clingo files to output json able to be visualised
     """
@@ -82,7 +82,7 @@ class ClingoDotter(globber.DootEagerGlobber):
     def json_call(self, fpath):
         return clingo_call + ["--outf2", fpath]
 
-class TODOClingoVisualise(globber.DootEagerGlobber):
+class TODOClingoVisualise(dir_walker.DootDirWalker):
     """
     ([src] -> visual) Take clingo output with nodes,
     and convert to dot format

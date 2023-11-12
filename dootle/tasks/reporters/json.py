@@ -30,15 +30,14 @@ from weakref import ref
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from doot import globber
+from doot import dir_walker
 from doot.mixins.commander import CommanderMixin
-from doot.mixins.filer import FilerMixin
 from doot.mixins.delayed import DelayedMixin
 from doot.mixins.targeted import TargetedMixin
 from doot.mixins.json import JsonMixin
 from doot.mixins.plantuml import PlantUMLMixin
 
-class JsonPythonSchema(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, FilerMixin, CommanderMixin, JsonMixin):
+class JsonPythonSchema(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin, JsonMixin):
     """
     ([data] -> codegen) Use XSData to generate python bindings for a directory of json's
     """
@@ -67,7 +66,7 @@ class JsonPythonSchema(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, Fi
         })
         return task
 
-class JsonVisualise(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, JsonMixin, PlantUMLMixin):
+class JsonVisualise(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, JsonMixin, PlantUMLMixin):
     """
     ([data] -> visual) Wrap json files with plantuml header and footer,
     ready for plantuml to visualise structure

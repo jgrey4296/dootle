@@ -30,13 +30,12 @@ from weakref import ref
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from doot.mixins.filer import FilerMixin
 from doot.mixins.delayed import DelayedMixin
 from doot.mixins.targeted import TargetedMixin
 import doot
-from doot import tasker, globber
+from doot import tasker, dir_walker
 
-class MoveLogs(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, FilerMixin):
+class MoveLogs(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker):
     """
     Move logs in the direct root directory, to a logs directory
     """

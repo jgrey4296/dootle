@@ -23,14 +23,14 @@ from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     cast, final, overload, runtime_checkable)
 from uuid import UUID, uuid1
 from weakref import ref
+##-- end imports
 
 import doot
-from doot.control import globber, tasker
+from doot.control import dir_walker, tasker
 from doot.control.tasker import DootTasker
 from doot.mixins.batch import BatchMixin
 from doot.mixins.commander import CommanderMixin
 from doot.mixins.delayed import DelayedMixin
-from doot.mixins.filer import FilerMixin
 from doot.mixins.pdf import PdfMixin
 from doot.mixins.targeted import TargetedMixin
 from doot.mixins.web import WebMixin
@@ -40,7 +40,6 @@ from dootle.utils.formats.timelinefile import TimelineFile
 from dootle.mixins.bibtex import clean as bib_clean
 from dootle.mixins.bibtex import utils as bib_utils
 from dootle.mixins.bibtex.load_save import BibLoadSaveMixin
-##-- end imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -53,7 +52,7 @@ wayback_wait         : Final[int] = doot.config.on_fail(10, int).bibtex.wayback_
 acceptible_responses : Final[list] = doot.config.on_fail(["200"], list).bibtex.accept_wayback()
 ENT_const            : Final[str] = 'ENTRYTYPE'
 
-class PdfLibSummary(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, PdfMixin):
+class PdfLibSummary(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, PdfMixin):
     """
     Compile the first n pages of each pdf in a decade together
     """

@@ -22,7 +22,6 @@ logging = logmod.getLogger(__name__)
 
 from doot.mixins.cargo import CargoMixin
 from doot.mixins.commander import CommanderMixin
-from doot.mixins.filer import FilerMixin
 
 cargo  = Tomler.load("Cargo.toml")
 config = Tomler.load("./.cargo/config.toml")
@@ -54,7 +53,7 @@ def task_cargo_report():
         "verbosity" : 2,
     }
 
-class CargoBuild(tasker.DootTasker, CommanderMixin, CargoMixin, FilerMixin):
+class CargoBuild(tasker.DootTasker, CommanderMixin, CargoMixin):
     """
     Build rust binary target, using a tuple (type, name)
     eg: (bin, main) or (lib, mylib)
@@ -91,7 +90,7 @@ class CargoBuild(tasker.DootTasker, CommanderMixin, CargoMixin, FilerMixin):
 
         return task
 
-class CargoInstall(tasker.DootTasker, CommanderMixin, CargoMixin, FilerMixin):
+class CargoInstall(tasker.DootTasker, CommanderMixin, CargoMixin):
 
     def __init__(self, name="cargo::install", locs=None):
         super().__init__(name, locs)

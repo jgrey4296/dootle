@@ -33,12 +33,11 @@ logging = logmod.getLogger(__name__)
 from collections import defaultdict
 import doot
 from doot import tasker
-from doot.mixins.filer import FilerMixin
 
 time_format : Final[str] = doot.config.on_fail("%I:%M %p", str).notify.time_format()
 time_voice  : Final[str] = doot.config.on_fail("Moira", str).notify.voice()
 
-class NoScriptMerge(tasker.DootTasker, FilerMixin):
+class NoScriptMerge(tasker.DootTasker):
     """
     merge noscript json files
     """

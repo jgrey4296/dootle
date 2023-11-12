@@ -11,13 +11,12 @@ from typing import Final
 
 from functools import partial
 from itertools import cycle, chain
-from doit.action import CmdAction
+##-- end imports
 
 import doot
-from doot import tasker, globber
+from doot import tasker, dir_walker
 from doot.tasks.files import hashing
 
-##-- end imports
 
 
 import numpy as np

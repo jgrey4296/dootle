@@ -41,11 +41,10 @@ logging = logmod.getLogger(__name__)
 from doot.mixins.delayed import DelayedMixin
 from doot.mixins.targeted import TargetedMixin
 from doot.mixins.commander import CommanderMixin
-from doot.mixins.filer import FilerMixin
 from doot.mixins.xml import XMLMixin
 
 
-class XmlValidateTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, FilerMixin, XMLMixin):
+class XmlValidateTask(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin, XMLMixin):
     """
     ([data]) Validate xml's by schemas
     """
@@ -79,7 +78,7 @@ class XmlValidateTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, Com
         })
         return task
 
-class XmlFormatTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, FilerMixin, XMLMixin):
+class XmlFormatTask(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin, XMLMixin):
     """
     ([data] -> data) Basic Formatting with backup
     """

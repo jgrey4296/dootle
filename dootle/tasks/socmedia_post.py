@@ -38,7 +38,6 @@ from doot.mixins.bibtex import utils as bib_utils
 from doot.mixins.bibtex.clean import BibFieldCleanMixin, BibPathCleanMixin
 from doot.mixins.bibtex.load_save import BibLoadSaveMixin
 from doot.task import tasker
-from doot.mixins.filer import FilerMixin
 
 pl_expand           : Final[Callable] = lambda x: pl.Path(x).expanduser().resolve()
 

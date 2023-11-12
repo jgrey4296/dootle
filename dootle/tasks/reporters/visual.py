@@ -30,16 +30,15 @@ from weakref import ref
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from doot.mixins.filer import FilerMixin
 from doot.mixins.commander import CommanderMixin
 from doot.mixins.delayed import DelayedMixin
 from doot.mixins.targeted import TargetedMixin
 from doot.mixins.plantuml import PlantUMLMixin
 from doot.mixins.dot import DotMixin
-from doot import globber, tasker
+from doot import dir_walker, tasker
 
 
-class DotVisualise(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, DotMixin):
+class DotVisualise(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin, DotMixin):
     """
     ([src] -> build) make images from any dot files
     https://graphviz.org/doc/info/command.html
@@ -62,7 +61,7 @@ class DotVisualise(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, Comman
             })
         return task
 
-class PlantUMLGlobberTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, PlantUMLMixin):
+class PlantUMLGlobberTask(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin, PlantUMLMixin):
     """
     ([visual] -> build) run plantuml on a specification, generating target.'ext's
     """

@@ -29,9 +29,8 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import doot
-from doot.task import globber
+from doot.task import dir_walker
 from doot.task.tasker import DootTasker
-from doot.mixins.task.filer import FilerMixin
 from doot.mixins.task.zipper import ZipperMixin
 
 from dootle.tasks.files.backup import BackupTask
@@ -44,7 +43,7 @@ user_batch_size : Final[int] = doot.config.on_fail(100, int).twitter.user_batch(
 
 empty_match = re.match("","")
 
-class TwitterFull(DootTasker, FilerMixin):
+class TwitterFull(DootTasker):
     """
     run the combined pipeline
     """
@@ -67,7 +66,7 @@ class TwitterFull(DootTasker, FilerMixin):
         })
         return task
 
-class TwitterLibTweets(DootTasker, FilerMixin):
+class TwitterLibTweets(DootTasker):
     """
     (data -> temp ) download tweets from the library as jsons
     """
@@ -148,7 +147,7 @@ class TwitterLibTweets(DootTasker, FilerMixin):
             f.write("--------------------\n")
             f.write("\n".join(newly_downloaded))
 
-class TwitterTweets(DootTasker, FilerMixin):
+class TwitterTweets(DootTasker):
     """
     (data -> temp ) download tweets and their thread predecessors using todo file
     """
@@ -242,7 +241,7 @@ class TwitterTweets(DootTasker, FilerMixin):
             f.write("--------------------\n")
             f.write("\n".join(newly_downloaded))
 
-class TwitterUserIdentities(globber.DootEagerGlobber, FilerMixin):
+class TwitterUserIdentities(dir_walker.DootDirWalker):
     """
     (temp -> temp) download identities of user id's found in tweets
     """
@@ -309,7 +308,7 @@ class TwitterUserIdentities(globber.DootEagerGlobber, FilerMixin):
             user_dict.update(json.loads(users_file.read_text()))
         users_file.write_text(json.dumps(user_dict, indent=4))
 
-class TwitterComponentGraph(DootTasker, passes.TwGraphComponentMixin, FilerMixin):
+class TwitterComponentGraph(DootTasker, passes.TwGraphComponentMixin):
     """
     (temp -> temp) combine individual tweets into threads
     """
@@ -346,7 +345,7 @@ class TwitterComponentGraph(DootTasker, passes.TwGraphComponentMixin, FilerMixin
 
         logging.info("Graph Built")
 
-class TwitterThreadBuild(globber.DootEagerGlobber, passes.TwThreadBuildMixin, FilerMixin):
+class TwitterThreadBuild(dir_walker.DootDirWalker, passes.TwThreadBuildMixin):
     """
     (components -> threads)
     """
@@ -361,7 +360,7 @@ class TwitterThreadBuild(globber.DootEagerGlobber, passes.TwThreadBuildMixin, Fi
         })
         return task
 
-class TwitterThreadWrite(globber.DootEagerGlobber, passes.TwThreadWritingMixin, FilerMixin):
+class TwitterThreadWrite(dir_walker.DootDirWalker, passes.TwThreadWritingMixin):
     """
     (threads -> build) build the org files from threads
     """
@@ -396,7 +395,7 @@ class TwitterThreadWrite(globber.DootEagerGlobber, passes.TwThreadWritingMixin, 
         })
         return task
 
-class TwitterDownloadMedia(globber.DootEagerGlobber, DownloaderMixin, FilerMixin):
+class TwitterDownloadMedia(dir_walker.DootDirWalker, DownloaderMixin):
     """
     download media associated with threads
     """
@@ -434,7 +433,7 @@ class TwitterDownloadMedia(globber.DootEagerGlobber, DownloaderMixin, FilerMixin
         # download
         self.download_media(download_to, media)
 
-class TwitterMerge(globber.DootEagerGlobber, FilerMixin):
+class TwitterMerge(dir_walker.DootDirWalker):
     """
     (temp -> data) integrate threads into the library
     """
@@ -515,7 +514,7 @@ class TwitterMerge(globber.DootEagerGlobber, FilerMixin):
             for x in list(fdir.glob("*")):
                 self.copy_to(dest, x)
 
-class TwitterArchive(globber.DootEagerGlobber, ZipperMixin):
+class TwitterArchive(dir_walker.DootDirWalker, ZipperMixin):
     """
     Zip json data for users
 

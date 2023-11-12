@@ -17,11 +17,11 @@ from functools import partial
 from itertools import cycle
 
 from itertools import cycle, chain
-from doit.tools import Interactive
-
-from doot import globber, tasker
 
 ##-- end imports
+
+from doot import dir_walker, tasker
+
 
 
 class XMLMixin:

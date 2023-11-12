@@ -1,4 +1,3 @@
-# -*- mode:doit; -*-
 ##-- imports
 from __future__ import annotations
 

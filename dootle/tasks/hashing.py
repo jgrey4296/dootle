@@ -30,15 +30,13 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import doot
-from doot import globber, tasker
+from doot import dir_walker, tasker
 
 from hashlib import sha256
-from doit.exceptions import TaskFailed
 from collections import defaultdict
 import fileinput
 import re
 
-from doot.mixins.filer import FilerMixin
 
 batch_size   : Final[int]= doot.config.on_fail(10, int).batch.size()
 
@@ -46,7 +44,7 @@ hash_record  : Final[str] = doot.config.on_fail(".hashes", str).files.hash.recor
 hash_concat  : Final[str] = doot.config.on_fail(".all_hashes", str).files.hash.grouped()
 hash_dups    : Final[str] = doot.config.on_fail(".dup_hashes", str).files.hash.duplicates()
 
-class HashAllFiles(globber.DootEagerGlobber):
+class HashAllFiles(dir_walker.DootDirWalker):
     """
     ([data] -> data) For each subdir, hash all the files in it to .hashes
 
@@ -126,7 +124,7 @@ class HashAllFiles(globber.DootEagerGlobber):
             print(err, file=sys.stderr)
             raise err
 
-class GroupHashes(tasker.DootTasker, FilerMixin):
+class GroupHashes(tasker.DootTasker):
     """
     Concat all .hashes files together, to prep for duplicate detection
     """
@@ -164,7 +162,7 @@ class GroupHashes(tasker.DootTasker, FilerMixin):
             for line in fileinput.input(files=globbed):
                 print(line, end="", file=allHashes)
 
-class DetectDuplicateHashes(tasker.DootTasker, FilerMixin):
+class DetectDuplicateHashes(tasker.DootTasker):
     """
     sort all_hashes, and run uniq of the first n chars
     """
@@ -244,7 +242,7 @@ class DetectDuplicateHashes(tasker.DootTasker, FilerMixin):
             current_set.add(hash_val)
             print(line.strip())
 
-class MarkDuplicates(tasker.DootTasker, FilerMixin):
+class MarkDuplicates(tasker.DootTasker):
     """
     Delete duplicates, using a set heuristic
 

@@ -36,12 +36,11 @@ import sys
 import shutil
 import doot
 from doot import tasker
-from doot.mixins.filer import FilerMixin
 
 batch_size       = doot.config.on_fail(10, int).batch.size()
 sleep_batch      = doot.config.on_fail(2.0,   int|float).batch.sleep()
 
-class BackupCollectorTask(tasker.DootTasker, FilerMixin):
+class BackupCollectorTask(tasker.DootTasker):
     """
     alternate backup task, using a calls to `find`
     # TODO option for backup as zip

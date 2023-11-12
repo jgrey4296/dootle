@@ -5,12 +5,12 @@ import logging as logmod
 import pathlib as pl
 from functools import partial
 from typing import Final
+##-- end imports
 
 import doot
-from doot.control import globber
+from doot.control import dir_walker
 from doot.control.tasker import DootTasker
 
-##-- end imports
 
 
 ##-- logging
@@ -20,7 +20,6 @@ logging = logmod.getLogger(__name__)
 from doot.mixins.delayed import DelayedMixin
 from doot.mixins.targeted import TargetedMixin
 from doot.mixins.commander import CommanderMixin
-from doot.mixins.filer import FilerMixin
 
 lint_config     : Final[str]  = doot.config.on_fail("pylint.toml", str).python.lint.config()
 lint_exec       : Final[str]  = doot.config.on_fail("pylint", str).python.lint.exec()
@@ -33,7 +32,7 @@ py_test_dir_fmt : Final[str]  = doot.config.on_fail("__test", str).python.test.d
 py_test_args    : Final[list] = doot.config.on_fail([], list).python.test.args()
 py_test_out     : Final[str]  = pl.Path(doot.config.on_fail("result.test", str).python.test())
 
-class InitPyGlobber(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin):
+class InitPyGlobber(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin):
     """ ([src] -> src) add missing __init__.py's """
 
     def __init__(self, name=f"py::initpy", locs:DootLocData=None, roots=None, rec=False):
@@ -52,7 +51,7 @@ class InitPyGlobber(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, Comma
         task['actions'] += [ self.make_cmd("touch", fpath / "__init__.py") ]
         return task
 
-class PyLintTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, FilerMixin):
+class PyLintTask(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin):
     """ ([root]) lint the package """
 
     def __init__(self, name=f"py::lint", locs:DootLocData=None, rec=None, exts=None):
@@ -116,7 +115,7 @@ class PyLintTask(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, Commande
         else:
             fpath.write_text(task.values['lint'])
 
-class PyUnitTestGlob(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, CommanderMixin, FilerMixin):
+class PyUnitTestGlob(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, CommanderMixin):
     """
     ([root]) Run all project unit tests
     """

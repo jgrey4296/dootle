@@ -36,19 +36,18 @@ from collections import defaultdict
 
 import doot
 from dootle.utils.formats.tagfile import IndexFile, SubstitutionFile, TagFile
-from doot import globber
+from doot import dir_walker
 from doot.control.tasker import DootTasker
 from doot.mixins.batch import BatchMixin
 from doot.mixins.delayed import DelayedMixin
 from doot.mixins.targeted import TargetedMixin
-from doot.mixins.filer import FilerMixin
 
 empty_match     : Final[re.Match]   = re.match("","")
 bib_tag_re      : Final[re.Pattern] = re.compile(r"^(\s+tags\s+=)\s+{(.+?)},$")
 org_tag_re      : Final[re.Pattern] = re.compile(r"^(\*\* .+?)\s+:(\S+):$")
 bookmark_tag_re : Final[re.Pattern] = re.compile(r"^(http.+?) : (.+)$")
 
-class TagsReport(DelayedMixin, TargetedMixin, globber.DootEagerGlobber, BatchMixin, FilerMixin):
+class TagsReport(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker, BatchMixin):
     """
     (src -> build) Report on tags
     """

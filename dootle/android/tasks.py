@@ -34,11 +34,10 @@ logging = logmod.getLogger(__name__)
 
 import doot
 from doot.task.base_tasker import DootTasker
-from doot.task import globber
+from doot.task import dir_walker
 from dootle.mixins.task import android
 from doot.mixins.task.batch import BatchMixin
 from doot.mixins.tasker.targeted import TargetedMixin
-from doot.mixins.task.filer import FilerMixin
 
 
 android_base : Final[str] = doot.config.on_fail("/storage/6331-3162", str).tools.doot.android.base(wrapper=pl.Path)
@@ -48,7 +47,7 @@ wait_time    : Final[int] = doot.config.on_fail(10, int).tools.doot.android.wait
 
 NICE         : Final[list] = ["nice", "-n", "10"]
 
-class ADBUpload(android.ADBMixin, BatchMixin, TargetedMixin, globber.DootEagerGlobber, FilerMixin):
+class ADBUpload(android.ADBMixin, BatchMixin, TargetedMixin, dir_walker.DootDirWalker):
     """
     Push files from local to device
     """
@@ -119,7 +118,7 @@ class ADBUpload(android.ADBMixin, BatchMixin, TargetedMixin, globber.DootEagerGl
 
         (self.locs.build / "adb_push.report").write_text("\n".join(report))
 
-class ADBDownload(android.ADBMixin, DootTasker, FilerMixin, BatchMixin):
+class ADBDownload(android.ADBMixin, DootTasker, BatchMixin):
     """
     pull files from device to local
     """
@@ -214,7 +213,7 @@ class ADBDownload(android.ADBMixin, DootTasker, FilerMixin, BatchMixin):
         targets = [x.strip() for x in cache.read_text().split("\n")]
         return { 'remote_files': list(filter(bool, targets)) }
 
-class ADBDelete(android.ADBMixin, DootTasker, FilerMixin, BatchMixin):
+class ADBDelete(android.ADBMixin, DootTasker, BatchMixin):
     """
     delete all files specified in the provided list
     """
