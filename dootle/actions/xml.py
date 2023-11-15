@@ -20,11 +20,14 @@ from itertools import cycle, chain
 
 ##-- end imports
 
-from doot import dir_walker, tasker
+printer = logmod.getLogger("doot._printer")
 
+import doot
+import doot.errors
+from doot._abstract import Action_p
 
-
-class XMLMixin:
+@doot.check_protocol
+class XMLAction(Action_p):
 
     xsdata_defaults = [ "--relative-imports",
                        "--postponed-annotations",
@@ -33,6 +36,9 @@ class XMLMixin:
                        "--no-unnest-clases",
                        "--output", "dataclasses"]
     element_arg     = "-u"
+
+    def __call__(self, spec, state):
+        pass
 
     def xml_elements(self, *targets):
         """

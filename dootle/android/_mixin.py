@@ -50,11 +50,6 @@ class ADBMixin:
     device_root = None
     local_root  = None
 
-    def adb_params(self) -> list:
-        return [
-            {"name": "id", "long": "id", "type": str, "default": None},
-        ]
-
     def args_adb_query(self, target:str|pl.Path=".", depth=1, ftype="d") -> list:
         """
         return cmd arg list to find all {depth} {ftype} of android_root / {target}

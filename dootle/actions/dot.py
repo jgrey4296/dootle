@@ -30,13 +30,21 @@ from weakref import ref
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
+printer = logmod.getLogger("doot._printer")
+
 import doot
+import doot.errors
+from doot._abstract import Action_p
 
 dot_scale  = doot.config.on_fail(72.0, float).dot_graph.scale()
 dot_layout = doot.config.on_fail("neato", str).dot_graph.layout()
 dot_ext    = doot.config.on_fail("png", str).dot_graph.ext()
 
-class DotMixin:
+@doot.check_protocol
+class DotAction(Action_p):
+
+    def __call__(self, spec, state):
+        pass
 
     def dot_params(self):
         return [

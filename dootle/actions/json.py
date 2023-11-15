@@ -14,15 +14,21 @@ from functools import partial
 from itertools import cycle, chain
 ##-- end imports
 
-import doot
-from doot import dir_walker, tasker
+printer = logmod.getLogger("doot._printer")
 
+import doot
+import doot.errors
+from doot._abstract import Action_p
 
 from xsdata.formats.dataclass.context import XmlContext
 from xsdata.formats.dataclass.parsers import JsonParser
 from typing import List
 
-class JsonMixin:
+@doot.check_protocol
+class JsonSchemeAction(Action_p):
+
+    def __call__(self, spec, state):
+        pass
 
     def json_load(self, fpath):
         return json.loads(fpath.read_text())

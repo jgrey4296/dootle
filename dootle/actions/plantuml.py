@@ -30,11 +30,18 @@ from weakref import ref
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
+printer = logmod.getLogger("doot._printer")
+
 import doot
+import doot.errors
+from doot._abstract import Action_p
 
 plant_ext    = doot.config.on_fail("png", str).plantuml.ext()
 
-class PlantUMLMixin:
+class PlantUMLAction(Action_p)
+
+    def __call__(self, spec, state):
+        pass
 
     def plantuml_params(self):
         return [

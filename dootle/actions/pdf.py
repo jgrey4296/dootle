@@ -30,6 +30,12 @@ from weakref import ref
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
+printer = logmod.getLogger("doot._printer")
+
+import doot
+import doot.errors
+from doot._abstract import Action_p
+
 from pdfrw import IndirectPdfDict, PageMerge, PdfReader, PdfWriter
 import pypandoc as pandoc
 import subprocess
@@ -41,7 +47,11 @@ from pdfrw import PdfName, PdfReader, PdfWriter
 END_LINE : Final = "---%%%--- Finished"
 FILE_RE : Final[re.Pattern]  = re.compile(r"^file(\d*)")
 
-class PdfMixin:
+@doot.check_protocol
+class PdfAction(Action_p):
+
+    def __call__(self, spec, state):
+        pass
 
     def pdf_get_info(self, fpath):
         assert(fpath.suffix == ".pdf")
@@ -130,7 +140,12 @@ class PdfMixin:
 
 
 
-class PdfMetaDataMixin:
+
+@doot.check_protocol
+class PdfMetaAction(Action_p):
+
+    def __call__(self, spec, state):
+        pass
 
     def check_pdf(self, path:pl.Path):
         raise NotImplementedError()

@@ -16,7 +16,7 @@ from math import ceil
 from shutil import copyfile, move
 from uuid import uuid4
 
-import regex as re
+import re
 from doot.mixins.bibtex.writer import JGBibTexWriter
 
 ##-- end imports

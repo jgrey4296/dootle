@@ -17,18 +17,25 @@ from doot import tasker
 ##-- end imports
 
 logging = logmod.getLogger(__name__)
+printer = logmod.getLogger("doot._printer")
 
 import doot
+import doot.errors
+from doot._abstract import Action_p
 
 CHECK_AMNT    : Final[int] = doot.config.on_fail(150, int).downloader.check_amnt()
 speak_confirm : Final      = "Found a Large Group of Files, waiting for confirmation"
 
-class DownloaderMixin:
+@doot.check_protocol
+class Downloader(Action_p):
     """
     Download files in a url list to specified target,
     skips files that already exist,
     asks for confirmation if downloading more than CHECK_AMNT
     """
+
+    def __call__(self, spec, state):
+        pass
 
     def download_media(self, media_dir:pl.Path, media:list):
         """ Download all media mentioned in json files """

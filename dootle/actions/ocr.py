@@ -13,11 +13,12 @@ from functools import partial
 from itertools import cycle, chain
 ##-- end imports
 
+logging = logmod.getLogger(__name__)
+printer = logmod.getLogger("doot._printer")
+
 import doot
-from doot import tasker, dir_walker
-from doot.tasks.files import hashing
-
-
+import doot.errors
+from doot._abstract import Action_p
 
 import numpy as np
 import PIL
@@ -55,9 +56,11 @@ def norm_img(img):
     return np.array(norm_c1).reshape((1,-1))
 
 
+@doot.check_protocol
+class OCRAction(Action_p):
 
-
-class OCRMixin:
+    def __call__(self, spec, state):
+        pass
 
     def get_ocr_file_name(self, fpath):
         return fpath.parent / f".{fpath.stem}{ocr_out_ext}"
