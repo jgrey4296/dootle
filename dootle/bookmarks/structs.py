@@ -12,14 +12,13 @@ from dataclasses import InitVar, dataclass, field
 from typing import (Any, Callable, ClassVar, Dict, Generic, Iterable, Iterator,
                     List, Mapping, Match, MutableMapping, Optional, Sequence,
                     Set, Tuple, TypeVar, Union, cast)
-
-import regex
+import re
 
 ##-- end imports
 
 logging = logmod.getLogger(__name__)
 
-TAG_NORM : Final[re.Pattern] = regex.compile(" +")
+TAG_NORM : Final[re.Pattern] = re.compile(" +")
 
 @dataclass
 class Bookmark:
@@ -120,6 +119,8 @@ class BookmarkCollection:
     def __len__(self):
         return len(self.entries)
 
+    def __hash__(self):
+        return id(self)
     def update(self, *values):
         for val in values:
             match val:

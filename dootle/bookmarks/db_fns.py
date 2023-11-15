@@ -24,14 +24,14 @@ from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
 from uuid import UUID, uuid1
 from weakref import ref
 
-import pony.orm as pony
-from doot.utils.formats import bookmarks as BC
-
 ##-- end imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
+
+import pony.orm as pony
+from dootle.bookmarks import structs as BC
 
 def init_db():
     db = pony.Database()
