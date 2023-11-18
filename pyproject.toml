@@ -16,15 +16,14 @@ classifiers     = [
 
 dependencies   = [
     "doot @ git+https://github.com/jgrey4296/doot.git",
-    "python_version >= 3.10 ",
     "itemadapter",
     "w3lib",
 ]
 
 [project.optional-dependencies]
-dev      = [ "doot@git+https://github.com/jgrey4296/doot.git", "pipreqs", "sphinx" ]
+dev      = [ "pipreqs", "sphinx" ]
 test     = [ "pytest > 7.0" ]
-database = [ "pony", "python_version <= 3.10" ]
+database = [ "pony" ]
 image    = ["Pillow"]
 net      = ["Requests", "beautifulsoup4", "scrapy"]
 bibtex   = ["bibtexparser", "pylatexenc"]
