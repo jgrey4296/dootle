@@ -121,7 +121,7 @@ class MastodonPost:
     def _post_text(self, instance, text):
         printer.info("Posting Text Toot: %s", text)
         if len(text) >= TOOT_SIZE:
-            printer.warning("Resulting Toot too long for mastodon: %s\n%s", len(msg), msg)
+            printer.warning("Resulting Toot too long for mastodon: %s\n%s", len(text), text)
             return False
 
         result = instance.status_post(text)
