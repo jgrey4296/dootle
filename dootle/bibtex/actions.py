@@ -234,8 +234,7 @@ class BibtexEntryTransformer(Action_p):
     _toml_kwargs = ["from_"]
 
     def __call__(self, spec, task_state):
-        db_key                                  = expand_str(spec.kwargs.on_fail(DB_KEY).from_(), spec, task_state)
-        db       = task_state[db_key]
+        db = expand_key(spec.kwargs.on_fail(DB_KEY).from_(), spec, task_state)
         match spec.args:
             case []:
                 transforms = [self._entry_transform]

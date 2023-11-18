@@ -47,7 +47,7 @@ from doot._abstract import Task_i
 from doot.enums import StructuredNameEnum
 from doot.structs import DootActionSpec
 import dootle.mastodon as mast_consts
-from doot.utils.string_expand import expand_str
+from doot.utils.string_expand import expand_str, expand_key
 
 TOOT_SIZE            : Final[int]                   = doot.config.on_fail(250, int).mastodon.toot_size()
 toot_image_size      : Final[str]                   = doot.config.on_fail("8mb", str).mastodon.image_size()
@@ -86,23 +86,19 @@ class MastodonPost:
     _toml_kwargs = ["from_", "instance_", "image_", "image_desc_"]
 
     def __call__(self, spec, task_state):
-        instance_key = expand_str(spec.kwargs.on_fail(mast_consts.INSTANCE_KEY).instance_(), spec, task_state)
-        if not instance_key not in task_state:
-            raise doot.errors.DootActionError("No Mastodon Instance available")
-
-        data_key      = expand_str(spec.kwargs.on_fail(mast_consts.TEXT_KEY).from_(), spec, task_state)
-        image_key     = expand_str(spec.kwargs.on_fail(mast_consts.IMAGE_KEY).image_(), spec, task_state)
-        image_desc    = expand_str(spec.kwargs.on_fail(mast_consts.IMAGE_DESC).image_desc_(), spec, task_state)
+        instance      = expand_key(spec.kwargs.on_fail(mast_consts.INSTANCE_KEY).instance_(), spec, task_state)
+        data_key      = spec.kwargs.on_fail(mast_consts.TEXT_KEY).from_()
+        image_key     = spec.kwargs.on_fail(mast_consts.IMAGE_KEY).image_()
+        image_desc    = spec.kwargs.on_fail(mast_consts.IMAGE_DESC).image_desc_()
 
         try:
-            instance = task_state[instance_key]
             if image_key in task_state and data_key in task_state:
-                text          = expand_str(data_key, spec, task_state)
-                desc          = expand_str(image_desc, spec, state)
-                image_path    = expand_str(image_key, spec, state, as_path=True)
+                text          = expand_key(data_key, spec, task_state)
+                desc          = expand_key(image_desc, spec, state)
+                image_path    = expand_key(image_key, spec, state, as_path=True)
                 return self._post_image(instance, text, image_path, desc)
             elif data_key in task_state:
-                text = expand_str(data_key, spec, task_state)
+                text = expand_key(data_key, spec, task_state)
                 return self._post_text(instance, text)
 
             raise doot.errors.DootTaskError("Unknown Mastodon Posting type")
@@ -122,8 +118,8 @@ class MastodonPost:
             printer.error("Mastodon Post Failed: %s", repr(err))
             return False
 
-    def _post_text(self, instance, text, task_state):
-        printer.info("Posting Text Toot")
+    def _post_text(self, instance, text):
+        printer.info("Posting Text Toot: %s", text)
         if len(text) >= TOOT_SIZE:
             printer.warning("Resulting Toot too long for mastodon: %s\n%s", len(msg), msg)
             return False

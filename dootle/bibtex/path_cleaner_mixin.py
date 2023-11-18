@@ -17,9 +17,10 @@ from shutil import copyfile, move
 from uuid import uuid4
 
 import re
-from doot.mixins.bibtex.writer import JGBibTexWriter
-
 ##-- end imports
+##
+from dootle.bibtex.writer import DootleBibtexWriter
+
 
 ##-- logging
 logging = logmod.getLogger(__name__)
