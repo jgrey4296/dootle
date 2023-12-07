@@ -202,14 +202,14 @@ class DootleReactorTracker(TaskTracker_i):
         assert(self.tasks[task.name] is not None)
 
         # Insert into dependency graph
-        task_state = self.state_e.READY if not bool(task.runs_after) else self.state_e.DEFINED
+        task_state = self.state_e.READY if not bool(task.depends_on) else self.state_e.DEFINED
         self.dep_graph.add_node(task.name, state=task_state, priority=task.spec.priority)
 
         # Then connect it:
         if not no_root_connection:
             self.dep_graph.add_edge(ROOT, task.name)
 
-        for pre in task.runs_after:
+        for pre in task.depends_on:
             match pre:
                 case str() | DootStructuredName() if str(pre) in self.dep_graph:
                     self.dep_graph.add_edge(task.name, str(pre), type=_TrackerEdgeType.TASK)
@@ -223,7 +223,7 @@ class DootleReactorTracker(TaskTracker_i):
                 case _:
                     raise doot.errors.DootTaskTrackingError("Unknown pre-task attempted to be added: %s", pre)
 
-        for post in task.runs_before:
+        for post in task.required_for:
             match post:
                 case str() | DootStructuredName() if str(post) in self.dep_graph:
                     self.dep_graph.add_edge(str(post), task.name, type=_TrackerEdgeType.TASK)

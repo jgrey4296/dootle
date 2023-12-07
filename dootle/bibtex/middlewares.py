@@ -58,30 +58,43 @@ from bibtexparser.middlewares.middleware import BlockMiddleware
 
 
 class ParsePathsMiddleware(BlockMiddleware):
+    """
+      Convert file paths in bibliography to pl.Path's, expanding relative paths according to lib_root
+    """
 
     @staticmethod
     def metadata_key():
         return "jg-paths-in"
 
-    def __init__(self, allow_inplace_modification:bool=True, lib_root:pl.Path=None)
-        super().__init__(True, allow_inplace_modification)
+    def __init__(self, lib_root:pl.Path=None):
+        super().__init__(True, True)
         self._lib_root = lib_root
 
     def transform_entry(self, entry, library):
-        # TODO Check paths exist, expand against lib root
         for field in entry.fields:
-            if "file" in field.key:
-                field.value = pl.Path(field.value)
-            if "look_in" in field.key:
-                field.value = pl.Path(field.value)
+            if "file" in field.key or "look_in" in field.key:
+                base = pl.Path(field.value)
+                match base.parts[0]:
+                    case "/":
+                        field.value = base
+                    case "~":
+                        field.value = base.expanduser().absolute()
+                    case _:
+                        field.value = self._lib_root / base
 
         return entry
 
 class ParseTagsMiddleware(BlockMiddleware):
+    """
+      Read Tag strings, split them into a set
+    """
 
     @staticmethod
     def metadata_key():
         return "jg-tags-in"
+
+    def __init__(self):
+        super().__init__(True, True)
 
     def transform_entry(self, entry, library):
         for field in entry.fields:
@@ -92,10 +105,17 @@ class ParseTagsMiddleware(BlockMiddleware):
 
 
 class WriteTagsMiddleware(BlockMiddleware):
+    """
+      Reduce tag set to a string
+    """
 
     @staticmethod
     def metadata_key():
         return "jg-tags-out"
+
+
+    def __init__(self):
+        super().__init__(True, True)
 
     def transform_entry(self, entry, library):
         for field in entry.fields:
@@ -105,21 +125,29 @@ class WriteTagsMiddleware(BlockMiddleware):
         return entry
 
 class WritePathsMiddleware(BlockMiddleware):
+    """
+      Relativize library paths back to strings
+    """
 
     @staticmethod
     def metadata_key():
         return "jg-paths-out"
 
-    def __init__(self, allow_inplace_modification:bool=True, lib_root:pl.Path=None)
-        super().__init__(True, allow_inplace_modification)
+    def __init__(self, lib_root:pl.Path=None):
+        super().__init__(True, True)
         self._lib_root = lib_root
 
     def transform_entry(self, entry, library):
         for field in entry.fields:
-            if "file" in field.key:
-                field.value = pl.Path(field.value)
-            if "look_in" in field.key:
-                field.value = pl.Path(field.value)
+            try:
+                if "file" in field.key:
+                    field.value = str(field.value.relative_to(self._lib_root))
+                elif "look_in" in field.key:
+                    field.value = str(field.value.relative_to(self._lib_root))
+            except ValueError:
+                field.value = str(field.value)
+
+
         return entry
 
 """
