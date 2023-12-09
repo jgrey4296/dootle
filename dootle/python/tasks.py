@@ -118,7 +118,7 @@ class PipBuild(DootTasker):
 
         if cargo_p:
             self.locs.ensure("python")
-            cargo_name = Tomler.load("Cargo.toml").package.name
+            cargo_name = TomlGuard.load("Cargo.toml").package.name
             task['actions'].insert(0, (self.copy_to, [self.locs.python / "__data", self.locs.temp / f"{cargo_name}.so"]))
             task['file_dep'].append(self.locs.temp / f"{cargo_name}.so")
 

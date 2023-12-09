@@ -34,12 +34,12 @@ logging = logmod.getLogger(__name__)
 from importlib.resources import files
 ##-- end imports
 
-import tomler
+import tomlguard
 import doot
 from doot.spiders.crawler import CrawlerProcessFix
 from urllib.parse import urlparse
 
-default_toml           = tomler.load(files("doot.__templates") / "spider_toml").flatten_on().spiders().get_table()
+default_toml           = tomlguard.load(files("doot.__templates") / "spider_toml").flatten_on().spiders().get_table()
 spider_settings        = doot.config.flatten_on().spiders().get_table()
 
 settings_with_defaults = default_toml.copy()
@@ -65,7 +65,7 @@ class SpiderMixin:
                 pass
             case dict() if bool(settings):
                 merged.update(settings)
-            case tomler.Tomler():
+            case tomlguard.TomlGuard():
                 merged.update(dict(settings))
             case [dict() as val]:
                 merged = val

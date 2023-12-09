@@ -15,9 +15,9 @@ import sys
 sys.path.insert(0, os.path.abspath('../dootle'))
 
 import warnings
-import tomler
+import tomlguard
 
-data = tomler.load("../pyproject.toml")
+data = tomlguard.load("../pyproject.toml")
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
