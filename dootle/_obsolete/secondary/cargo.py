@@ -10,7 +10,7 @@ import logging as logmod
 
 import doot
 from doot.task.group import TaskGroup
-from tomler import TomlAccessError, Tomler
+from tomlguard import TomlAccessError, TomlGuard
 from doot import tasker
 
 ##-- end imports
@@ -23,8 +23,8 @@ logging = logmod.getLogger(__name__)
 from doot.mixins.cargo import CargoMixin
 from doot.mixins.commander import CommanderMixin
 
-cargo  = Tomler.load("Cargo.toml")
-config = Tomler.load("./.cargo/config.toml")
+cargo  = TomlGuard.load("Cargo.toml")
+config = TomlGuard.load("./.cargo/config.toml")
 
 build_path    : Final[str]          = config.on_fail(str(doot.locs.build)).build.target_dir()
 package_name  : Final[str]          = cargo.package.name

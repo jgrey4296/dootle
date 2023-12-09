@@ -36,7 +36,7 @@ logmod.getLogger('bibtexparser').setLevel(logmod.CRITICAL)
 
 printer = logmod.getLogger("doot._printer")
 
-import tomler
+import tomlguard
 import doot
 from doot.tasks.base_task import DootTask
 from doot.structs import DootActionSpec
@@ -54,7 +54,7 @@ class BibtexBase(DootTask):
 
     @property
     def actions(self):
-        yield BibtexInitAction(tomler.Tomler())
+        yield BibtexInitAction(tomlguard.TomlGuard())
         yield from super().actions
 
 class LibDirClean(DootTask):
@@ -80,8 +80,8 @@ class BibtexClean(BibFieldCleanMixin, BibPathCleanMixin, DootTask):
 
     def actions(self):
         yield DootActionSpec(fun=lambda x: {"target": task_state_copy['file'] if self.clean_in_place else self.locs.temp / task_state_copy['file'].name})
-        yield DootActionSpec(fun=BibtexEntryTransformer, args=tomler.Tomler({"args": [self.on_parse_check_entry]}))
-        yield DootActionSpec(fun=BibtexEntryTransformer, args=tomler.Tomler({"args": [self.loaded_clean_entry]}))
+        yield DootActionSpec(fun=BibtexEntryTransformer, args=tomlguard.TomlGuard({"args": [self.on_parse_check_entry]}))
+        yield DootActionSpec(fun=BibtexEntryTransformer, args=tomlguard.TomlGuard({"args": [self.loaded_clean_entry]}))
 
     def on_parse_check_entry(self, entry):
         # Preprocess

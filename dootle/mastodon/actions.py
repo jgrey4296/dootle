@@ -40,7 +40,7 @@ logging = logmod.getLogger(__name__)
 printer = logmod.getLogger("doot._printer")
 
 import mastodon
-import tomler
+import tomlguard
 import doot
 import doot.errors
 from doot._abstract import Task_i
@@ -56,7 +56,7 @@ RESOLUTION_RE        : Final[re.Pattern]            = re.compile(r".*?([0-9]+x[0
 
 class MastodonSetup:
     """ Default Mastodon Setup, using secrets from doot.locs.mastodon_secrets
-      loads the secrets as a tomler, and accesses mastodon.access_token and mastodon.url
+      loads the secrets as a tomlguard, and accesses mastodon.access_token and mastodon.url
       ensures thers an "image_temp" location
     """
     instance = None
@@ -68,7 +68,7 @@ class MastodonSetup:
         if MastodonSetup.instance is None:
             printer.info("---------- Initialising Mastodon", extra={"colour": "green"})
             secrets_path = expand_str(spec.kwargs.on_fail("{mastodon_secrets}").from_(), spec, task_state, as_path=True)
-            secrets = tomler.load(secrets_path)
+            secrets = tomlguard.load(secrets_path)
             MastodonSetup.instance = mastodon.Mastodon(
                 access_token = secrets.mastodon.access_token,
                 api_base_url = secrets.mastodon.url

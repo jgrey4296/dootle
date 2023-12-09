@@ -30,15 +30,15 @@ from weakref import ref
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-import tomler
+import tomlguard
 import shutil
 import doot
 
 cargo  = shutil.which("cargo")
 rustup = shutil.which("rustup")
 
-cargo_config    = tomler.load("Cargo.toml")
-cargo_subconfig = tomler.load("./.cargo/config.toml")
+cargo_config    = tomlguard.load("Cargo.toml")
+cargo_subconfig = tomlguard.load("./.cargo/config.toml")
 
 package_name  : Final[str]      = cargo_config.package.name
 build_path    : Final[str]      = cargo_subconfig.on_fail(str(doot.locs.build), str).build.target_dir()

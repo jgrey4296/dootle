@@ -51,5 +51,5 @@ class ExampleCmd(Command_i):
     def param_specs(self) -> list:
         return super().param_specs + []
 
-    def __call__(self, tasks:Tomler, plugins:Tomler):
+    def __call__(self, tasks:TomlGuard, plugins:TomlGuard):
         printer.info("This is an Example Cmd edited")

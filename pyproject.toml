@@ -18,16 +18,17 @@ dependencies   = [
     "doot @ git+https://github.com/jgrey4296/doot.git",
     "itemadapter",
     "w3lib",
+    "pony",
+    "scrapy",
+    "mastodon.py>=1.8"
 ]
 
 [project.optional-dependencies]
-dev      = [ "pipreqs", "sphinx" ]
-test     = [ "pytest > 7.0" ]
-database = [ "pony" ]
+dev      = ["pipreqs", "sphinx" ]
+test     = ["pytest > 7.0" ]
 image    = ["Pillow"]
-net      = ["Requests", "beautifulsoup4", "scrapy"]
+net      = ["Requests", "beautifulsoup4"]
 bibtex   = ["bibtexparser", "pylatexenc"]
-social   = ["mastodon.py>=1.8"]
 data     = ["PyYAML", "pandas", "numpy", "scikit-learn", "xsdata", "networkx"]
 visual   = ["matplotlib", "seaborn", "wordcloud"]
 pdf      = ["pdfrw", "pypandoc"]

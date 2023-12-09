@@ -32,7 +32,7 @@ logging = logmod.getLogger(__name__)
 
 import sys
 import datetime
-import tomler
+import tomlguard
 
 from doot import config
 from doot.control.tasker import DootTasker
@@ -64,7 +64,7 @@ class PelicanTasker(DootTasker):
 
     def load_pelican_settings(self):
         # Walk data, if key matches key in settings, copy it over
-        data     = tomler.load(self.locs.pelican_settings)
+        data     = tomlguard.load(self.locs.pelican_settings)
         queue    = [([k], v) for k,v in dict(data).items()]
         while bool(queue):
             match queue.pop(0):

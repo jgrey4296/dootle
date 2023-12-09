@@ -48,7 +48,7 @@ wayback_wait         : Final[int] = doot.config.on_fail(10, int).bibtex.wayback_
 acceptible_responses : Final[list] = doot.config.on_fail(["200"], list).bibtex.accept_wayback()
 ENT_const            : Final[str] = 'ENTRYTYPE'
 
-class BibtexReport(dir_walker.DootDirWalker, BibLoadSaveMixin, bib_clean.BibFieldCleanMixin, bib_clean.BibPathCleanMixin):
+class BibtexReport:
     """
     (src -> build) produce reports on the bibs found
     """
@@ -66,12 +66,6 @@ class BibtexReport(dir_walker.DootDirWalker, BibLoadSaveMixin, bib_clean.BibFiel
         self.files_counts                   = defaultdict(lambda: 0)
         self.authors : set[tuple[str, str]] = set()
         self.editors : set[tuple[str, str]] = set()
-
-    def setup_detail(self, task):
-        task.update({
-            "actions": [ (self.bc_load_db, [[], lambda x: x]) ]
-        })
-        return task
 
     def task_detail(self, task):
         years_target  = self.locs.build / "years.report"
