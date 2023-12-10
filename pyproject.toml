@@ -15,12 +15,13 @@ classifiers     = [
 ]
 
 dependencies   = [
-    "doot @ git+https://github.com/jgrey4296/doot.git",
+    "doot",
     "itemadapter",
     "w3lib",
     "pony",
     "scrapy",
-    "mastodon.py>=1.8"
+    "mastodon.py>=1.8",
+    "bibtexparser>=2.0.0b4",
 ]
 
 [project.optional-dependencies]
