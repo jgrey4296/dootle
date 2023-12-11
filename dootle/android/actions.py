@@ -61,7 +61,7 @@ class AndroidRunning(Action_p):
     _toml_kwargs = ["update_"]
 
     def __call__(self, spec, state):
-        data_key = expand_str(spec.kwargs.on_fail("transport").update_(), spec, task_state)
+        data_key = expand_str(spec.kwargs.on_fail("transport").update_(), spec, state)
         try:
             adb("start-server", _bg=True)
             transport = self._get_transport_id()
@@ -102,7 +102,7 @@ class AndroidPush(Action_p):
 
     def __call__(self, spec, state):
         try:
-            from_key  = expand_str(spec.kwargs.on_fail("transport").from_(), spec, task_state)
+            from_key  = expand_str(spec.kwargs.on_fail("transport").from_(), spec, state)
             push      = adb.bake("-t", state[from_key], "push", "--sync", _return_cmd=True)
             local     = expand_str(spec.kwargs.local, spec, state, as_path=True)
             remote    = expand_str(spec.kwargs.remote, spec, state, as_path=True)
@@ -120,7 +120,7 @@ class AndroidPull(Action_p):
 
     def __call__(self, spec, state):
         result = None
-        from_key  = expand_str(spec.kwargs.on_fail("transport").from_(), spec, task_state)
+        from_key  = expand_str(spec.kwargs.on_fail("transport").from_(), spec, state)
         try:
             pull   = adb.bake("-t", state[from_key], "pull", "-a", _return_cmd=True)
             local  = expand_str(spec.kwargs.local, spec, state, as_path=True)
@@ -140,8 +140,8 @@ class AndroidInstall(Action_p):
 
     def __call__(self, spec, state):
         try:
-            from_key = expand_str(spec.kwargs.on_fail("transport").from_(), spec, task_state)
-            target   = expand_str(spec.kwargs.package, spec, task_state, as_path=True)
+            from_key = expand_str(spec.kwargs.on_fail("transport").from_(), spec, state)
+            target   = expand_str(spec.kwargs.package, spec, state, as_path=True)
             install  = adb.bake("-t", state[from_key], "install", _return_cmd=True)
             printer.info("ADB Installing: %s", target)
             result = install(str(target))
@@ -159,8 +159,8 @@ class AndroidRemoteCmd(Action_p):
 
     def __call__(self, spec, state):
         try:
-            from_key = expand_str(spec.kwargs.on_fail("transport").from_(), spec, task_state)
-            data_key = expand_str(spec.kwargs.on_fail("adb_result").update_(), spec, task_state)
+            from_key = expand_str(spec.kwargs.on_fail("transport").from_(), spec, state)
+            data_key = expand_str(spec.kwargs.on_fail("adb_result").update_(), spec, state)
             cmd    = adb.bake("-t", state[from_key], "shell", "", _return_cmd=True)
             args   = [expand_str(x, spec, state) for x in spec.args]
             printer.info("ADB Cmd: %s : %s", spec.kwargs.cmd, args)

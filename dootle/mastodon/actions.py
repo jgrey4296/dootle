@@ -44,7 +44,6 @@ import tomlguard
 import doot
 import doot.errors
 from doot._abstract import Task_i
-from doot.enums import StructuredNameEnum
 from doot.structs import DootActionSpec
 import dootle.mastodon as mast_consts
 from doot.utils.string_expand import expand_str, expand_key

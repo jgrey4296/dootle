@@ -62,7 +62,7 @@ from queue import PriorityQueue
 import doot
 import doot.errors
 from doot._abstract import Tasker_i, Task_i, FailPolicy_p
-from doot.structs import DootTaskArtifact, DootTaskSpec, DootStructuredName
+from doot.structs import DootTaskArtifact, DootTaskSpec, DootCodeReference, DootTaskName
 from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i
 from doot.task.base_task import DootTask
 
@@ -113,12 +113,12 @@ class DootleReactorTracker(TaskTracker_i):
         super().__init__(policy=policy) # self.tasks
         self.artifacts              : dict[str, DootTaskArtifact]                       = {}
         self.dep_graph              : nx.DiGraph                                        = nx.DiGraph()
-        self.active_set             : list[str|DootStructuredName|DootTaskArtifact]     = set()
+        self.active_set             : list[str|DootTaskName|DootTaskArtifact]           = set()
         self.task_queue                                                                 = boltons.queueutils.HeapPriorityQueue()
-        # self.task_queue = PriorityQueue()
+        # self.task_queue                                                               = PriorityQueue()
         self.execution_path         : list[str]                                         = []
         self.shadowing              : bool                                              = shadowing
-        self._root_name             : str = ROOT
+        self._root_name             : str                                               = ROOT
 
         self.dep_graph.add_node(ROOT, state=self.state_e.WAIT)
 
@@ -211,9 +211,9 @@ class DootleReactorTracker(TaskTracker_i):
 
         for pre in task.depends_on:
             match pre:
-                case str() | DootStructuredName() if str(pre) in self.dep_graph:
+                case str() | DootTasName() if str(pre) in self.dep_graph:
                     self.dep_graph.add_edge(task.name, str(pre), type=_TrackerEdgeType.TASK)
-                case str() | DootStructuredName():
+                case str() | DootTaskName():
                     self.dep_graph.add_node(str(pre), state=self.state_e.DECLARED, priority=DECLARE_PRIORITY)
                     self.dep_graph.add_edge(task.name, str(pre), type=_TrackerEdgeType.TASK)
                 case pl.Path():
@@ -225,9 +225,9 @@ class DootleReactorTracker(TaskTracker_i):
 
         for post in task.required_for:
             match post:
-                case str() | DootStructuredName() if str(post) in self.dep_graph:
+                case str() | DootTaskName() if str(post) in self.dep_graph:
                     self.dep_graph.add_edge(str(post), task.name, type=_TrackerEdgeType.TASK)
-                case str() | DootStructuredName():
+                case str() | DootTaskName():
                     self.dep_graph.add_node(str(post), state=self.state_e.DECLARED, priority=DECLARE_PRIORITY)
                     self.dep_graph.add_edge(str(post), task.name, type=_TrackerEdgeType.TASK)
                 case pl.Path():
@@ -236,16 +236,16 @@ class DootleReactorTracker(TaskTracker_i):
                 case _:
                     raise doot.errors.DootTaskTrackingError("Unknown post task attempted to be added: %s", post)
 
-    def queue_task(self, *tasks:str|DootStructuredName|tuple, silent=False) -> None:
+    def queue_task(self, *tasks:str|DootTaskName|tuple, silent=False) -> None:
         for task in tasks:
             match task:
-                case str() | DootStructuredName() | DootTaskArtifact() if str(task) in self.active_set:
+                case str() | DootTaskName() | DootTaskArtifact() if str(task) in self.active_set:
                     if not silent:
                         logging.warning("Trying to queue an already active task: %s", task)
-                case str() | DootStructuredName() | DootTaskArtifact() if str(task) in self.dep_graph.nodes:
+                case str() | DootTaskName() | DootTaskArtifact() if str(task) in self.dep_graph.nodes:
                     self.active_set.add(str(task))
                     self.task_queue.add(str(task), self.dep_graph.nodes[str(task)][PRIORITY])
-                case str() | DootStructuredName() | DootTaskArtifact():
+                case str() | DootTaskName() | DootTaskArtifact():
                     raise doot.errors.DootTaskTrackingError("Can't queue a task that isn't loaded in the tracker", task)
                 case _:
                     raise doot.errors.DootTaskTrackingError("Unknown type tried to be queued: %s", task)
@@ -283,7 +283,7 @@ class DootleReactorTracker(TaskTracker_i):
             case _, _:
                 raise doot.errors.DootTaskTrackingError("Bad task update state args", task, state)
 
-    def task_state(self, task:str|DootStructuredName|pl.Path) -> self.state_e:
+    def task_state(self, task:str|DootTaskName|pl.Path) -> self.state_e:
         """ Get the state of a task """
         if str(task) in self.dep_graph.nodes:
             return self.dep_graph.nodes[str(task)][STATE]
