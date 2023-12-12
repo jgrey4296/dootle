@@ -42,7 +42,7 @@ import doot
 import doot.errors
 from doot._abstract import Action_p
 from doot.enums import ActionResponseEnum as ActRE
-from doot.utils.string_expand import expand_str
+import doot.utils.expansion as exp
 
 try:
     godot = sh.Command("godot4")
@@ -77,8 +77,8 @@ class GodotRunSceneAction(Action_p):
 
     def __call__(self, spec, task_state):
         try:
-            godot_b = godot.bake("--path", doot.locs.root, _return_cmd=True)
-            scene_file = expand_str(spec.kwargs.on_fail("fpath", str).scene(), spec, task_state, as_path=True)
+            godot_b    = godot.bake("--path", doot.locs.root, _return_cmd=True)
+            scene_file = exp.to_str(spec.kwargs.on_fail("scene", str).scene_(), spec, task_state, indirect=True)
             if "quit-after" in spec.kwargs:
                 result = godot_b("--quit-after", spec.kwargs.quit_after, str(scene_file))
             else:
@@ -97,8 +97,8 @@ class GodotRunScriptAction(Action_p):
 
     def __call__(self, spec, task_state):
         try:
-            godot_b = godot.bake("--path", doot.locs.root, _return_cmd=True)
-            script_file = expand_str(spec.kwargs.on_fail("fpath", str).scene(), spec, task_state, as_path=True)
+            godot_b     = godot.bake("--path", doot.locs.root, _return_cmd=True)
+            script_file = exp.to_str(spec.kwargs.on_fail("script", str).script_(), spec, task_state, as_path=True)
             if "quit-after" in spec.kwargs:
                 result = godot_b("--quit-after", spec.kwargs.quit_after, "--headless", "--script", str(script_file))
             else:
@@ -125,8 +125,8 @@ class GodotBuildAction(Action_p):
                 case _:
                     raise doot.errors.DootActionError("Bad export type specified, should be `release` or `debug`")
 
-            path_loc = expand_str(spec.kwargs.path, spec, task_state, as_path=True)
-            result = godot_b(spec.kwargs.preset, str(path_loc))
+            path_loc = exp.to_path(spec.kwargs.on_fail("path").path_, spec, task_state, indirect=True)
+            result   = godot_b(spec.kwargs.preset, str(path_loc))
             printer.info("Godot Result: %s", result.stdout.decode())
             return { "godot_result" : result.stdout.decode() }
 
@@ -169,12 +169,12 @@ class GodotNewScriptAction(Action_p):
 @doot.check_protocol
 class GodotCheckScriptsAction(Action_p):
 
-    outState = ["godot_result"]
+    outState = ["godot_result", "target"]
 
     def __call__(self, spec, task_state):
         try:
             godot_b = godot.bake("--path", doot.locs.root, "--headless", _return_cmd=True)
-            script_file = expand_str(spec.kwargs.on_fail("fpath", str).target(), spec, task_state, as_path=True)
+            script_file = exp.to_path(spec.kwargs.on_fail("target", str).target_(), spec, task_state, as_path=True)
             result = godot_b("--check-only", "--script", str(script_file))
             printer.info("Godot Result: %s", result.stdout.decode())
             return { "godot_result" : result.stdout.decode() }

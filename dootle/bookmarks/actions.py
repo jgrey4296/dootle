@@ -40,7 +40,7 @@ logging = logmod.getLogger(__name__)
 import doot
 import doot.errors
 from doot._abstract import Action_p
-from doot.utils.string_expand import expand_str, expand_set, expand_to_obj, expand_key
+import doot.utils.expansion as exp
 
 from dootle.bookmarks.db_fns import extract
 from dootle.bookmarks import structs as BC
@@ -54,8 +54,8 @@ class BookmarksPonyExtraction(Action_p):
     _toml_kwargs = ["_from", "update_", "debug"]
 
     def __call__(self, spec, task_state):
-        db_loc         = expand_str(spec.kwargs._from, spec, task_state)
-        update_key     = expand_str(spec.kwargs.update_, spec, task_state)
+        db_loc         = exp.to_path(spec.kwargs._from, spec, task_state, indirect=True)
+        update_key     = exp.to_str(spec.kwargs.update_, spec, task_state)
         debug          = spec.kwargs.on_fail(False).debug()
         try:
             printer.info("Starting Extraction")
@@ -71,8 +71,8 @@ class BookmarksLoad(Action_p):
     _toml_kwargs = ["_from", "update_"]
 
     def __call__(self, spec, task_state):
-        load_path = expand_str(spec.kwargs._from, spec, task_state)
-        data_key  = expand_str(spec.kwargs.update_, spec, task_state)
+        load_path = exp.to_path(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
+        data_key  = exp.to_str(spec.kwargs.update_, spec, task_state)
         printer.info("Loading Bookmarks _from: %s", load_path)
         result    = BC.BookmarkCollection.read(load_path)
         printer.info("Loaded %s Bookmarks", len(result))
@@ -80,11 +80,11 @@ class BookmarksLoad(Action_p):
 
 class BookmarksMerge(Action_p):
 
-    _toml_kwargs = ["from_", "update_"]
+    _toml_kwargs = ["_from", "update_"]
 
     def __call__(self, spec, task_state):
-        data_key                                 = expand_str(spec.kwargs.update_, spec, task_state)
-        source_data : set[BC.BookmarkCollection] = expand_set(spec.kwargs.from_, spec, task_state)
+        data_key                                 = exp.to_str(spec.kwargs.update_, spec, task_state)
+        source_data : set[BC.BookmarkCollection] = exp.to_any(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
 
         merged = BC.BookmarkCollection()
         for x in source_data:
@@ -96,21 +96,21 @@ class BookmarksMerge(Action_p):
         return { data_key : merged }
 
 class BookmarksToStr(Action_p):
-    _toml_kwargs = ["update_", "from_"]
+    _toml_kwargs = ["update_", "_from"]
 
     def __call__(self, spec, task_state):
-        data_key                                      = expand_str(spec.kwargs.update_, spec, task_state)
-        source_data : set[BC.BookmarkCollection]      = expand_to_obj(spec.kwargs.from_, spec, task_state)
+        data_key                                      = exp.to_str(spec.kwargs.update_, spec, task_state)
+        source_data : set[BC.BookmarkCollection]      = exp.to_any(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
 
         printer.info("Writing Bookmark Collection of size: %s", len(source_data))
         return { data_key : str(source_data) }
 
 
 class BookmarksRemoveDuplicates(Action_p):
-    _toml_kwargs = ["from_"]
+    _toml_kwargs = ["_from"]
 
     def __call__(self, spec, task_state):
-        source_data : BC.BookmarkCollection      = expand_to_obj(spec.kwargs.from_, spec, task_state)
+        source_data : BC.BookmarkCollection      = exp.to_any(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
 
         pre_count = len(source_data)
         source_data.merge_duplicates()

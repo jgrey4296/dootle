@@ -44,7 +44,7 @@ from bibtexparser.middlewares.middleware import BlockMiddleware
 
 import doot
 from doot._abstract.task import Action_p
-from doot.utils.expansion import expand_str, expand_key, expand_to_obj, expand_set
+import doot.utils.expansion as exp
 from dootle.bibtex import middlewares as dmids
 
 NEWLINE_RE                 : Final[re.Pattern] = re.compile(r"\n+\s*")
@@ -63,9 +63,10 @@ class BibtexInitAction(Action_p):
 
       pass a callable as the spec.args value to use instead of _entry_transform
     """
+    _toml_kwargs = ["update_"]
 
     def __call__(self, spec, task_state:dict):
-        data_key = expand_str(spec.kwargs.on_fail(DB_KEY).update_(), spec, task_state)
+        data_key = exp.to_str(spec.kwargs.on_fail(DB_KEY).update_(), spec, task_state)
         if data_key in task_state:
             return True
 
@@ -80,18 +81,22 @@ class BibtexLoadAction(Action_p):
       or subclass this and override self._entry_transform.
 
       """
-    _toml_kwargs = ["update_", "crossref", "parse_stack_"]
+    _toml_kwargs = ["update_", "crossref", "parse_stack", "_from"]
 
     def __call__(self, spec, task_state:dict):
-            year_key             = expand_str(spec.kwargs.on_fail(YEAR_KEY).year_(), spec, task_state)
-            db_key               = expand_str(spec.kwargs.on_fail(DB_KEY).update_(), spec, task_state, as_key=True)
-            from_key             = expand_str(spec.kwargs.on_fail("_from").from_(), spec, task_state, as_key=True)
-            transform_key        = expand_str(spec.kwargs.on_fail("transform").transform_(), spec, task_state, as_key=True)
+            year_key             = exp.to_str(spec.kwargs.on_fail(YEAR_KEY).year_(), spec, task_state, indirect=True)
+            db                   = exp.to_any(spec.kwargs.on_fail(DB_KEY).update_(), spec, task_state, indirect=True)
+            from_val             = exp.to_any(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
+            match from_val:
+                case str():
+                    file_list    = [exp.to_path(from_str, spec, task_state)]
+                case pl.Path():
+                    file_list    = [from_val]
+                case list():
+                    file_list    = [exp.to_path(x, spec, state) for x in from_val]
 
-            parse_stack          = task_state.get(spec.kwargs.on_fail("parse_stack").parse_stack_(), [])
-            file_list            = list(expand_set(from_key, spec, task_state, as_path=True))
+            parse_stack          = exp.to_any(spec.kwargs.on_fail("parse_stack").parse_stack_(), spec, task_state, indirect=True)
 
-            db                   = expand_to_obj(db_key, spec, task_state)
 
             printer.info("Attempting to load files: %s", [str(x) for x in file_list])
             for loc in file_list:
@@ -124,14 +129,13 @@ class BibtexToStrAction(Action_p):
     """
       Convert a bib database to a string for writing to a file.
     """
-    _toml_kwargs = ["from_", "update_", "write_stack_", "format_"]
+    _toml_kwargs = ["from_", "update_", "write_stack", "format"]
 
     def __call__(self, spec, task_state):
-        db_key                                  = expand_str(spec.kwargs.on_fail(DB_KEY).from_(), spec, task_state, as_key=True)
-        data_key                                = expand_str(spec.kwargs.on_fail(TEXT_KEY).update_(), spec, task_state)
-        db                                      = expand_to_obj(db_key, spec, task_state)
-        write_stack                             = task_state.get(spec.kwargs.on_fail("write_stack").write_stack_(), [])
-        format                                  = task_state.get(spec.kwargs.on_fail("format").format_(), None)
+        data_key                                = exp.to_str(spec.kwargs.on_fail(TEXT_KEY).update_(), spec, task_state)
+        db                                      = exp.to_any(spec.kwargs.on_fail(DB_KEY).from_(), spec, task_state, indirect=True)
+        write_stack                             = exp.to_any(spec.kwargs.on_fail("write_stack").write_stack_(), spec, task_state, indirect=True)
+        format                                  = exp.to_any(spec.kwargs.on_fail("format").format_(), spec, task_state, indirect=True)
 
         if format is None:
             format                              = b.BibtexFormat()

@@ -42,7 +42,7 @@ printer = logmod.getLogger("doot._printer")
 import sh
 import doot
 import doot.errors
-from doot.utils.string_expand import expand_str
+import doot.utils.expansion as exp
 from doot._abstract import Action_p
 
 try:
@@ -61,7 +61,7 @@ class AndroidRunning(Action_p):
     _toml_kwargs = ["update_"]
 
     def __call__(self, spec, state):
-        data_key = expand_str(spec.kwargs.on_fail("transport").update_(), spec, state)
+        data_key = exp.to_str(spec.kwargs.on_fail("transport").update_(), spec, state, indirect=True)
         try:
             adb("start-server", _bg=True)
             transport = self._get_transport_id()
@@ -102,10 +102,10 @@ class AndroidPush(Action_p):
 
     def __call__(self, spec, state):
         try:
-            from_key  = expand_str(spec.kwargs.on_fail("transport").from_(), spec, state)
+            from_key  = exp.to_str(spec.kwargs.on_fail("transport").from_(), spec, state, indirect=True)
             push      = adb.bake("-t", state[from_key], "push", "--sync", _return_cmd=True)
-            local     = expand_str(spec.kwargs.local, spec, state, as_path=True)
-            remote    = expand_str(spec.kwargs.remote, spec, state, as_path=True)
+            local     = exp.to_path(spec.kwargs.on_fail("local").local_(), spec, state, indirect=True)
+            remote    = exp.to_str(spec.kwargs.on_fail("remote").remote_(), spec, state, indirect=True)
             printer.info("ADB Push: %s -> %s", local, remote)
             result = push(str(local), str(remote))
         except sh.ErrorReturnCode as err:
@@ -120,11 +120,11 @@ class AndroidPull(Action_p):
 
     def __call__(self, spec, state):
         result = None
-        from_key  = expand_str(spec.kwargs.on_fail("transport").from_(), spec, state)
+        from_key  = exp.to_str(spec.kwargs.on_fail("transport").from_(), spec, state, indirect=True)
         try:
             pull   = adb.bake("-t", state[from_key], "pull", "-a", _return_cmd=True)
-            local  = expand_str(spec.kwargs.local, spec, state, as_path=True)
-            remote = expand_str(spec.kwargs.remote, spec, state, as_path=True)
+            local  = exp.to_path(spec.kwargs.on_fail("local").local_(), spec, state, indirect=True)
+            remote = exp.to_path(spec.kwargs.on_fail("remote").remote_(), spec, state, indirect=True)
             printer.info("ADB Pull: %s -> %s", remote, local)
             # TODO get list of local files, list of remote files, diff, pull those lacking.
 
@@ -140,8 +140,8 @@ class AndroidInstall(Action_p):
 
     def __call__(self, spec, state):
         try:
-            from_key = expand_str(spec.kwargs.on_fail("transport").from_(), spec, state)
-            target   = expand_str(spec.kwargs.package, spec, state, as_path=True)
+            from_key = exp.to_str(spec.kwargs.on_fail("transport").from_(), spec, state, indirect=True)
+            target   = exp.to_path(spec.kwargs.on_fail("package").package_(), spec, state, indirect=True)
             install  = adb.bake("-t", state[from_key], "install", _return_cmd=True)
             printer.info("ADB Installing: %s", target)
             result = install(str(target))
@@ -155,14 +155,14 @@ class AndroidInstall(Action_p):
 @doot.check_protocol
 class AndroidRemoteCmd(Action_p):
     inState      = ["transport", "android_root"]
-    _toml_kwargs = ["cmd", "update_"]
+    _toml_kwargs = ["cmd", "update_", "from_"]
 
     def __call__(self, spec, state):
         try:
-            from_key = expand_str(spec.kwargs.on_fail("transport").from_(), spec, state)
-            data_key = expand_str(spec.kwargs.on_fail("adb_result").update_(), spec, state)
+            from_key = exp.to_str(spec.kwargs.on_fail("transport").from_(), spec, state, indirect=True)
+            data_key = exp.to_str(spec.kwargs.on_fail("adb_result").update_(), spec, state)
             cmd    = adb.bake("-t", state[from_key], "shell", "", _return_cmd=True)
-            args   = [expand_str(x, spec, state) for x in spec.args]
+            args   = [exp.to_str(x, spec, state) for x in spec.args]
             printer.info("ADB Cmd: %s : %s", spec.kwargs.cmd, args)
             result = cmd(spec.kwargs.cmd, *args)
             return { data_key : result.stdout.decode() }

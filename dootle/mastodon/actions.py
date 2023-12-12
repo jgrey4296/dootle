@@ -46,7 +46,7 @@ import doot.errors
 from doot._abstract import Task_i
 from doot.structs import DootActionSpec
 import dootle.mastodon as mast_consts
-from doot.utils.string_expand import expand_str, expand_key
+import doot.utils.expansion as exp
 
 TOOT_SIZE            : Final[int]                   = doot.config.on_fail(250, int).mastodon.toot_size()
 toot_image_size      : Final[str]                   = doot.config.on_fail("8mb", str).mastodon.image_size()
@@ -62,11 +62,11 @@ class MastodonSetup:
     _toml_kwargs = ["update_", "from"]
 
     def __call__(self, spec, task_state) -> dict|bool|None:
-        data_key = expand_str(spec.kwargs.on_fail(mast_consts.INSTANCE_KEY).update_(), spec, task_state)
+        data_key = exp.to_str(spec.kwargs.on_fail(mast_consts.INSTANCE_KEY).update_(), spec, task_state)
 
         if MastodonSetup.instance is None:
             printer.info("---------- Initialising Mastodon", extra={"colour": "green"})
-            secrets_path = expand_str(spec.kwargs.on_fail("{mastodon_secrets}").from_(), spec, task_state, as_path=True)
+            secrets_path = exp.to_str(spec.kwargs.on_fail("{mastodon_secrets}").from_(), spec, task_state, as_path=True)
             secrets = tomlguard.load(secrets_path)
             MastodonSetup.instance = mastodon.Mastodon(
                 access_token = secrets.mastodon.access_token,
@@ -85,19 +85,15 @@ class MastodonPost:
     _toml_kwargs = ["from_", "instance_", "image_", "image_desc_"]
 
     def __call__(self, spec, task_state):
-        instance      = expand_key(spec.kwargs.on_fail(mast_consts.INSTANCE_KEY).instance_(), spec, task_state)
-        data_key      = spec.kwargs.on_fail(mast_consts.TEXT_KEY).from_()
-        image_key     = spec.kwargs.on_fail(mast_consts.IMAGE_KEY).image_()
-        image_desc    = spec.kwargs.on_fail(mast_consts.IMAGE_DESC).image_desc_()
+        instance      = exp.indirect_key(spec.kwargs.on_fail(mast_consts.INSTANCE_KEY).instance_(), spec, task_state)
+        text          = exp.to_str(spec.kwargs.on_fail(mast_consts.TEXT_KEY).from_(), spec, task_state, indirect=True)
+        image         = exp.to_path(spec.kwargs.on_fail(mast_consts.IMAGE_KEY).image_(), spec, task_state, indirect=True)
+        image_desc    = exp.to_str(spec.kwargs.on_fail(mast_consts.IMAGE_DESC).image_desc_(), spec, task_state, indirect=True)
 
         try:
-            if image_key in task_state and data_key in task_state:
-                text          = expand_key(data_key, spec, task_state)
-                desc          = expand_key(image_desc, spec, state)
-                image_path    = expand_key(image_key, spec, state, as_path=True)
-                return self._post_image(instance, text, image_path, desc)
-            elif data_key in task_state:
-                text = expand_key(data_key, spec, task_state)
+            if image.exists():
+                return self._post_image(instance, text, image, image_desc)
+            else:
                 return self._post_text(instance, text)
 
             raise doot.errors.DootTaskError("Unknown Mastodon Posting type")
