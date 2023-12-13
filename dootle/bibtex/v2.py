@@ -89,7 +89,7 @@ class BibtexLoadAction(Action_p):
             from_val             = exp.to_any(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
             match from_val:
                 case str():
-                    file_list    = [exp.to_path(from_str, spec, task_state)]
+                    file_list    = [exp.to_path(from_val, spec, task_state)]
                 case pl.Path():
                     file_list    = [from_val]
                 case list():
@@ -137,7 +137,7 @@ class BibtexToStrAction(Action_p):
         write_stack                             = exp.to_any(spec.kwargs.on_fail("write_stack").write_stack_(), spec, task_state, indirect=True)
         format                                  = exp.to_any(spec.kwargs.on_fail("format").format_(), spec, task_state, indirect=True)
 
-        if format is None:
+        if not isinstance(format, b.BibtexFormat):
             format                              = b.BibtexFormat()
             format.value_column                 = 15
             format.indent                       = " "
