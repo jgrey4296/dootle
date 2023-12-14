@@ -47,15 +47,21 @@ from dootle.bookmarks import structs as BC
 
 printer = logmod.getLogger("doot._printer")
 
+##-- expansion keys
+FROM_KEY = exp.DootKey("from")
+UPDATE   = exp.DootKEy("update_")
+
+##-- end expansion keys
+
 class BookmarksPonyExtraction(Action_p):
     """
-      extract bookmarks _from a sqlite firefox db using pony
+      extract bookmarks from a sqlite firefox db using pony
     """
-    _toml_kwargs = ["_from", "update_", "debug"]
+    _toml_kwargs = ["from", "update_", "debug"]
 
     def __call__(self, spec, task_state):
-        db_loc         = exp.to_path(spec.kwargs._from, spec, task_state, indirect=True)
-        update_key     = exp.to_str(spec.kwargs.update_, spec, task_state)
+        db_loc         = FROM_KEY.to_path(spec, task_state)
+        update_key     = UPDATE.redirect(spec)
         debug          = spec.kwargs.on_fail(False).debug()
         try:
             printer.info("Starting Extraction")
@@ -68,49 +74,53 @@ class BookmarksPonyExtraction(Action_p):
 
 class BookmarksLoad(Action_p):
 
-    _toml_kwargs = ["_from", "update_"]
+    _toml_kwargs = ["from", "update_"]
 
     def __call__(self, spec, task_state):
-        load_path = exp.to_path(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
-        data_key  = exp.to_str(spec.kwargs.update_, spec, task_state)
-        printer.info("Loading Bookmarks _from: %s", load_path)
+        load_path = FROM_KEY.to_path(spec, task_state)
+        data_key  = UPDATE.redirect(spec)
+        printer.info("Loading Bookmarks from: %s", load_path)
         result    = BC.BookmarkCollection.read(load_path)
         printer.info("Loaded %s Bookmarks", len(result))
         return { data_key : result }
 
 class BookmarksMerge(Action_p):
 
-    _toml_kwargs = ["_from", "update_"]
+    _toml_kwargs = ["from", "update_"]
 
     def __call__(self, spec, task_state):
-        data_key                                 = exp.to_str(spec.kwargs.update_, spec, task_state)
-        source_data : set[BC.BookmarkCollection] = exp.to_any(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
+        data_key                                 = UPDATE.redirect(spec)
+        source_data : set[BC.BookmarkCollection] = FROM_KEY.to_any(spec, task_state, type_=set)
 
         merged = BC.BookmarkCollection()
         for x in source_data:
-            pre_count = len(merged)
-            merged += x
-            growth = len(merged) - pre_count
-            printer.info("Added %s bookmarks, Total Growth: %s", len(x), growth)
+            match x:
+                case BC.BookmarkCollection():
+                    pre_count = len(merged)
+                    merged += x
+                    growth = len(merged) - pre_count
+                    printer.info("Added %s bookmarks, Total Growth: %s", len(x), growth)
+                case _:
+                    raise doot.errors.DootActionError("Unknown type tried to merge into bookmarks", x)
 
         return { data_key : merged }
 
 class BookmarksToStr(Action_p):
-    _toml_kwargs = ["update_", "_from"]
+    _toml_kwargs = ["update_", "from"]
 
     def __call__(self, spec, task_state):
-        data_key                                      = exp.to_str(spec.kwargs.update_, spec, task_state)
-        source_data : set[BC.BookmarkCollection]      = exp.to_any(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
+        data_key                                      = UPDATE.redirect(spec)
+        source_data : BC.BookmarkCollection           = FROM_KEY.to_any(spec, task_state, type_=BC.BookmarkCollection)
 
         printer.info("Writing Bookmark Collection of size: %s", len(source_data))
         return { data_key : str(source_data) }
 
 
 class BookmarksRemoveDuplicates(Action_p):
-    _toml_kwargs = ["_from"]
+    _toml_kwargs = ["from"]
 
     def __call__(self, spec, task_state):
-        source_data : BC.BookmarkCollection      = exp.to_any(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
+        source_data : BC.BookmarkCollection      = FROM_KEY.to_any(spec, task_state, type_=BC.BookmarkCollection)
 
         pre_count = len(source_data)
         source_data.merge_duplicates()

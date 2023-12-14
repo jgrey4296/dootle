@@ -273,3 +273,27 @@ class FieldAwareLatexDecodingMiddleware(ms.LatexDecodingMiddleware):
             return ms.MiddlewareErrorBlock(block=entry, error=errors)
         else:
             return entry
+
+
+
+class TitleStripMiddleware(BlockMiddleware):
+    """
+      Convert file paths in bibliography to pl.Path's, expanding relative paths according to lib_root
+    """
+
+    @staticmethod
+    def metadata_key():
+        return "jg-title-strip"
+
+    def __init__(self, lib_root:pl.Path=None):
+        super().__init__(True, True)
+        self._lib_root = lib_root
+
+    def transform_entry(self, entry, library):
+        for field in entry.fields:
+            if not "title" in field.key:
+                continue
+
+            field.value = field.value.strip()
+
+        return entry

@@ -52,10 +52,16 @@ NEWLINE_RE                 : Final[re.Pattern] = re.compile(r"\n+\s*")
 default_convert_exclusions : Final[list]       = ["file", "url", "ID", "ENTRYTYPE", "_FROM_CROSSREF", "doi", "crossref", "tags", "look_in", "note", "reference_number", "see_also"]
 convert_exclusions         : Final[list]       = doot.config.on_fail(default_convert_exclusions, list).bibtex.convert_exclusions()
 
-DB_KEY                     : Final[str] = "bib_db"
-STATE_KEY                  : Final[str] = "load_key"
-TEXT_KEY                   : Final[str] = "bib_text"
-YEAR_KEY                   : Final[str] = "current_year"
+##-- expansion keys
+UPDATE      : Final[exp.DootKey] = exp.DootKey("update_")
+YEAR_KEY    : Final[exp.DootKey] = exp.DootKey("year_")
+PARSE_STACK : Final[exp.DootKey] = exp.DootKey("parse_stack")
+WRITE_STACK : Final[exp.DootKey] = exp.DootKey("write_stack")
+FROM_KEY    : Final[exp.DootKey] = exp.DootKey("from")
+DB_KEY      : Final[exp.DootKey] = exp.DootKey("bib_db")
+FORMAT_KEY  : Final[exp.DootKey] = exp.DootKey("bib_format")
+
+##-- end expansion keys
 
 class BibtexInitAction(Action_p):
     """
@@ -66,7 +72,7 @@ class BibtexInitAction(Action_p):
     _toml_kwargs = ["update_"]
 
     def __call__(self, spec, task_state:dict):
-        data_key = exp.to_str(spec.kwargs.on_fail(DB_KEY).update_(), spec, task_state)
+        data_key = UPDATE.redirect(spec, chain=DB_KEY)
         if data_key in task_state:
             return True
 
@@ -81,63 +87,60 @@ class BibtexLoadAction(Action_p):
       or subclass this and override self._entry_transform.
 
       """
-    _toml_kwargs = ["update_", "crossref", "parse_stack", "_from"]
+    _toml_kwargs = ["update_", "crossref", "parse_stack", "from", "year_"]
 
     def __call__(self, spec, task_state:dict):
-            year_key             = exp.to_str(spec.kwargs.on_fail(YEAR_KEY).year_(), spec, task_state, indirect=True)
-            db                   = exp.to_any(spec.kwargs.on_fail(DB_KEY).update_(), spec, task_state, indirect=True)
-            from_val             = exp.to_any(spec.kwargs.on_fail("_from").from_(), spec, task_state, indirect=True)
-            match from_val:
-                case str():
-                    file_list    = [exp.to_path(from_val, spec, task_state)]
-                case pl.Path():
-                    file_list    = [from_val]
-                case list():
-                    file_list    = [exp.to_path(x, spec, state) for x in from_val]
+        year_key    = YEAR_KEY.redirect(spec)
+        db          = UPDATE.to_type(spec, task_state, type_=b.Library|None, chain=DB_KEY)
+        parse_stack = PARSE_STACK.to_type(spec, task_state, type_=list)
+        from_val    = FROM_KEY.to_type(spec, task_state, type_=list|pl.Path|str)
+        match from_val:
+            case str():
+                file_list    = [exp.to_path(from_val, spec, task_state)]
+            case pl.Path():
+                file_list    = [from_val]
+            case list():
+                file_list    = [exp.to_path(x, spec, state) for x in from_val]
 
-            parse_stack          = exp.to_any(spec.kwargs.on_fail("parse_stack").parse_stack_(), spec, task_state, indirect=True)
+        printer.debug("Starting to load %s files", len(file_list))
+        for loc in file_list:
+            printer.info("Loading bibtex: %s", loc)
+            try:
+                lib  = b.parse_file(loc, parse_stack=parse_stack)
+                db.add(lib.entries)
+                printer.info("Loaded: %s entries",  len(lib.entries))
+                failed = lib.failed_blocks
+                if bool(failed):
+                    printer.warn("Parse Failure: %s Blocks Failed in %s", len(failed), loc)
+                    lib.add(failed)
+            except UnicodeDecodeError as err:
+                printer.error("Unicode Error in File: %s, Start: %s", loc, err.start)
+                return False
+            except Exception as err:
+                printer.error("Bibtex File Loading Errored: %s : %s", loc, err)
+                return False
 
+        printer.info("Total DB Entry Count: %s", len(db.entries))
+        if len(file_list) == 1:
+            loc = doot.locs[file_list[0]]
+            printer.info("Current year: %s", loc.stem)
+            return { year_key: loc.stem }
 
-            printer.info("Attempting to load files: %s", [str(x) for x in file_list])
-            for loc in file_list:
-                printer.info("Loading bibtex: %s", loc)
-                try:
-                    lib  = b.parse_file(loc, parse_stack=parse_stack)
-                    db.add(lib.entries)
-                    printer.info("Loaded: %s entries",  len(lib.entries))
-                    failed = lib.failed_blocks
-                    if bool(failed):
-                        printer.warn("Parse Failure: %s Blocks Failed in %s", len(failed), loc)
-                        lib.add(failed)
-                except UnicodeDecodeError as err:
-                    printer.error("Unicode Error in File: %s, Start: %s", loc, err.start)
-                    return False
-                except Exception as err:
-                    printer.error("Bibtex File Loading Errored: %s : %s", loc, err)
-                    return False
-
-            printer.info("Total DB Entry Count: %s", len(db.entries))
-            if len(file_list) == 1:
-                loc = doot.locs[file_list[0]]
-                printer.info("Current year: %s", loc.stem)
-                return { year_key: loc.stem }
-
-            return True
+        return True
 
 
 class BibtexToStrAction(Action_p):
     """
       Convert a bib database to a string for writing to a file.
     """
-    _toml_kwargs = ["from_", "update_", "write_stack", "format"]
+    _toml_kwargs = [FROM_KEY, UPDATE, WRITE_STACK, FORMAT_KEY]
 
     def __call__(self, spec, task_state):
-        data_key                                = exp.to_str(spec.kwargs.on_fail(TEXT_KEY).update_(), spec, task_state)
-        db                                      = exp.to_any(spec.kwargs.on_fail(DB_KEY).from_(), spec, task_state, indirect=True)
-        write_stack                             = exp.to_any(spec.kwargs.on_fail("write_stack").write_stack_(), spec, task_state, indirect=True)
-        format                                  = exp.to_any(spec.kwargs.on_fail("format").format_(), spec, task_state, indirect=True)
-
-        if not isinstance(format, b.BibtexFormat):
+        data_key    = UPDATE.redirect(spec)
+        db          = FROM_KEY.to_type(spec, task_state, type_=b.library.Library|None, chain=DB_KEY)
+        write_stack = WRITE_STACK.to_type(spec, task_state, type_=list)
+        format      = FORMAT_KEY.to_type(spec, task_state, type_=b.BibtexFormat|None)
+        if format is None:
             format                              = b.BibtexFormat()
             format.value_column                 = 15
             format.indent                       = " "

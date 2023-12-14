@@ -49,6 +49,17 @@ try:
 except sh.CommandNotFound as err:
     raise doot.errors.TaskLoadError("godot not found") from err
 
+##-- expansion keys
+SCENE      : Final[exp.DootKey] = exp.DootKey("scene")
+UPDATE     : Final[exp.DootKey] = exp.DootKey("update")
+SCRIPT     : Final[exp.DootKey] = exp.DootKey("script")
+QUIT_AFTER : Final[exp.DootKey] = exp.DootKey("quit_after")
+PATH       : Final[exp.DootKey] = exp.DootKey("path")
+TARGET     : Final[exp.DootKey] = exp.DootKey("target")
+
+##-- end expansion keys
+
+
 @doot.check_protocol
 class GodotProjectCheck(Action_p):
     """
@@ -73,14 +84,15 @@ class GodotTestAction(Action_p):
 @doot.check_protocol
 class GodotRunSceneAction(Action_p):
 
-    _toml_kwargs = ["quit-after", "scene"]
+    _toml_kwargs = [QUIT_AFTER, SCENE]
 
     def __call__(self, spec, task_state):
         try:
             godot_b    = godot.bake("--path", doot.locs.root, _return_cmd=True)
-            scene_file = exp.to_str(spec.kwargs.on_fail("scene", str).scene_(), spec, task_state, indirect=True)
-            if "quit-after" in spec.kwargs:
-                result = godot_b("--quit-after", spec.kwargs.quit_after, str(scene_file))
+            scene_file = SCENE.to_path(spec, task_state)
+            quit_after = QUIT_AFTER.to_type(spec, task_state, type_=int|str|None)
+            if quit_after:
+                result = godot_b("--quit-after", quit_after, str(scene_file))
             else:
                 result = godot_b(str(scene_file))
             printer.info("Godot Result: %s", result.stdout.decode())
@@ -93,18 +105,20 @@ class GodotRunSceneAction(Action_p):
 @doot.check_protocol
 class GodotRunScriptAction(Action_p):
 
-    _toml_kwargs = ["script", "quit-after"]
+    _toml_kwargs = [UPDATE, QUIT_AFTER, SCRIPT]
 
     def __call__(self, spec, task_state):
         try:
             godot_b     = godot.bake("--path", doot.locs.root, _return_cmd=True)
-            script_file = exp.to_str(spec.kwargs.on_fail("script", str).script_(), spec, task_state, as_path=True)
-            if "quit-after" in spec.kwargs:
-                result = godot_b("--quit-after", spec.kwargs.quit_after, "--headless", "--script", str(script_file))
+            date_key    = UPDATE.redirect(spec)
+            script_file = SCRIPT.to_path(spec, task_state)
+            quit_after  = QUIT_AFTER.to_type(spec, task_state, type_=int|str|None)
+            if quit_after:
+                result = godot_b("--quit-after", quit_after, "--headless", "--script", str(script_file))
             else:
                 result = godot_b(str(script_file))
             printer.info("Godot Result: %s", result.stdout.decode())
-            return { "godot_result" : result.stdout.decode() }
+            return { data_key: result.stdout.decode() }
 
         except sh.ErrorReturnCode as err:
             printer.error("Godot Failure: %s", err.stdout.decode())
@@ -113,7 +127,7 @@ class GodotRunScriptAction(Action_p):
 @doot.check_protocol
 class GodotBuildAction(Action_p):
 
-    _toml_kwargs = ["type", "preset", "path"]
+    _toml_kwargs = [PATH, UPDATE, "preset"]
 
     def __call__(self, spec, task_state):
         try:
@@ -125,10 +139,11 @@ class GodotBuildAction(Action_p):
                 case _:
                     raise doot.errors.DootActionError("Bad export type specified, should be `release` or `debug`")
 
-            path_loc = exp.to_path(spec.kwargs.on_fail("path").path_, spec, task_state, indirect=True)
-            result   = godot_b(spec.kwargs.preset, str(path_loc))
+            path_loc = PATH.to_path(spec, task_state)
+            data_key = UPDATE.expand(spec, task_state)
+            result      = godot_b(spec.kwargs.preset, str(path_loc))
             printer.info("Godot Result: %s", result.stdout.decode())
-            return { "godot_result" : result.stdout.decode() }
+            return { data_key: result.stdout.decode() }
 
         except sh.ErrorReturnCode as err:
             printer.error("Godot Failure: %s", err.stdout.decode())
@@ -169,15 +184,16 @@ class GodotNewScriptAction(Action_p):
 @doot.check_protocol
 class GodotCheckScriptsAction(Action_p):
 
-    outState = ["godot_result", "target"]
+    _toml_kwargs = [UPDATE, TARGET]
 
     def __call__(self, spec, task_state):
         try:
-            godot_b = godot.bake("--path", doot.locs.root, "--headless", _return_cmd=True)
-            script_file = exp.to_path(spec.kwargs.on_fail("target", str).target_(), spec, task_state, as_path=True)
-            result = godot_b("--check-only", "--script", str(script_file))
+            godot_b     = godot.bake("--path", doot.locs.root, "--headless", _return_cmd=True)
+            data_key    = UPDATE.expand(spec, task_state)
+            script_file = TARGET.to_path(spec, task_state)
+            result      = godot_b("--check-only", "--script", str(script_file))
             printer.info("Godot Result: %s", result.stdout.decode())
-            return { "godot_result" : result.stdout.decode() }
+            return { data_key : result.stdout.decode() }
 
         except sh.ErrorReturnCode as err:
             printer.error("Godot Failure: %s", err.stdout.decode())
