@@ -50,7 +50,7 @@ class TagFile:
         `key` : `value`
         """
         all_lines = []
-        for key in sorted(self.counts.keys()):
+        for key in sorted(self.counts.keys(), key=lambda x: x.lower()):
             if not bool(self.counts[key]):
                 continue
             all_lines.append(self.sep.join([key, str(self.counts[key])]))
@@ -96,6 +96,10 @@ class TagFile:
 
     def norm_tag(self, tag):
         return self.norm_regex.sub("_", tag.strip())
+
+class NameFile(TagFile):
+    def norm_tag(self, tag):
+        return tag
 
 @dataclass
 class SubstitutionFile(TagFile):

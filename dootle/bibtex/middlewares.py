@@ -41,6 +41,9 @@ import bibtexparser
 import bibtexparser.model as model
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares.middleware import BlockMiddleware
+from bibtexparser.middlewares.names import parse_single_name_into_parts
+
+from dootle.tags.structs import TagFile, NameFile
 
 # BlockMiddleware - subclass for working on blocks
 # LibraryMiddleware - subclass for library wide transformations
@@ -54,7 +57,7 @@ from bibtexparser.middlewares.middleware import BlockMiddleware
 # TODO ISBN formatting
 # TODO pdf metadata application
 # TODO Url way-backer
-
+# TODO &amp; -> \&
 # TODO reporters - author/editor counts, year entries, types, entries with files
 
 
@@ -94,20 +97,29 @@ class ParseTagsMiddleware(BlockMiddleware):
     """
       Read Tag strings, split them into a set
     """
+    _all_tags : TagFile = TagFile()
 
     @staticmethod
     def metadata_key():
         return "jg-tags-in"
 
-    def __init__(self):
+    @staticmethod
+    def tags_to_str():
+        return str(ParseTagsMiddleware._all_tags)
+
+    def __init__(self, clear=False):
         super().__init__(True, True)
+        if clear:
+            ParseTagsMiddleware._all_tags = TagFile()
 
     def transform_entry(self, entry, library):
         for field in entry.fields:
             if field.key == "tags":
-                field.value = field.value.split(",")
+                field.value = set(field.value.split(","))
+                ParseTagsMiddleware._all_tags.update(field.value)
 
         return entry
+
 
 
 
@@ -159,22 +171,22 @@ class WritePathsMiddleware(BlockMiddleware):
 
         return entry
 
-"""
-
-"""
-
-
-
 class MergeLastNameFirstName(ms.MergeNameParts):
     """Middleware to merge a persons name parts (first, von, last, jr) into a single string.
 
     Name fields (e.g. author, editor, translator) are expected to be lists of NameParts.
     """
+    _all_names = NameFile()
 
     # docstr-coverage: inherited
     @staticmethod
     def metadata_key() -> str:
         return "dootle_merge_name_parts"
+
+
+    @staticmethod
+    def names_to_str():
+        return str(MergeLastNameFirstName._all_names)
 
     def _transform_field_value(self, name) -> List[str]:
         if not isinstance(name, list) and all(isinstance(n, NameParts) for n in name):
@@ -200,7 +212,11 @@ class MergeLastNameFirstName(ms.MergeNameParts):
         result.append(" ".join(name.first))
 
 
-        return "".join(result).removesuffix(", ")
+        full_name = "".join(result).removesuffix(", ")
+        MergeLastNameFirstName._all_names.update(full_name)
+        return full_name
+
+
 
 
 
@@ -297,3 +313,20 @@ class TitleStripMiddleware(BlockMiddleware):
             field.value = field.value.strip()
 
         return entry
+
+
+class RelaxedSplitNameParts(ms.SplitNameParts):
+
+    @staticmethod
+    def metadata_key() -> str:
+        return "jg-split_name_parts"
+
+    def _transform_field_value(self, name) -> List[NameParts]:
+        if not isinstance(name, list):
+            raise ValueError(
+                "Expected a list of strings, got {}. "
+                "Make sure to use `SeparateCoAuthors` middleware"
+                "before using `SplitNameParts` middleware".format(name)
+            )
+
+        return [parse_single_name_into_parts(n, strict=False) for n in name]

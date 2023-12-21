@@ -109,10 +109,9 @@ class BibtexLoadAction(Action_p):
                 lib  = b.parse_file(loc, parse_stack=parse_stack)
                 db.add(lib.entries)
                 printer.info("Loaded: %s entries",  len(lib.entries))
-                failed = lib.failed_blocks
-                if bool(failed):
-                    printer.warn("Parse Failure: %s Blocks Failed in %s", len(failed), loc)
-                    lib.add(failed)
+                for block in lib.failed_blocks:
+                    printer.error("Parse Failure: %s", block.error)
+                    lib.add(block)
             except UnicodeDecodeError as err:
                 printer.error("Unicode Error in File: %s, Start: %s", loc, err.start)
                 return False

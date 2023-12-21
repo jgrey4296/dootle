@@ -145,7 +145,7 @@ class AndroidPull(Action_p):
 
 @doot.check_protocol
 class AndroidInstall(Action_p):
-    _toml_kwargs = ["package", "transport"_]
+    _toml_kwargs = ["package", "transport"]
 
     def __call__(self, spec, state):
         try:

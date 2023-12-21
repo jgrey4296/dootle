@@ -49,7 +49,7 @@ printer = logmod.getLogger("doot._printer")
 
 ##-- expansion keys
 FROM_KEY = exp.DootKey("from")
-UPDATE   = exp.DootKEy("update_")
+UPDATE   = exp.DootKey("update_")
 
 ##-- end expansion keys
 

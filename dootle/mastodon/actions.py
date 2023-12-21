@@ -51,7 +51,7 @@ TOOT_SIZE            : Final[int]                   = doot.config.on_fail(250, i
 TOOT_IMAGE_SIZE      : Final[str]                   = doot.config.on_fail(8_000_000, int).mastodon.image_size()
 RESOLUTION_BLACKLIST : Final[list]                  = doot.locs.image_blacklist
 RESOLUTION_RE        : Final[re.Pattern]            = re.compile(r".*?([0-9]+x[0-9]+)")
-TOOT_IMAGE_TYPES     : Final[list[str]]             = [".jpg", ".png", ".gif"])
+TOOT_IMAGE_TYPES     : Final[list[str]]             = [".jpg", ".png", ".gif"]
 
 ##-- expansion keys
 INSTANCE_KEY           : Final[exp.DootKey]                        = exp.DootKey("mastodon")
