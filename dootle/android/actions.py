@@ -42,7 +42,7 @@ printer = logmod.getLogger("doot._printer")
 import sh
 import doot
 import doot.errors
-from doot.utils.string_expand import expand_str
+import doot.utils.expansion as exp
 from doot._abstract import Action_p
 
 try:
@@ -52,16 +52,25 @@ except sh.CommandNotFound as err:
 
 TRANSPORT_RE = re.compile("transport_id:([0-9])")
 
+##-- expansion keys
+TRANSPORT  : Final[exp.DootKey] = exp.DootKey("transport")
+LOCAL      : Final[exp.DootKey] = exp.DootKey("local")
+REMOTE     : Final[exp.DootKey] = exp.DootKey("remote")
+PACKAGE    : Final[exp.DootKey] = exp.DootKey("package")
+UPDATE     : Final[exp.DootKey] = exp.DootKey("update_")
+
+##-- end expansion keys
+
 @doot.check_protocol
 class AndroidRunning(Action_p):
     """
       Start the adb server and connect to the device.
       internally identifies the transport id and adds it to the task state
     """
-    _toml_kwargs = ["update_"]
+    _toml_kwargs = ["update_", "transport"]
 
     def __call__(self, spec, state):
-        data_key = expand_str(spec.kwargs.on_fail("transport").update_(), spec, task_state)
+        data_key = TRANSPORT.redirect(spec)
         try:
             adb("start-server", _bg=True)
             transport = self._get_transport_id()
@@ -97,15 +106,15 @@ class AndroidRunning(Action_p):
 
 @doot.check_protocol
 class AndroidPush(Action_p):
-    _toml_kwargs = ["local", "remote", "from_"]
+    _toml_kwargs = ["local", "remote", "transport"]
     inState      = ["android_root"]
 
     def __call__(self, spec, state):
         try:
-            from_key  = expand_str(spec.kwargs.on_fail("transport").from_(), spec, task_state)
-            push      = adb.bake("-t", state[from_key], "push", "--sync", _return_cmd=True)
-            local     = expand_str(spec.kwargs.local, spec, state, as_path=True)
-            remote    = expand_str(spec.kwargs.remote, spec, state, as_path=True)
+            transport   = TRANSPORT.expand(spec, state)
+            push        = adb.bake("-t", transport, "push", "--sync", _return_cmd=True)
+            local       = LOCAL.to_path(spec, state)
+            remote      = REMOTE.expand(spec, state)
             printer.info("ADB Push: %s -> %s", local, remote)
             result = push(str(local), str(remote))
         except sh.ErrorReturnCode as err:
@@ -115,16 +124,16 @@ class AndroidPush(Action_p):
 
 @doot.check_protocol
 class AndroidPull(Action_p):
-    _toml_kwargs = ["local", "remote", "from_"]
+    _toml_kwargs = ["local", "remote", "transport"]
     inState      = ["android_root"]
 
     def __call__(self, spec, state):
-        result = None
-        from_key  = expand_str(spec.kwargs.on_fail("transport").from_(), spec, task_state)
+        result     = None
+        transport  = TRANSPORT.expand(spec, state)
         try:
-            pull   = adb.bake("-t", state[from_key], "pull", "-a", _return_cmd=True)
-            local  = expand_str(spec.kwargs.local, spec, state, as_path=True)
-            remote = expand_str(spec.kwargs.remote, spec, state, as_path=True)
+            pull   = adb.bake("-t", transport, "pull", "-a", _return_cmd=True)
+            local  = LOCAL.to_path(spec, state)
+            remote = REMOTE.to_path(spec, state)
             printer.info("ADB Pull: %s -> %s", remote, local)
             # TODO get list of local files, list of remote files, diff, pull those lacking.
 
@@ -136,13 +145,13 @@ class AndroidPull(Action_p):
 
 @doot.check_protocol
 class AndroidInstall(Action_p):
-    _toml_kwargs = ["package", "from_"]
+    _toml_kwargs = ["package", "transport"]
 
     def __call__(self, spec, state):
         try:
-            from_key = expand_str(spec.kwargs.on_fail("transport").from_(), spec, task_state)
-            target   = expand_str(spec.kwargs.package, spec, task_state, as_path=True)
-            install  = adb.bake("-t", state[from_key], "install", _return_cmd=True)
+            transport = TRANSPORT.expand(spec, state)
+            target   = PACKAGE.to_path(spec, state)
+            install  = adb.bake("-t", transport, "install", _return_cmd=True)
             printer.info("ADB Installing: %s", target)
             result = install(str(target))
         except sh.ErrorReturnCode as err:
@@ -155,14 +164,14 @@ class AndroidInstall(Action_p):
 @doot.check_protocol
 class AndroidRemoteCmd(Action_p):
     inState      = ["transport", "android_root"]
-    _toml_kwargs = ["cmd", "update_"]
+    _toml_kwargs = ["cmd", "update_", "transport"]
 
     def __call__(self, spec, state):
         try:
-            from_key = expand_str(spec.kwargs.on_fail("transport").from_(), spec, task_state)
-            data_key = expand_str(spec.kwargs.on_fail("adb_result").update_(), spec, task_state)
-            cmd    = adb.bake("-t", state[from_key], "shell", "", _return_cmd=True)
-            args   = [expand_str(x, spec, state) for x in spec.args]
+            transport = TRANSPORT.expand(spec, state)
+            data_key  = UPDATE.redirect(spec)
+            cmd       = adb.bake("-t", transport, "shell", "", _return_cmd=True)
+            args      = [exp.to_str(x, spec, state) for x in spec.args]
             printer.info("ADB Cmd: %s : %s", spec.kwargs.cmd, args)
             result = cmd(spec.kwargs.cmd, *args)
             return { data_key : result.stdout.decode() }

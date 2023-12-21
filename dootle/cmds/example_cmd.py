@@ -33,7 +33,7 @@ printer = logmod.getLogger("doot._printer")
 
 import doot
 from doot._abstract import Command_i
-from doot.structs import TaskStub, DootStructuredName
+from doot.structs import TaskStub
 from collections import defaultdict
 
 ##-- data

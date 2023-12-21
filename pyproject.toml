@@ -1,6 +1,6 @@
 [project]
 name            = "dootle"
-version         = "0.1.0"
+version         = "0.1.2"
 description     = "A Library of extensions for Doot task running"
 readme          = "README.md"
 requires-python = ">=3.11"
@@ -15,12 +15,13 @@ classifiers     = [
 ]
 
 dependencies   = [
-    "doot @ git+https://github.com/jgrey4296/doot.git",
+    "doot",
     "itemadapter",
     "w3lib",
     "pony",
     "scrapy",
-    "mastodon.py>=1.8"
+    "mastodon.py>=1.8",
+    "bibtexparser>=2.0.0b4",
 ]
 
 [project.optional-dependencies]
@@ -87,3 +88,22 @@ log_level     = "DEBUG"
 log_cli_level = "DEBUG"
 
 ##-- end pytest
+
+[tool.bumpver]
+current_version    = "0.1.2"
+version_pattern    = "MAJOR.MINOR.PATCH"
+commit_message     = "[bump]: version {old_version} -> {new_version}"
+tag_message        = "{new_version}"
+tag_scope          = "default"
+# commit             = true
+# tag                = true
+# pre_commit_hook  = ""
+# post_commit_hook = ""
+# push             = true
+
+[tool.bumpver.file_patterns]
+"pyproject.toml"   = [
+                   '^version\s+=\s+"{version}"',
+                   '^current_version\s+=\s+"{version}"'
+]
+"dootle/__init__.py" = ['^__version__\s+=\s+"{version}"']

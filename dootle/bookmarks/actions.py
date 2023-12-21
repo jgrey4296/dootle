@@ -40,22 +40,28 @@ logging = logmod.getLogger(__name__)
 import doot
 import doot.errors
 from doot._abstract import Action_p
-from doot.utils.string_expand import expand_str, expand_set, expand_to_obj, expand_key
+import doot.utils.expansion as exp
 
 from dootle.bookmarks.db_fns import extract
 from dootle.bookmarks import structs as BC
 
 printer = logmod.getLogger("doot._printer")
 
+##-- expansion keys
+FROM_KEY = exp.DootKey("from")
+UPDATE   = exp.DootKey("update_")
+
+##-- end expansion keys
+
 class BookmarksPonyExtraction(Action_p):
     """
-      extract bookmarks _from a sqlite firefox db using pony
+      extract bookmarks from a sqlite firefox db using pony
     """
-    _toml_kwargs = ["_from", "update_", "debug"]
+    _toml_kwargs = ["from", "update_", "debug"]
 
     def __call__(self, spec, task_state):
-        db_loc         = expand_str(spec.kwargs._from, spec, task_state)
-        update_key     = expand_str(spec.kwargs.update_, spec, task_state)
+        db_loc         = FROM_KEY.to_path(spec, task_state)
+        update_key     = UPDATE.redirect(spec)
         debug          = spec.kwargs.on_fail(False).debug()
         try:
             printer.info("Starting Extraction")
@@ -68,49 +74,53 @@ class BookmarksPonyExtraction(Action_p):
 
 class BookmarksLoad(Action_p):
 
-    _toml_kwargs = ["_from", "update_"]
+    _toml_kwargs = ["from", "update_"]
 
     def __call__(self, spec, task_state):
-        load_path = expand_str(spec.kwargs._from, spec, task_state)
-        data_key  = expand_str(spec.kwargs.update_, spec, task_state)
-        printer.info("Loading Bookmarks _from: %s", load_path)
+        load_path = FROM_KEY.to_path(spec, task_state)
+        data_key  = UPDATE.redirect(spec)
+        printer.info("Loading Bookmarks from: %s", load_path)
         result    = BC.BookmarkCollection.read(load_path)
         printer.info("Loaded %s Bookmarks", len(result))
         return { data_key : result }
 
 class BookmarksMerge(Action_p):
 
-    _toml_kwargs = ["from_", "update_"]
+    _toml_kwargs = ["from", "update_"]
 
     def __call__(self, spec, task_state):
-        data_key                                 = expand_str(spec.kwargs.update_, spec, task_state)
-        source_data : set[BC.BookmarkCollection] = expand_set(spec.kwargs.from_, spec, task_state)
+        data_key                                 = UPDATE.redirect(spec)
+        source_data : set[BC.BookmarkCollection] = FROM_KEY.to_any(spec, task_state, type_=set)
 
         merged = BC.BookmarkCollection()
         for x in source_data:
-            pre_count = len(merged)
-            merged += x
-            growth = len(merged) - pre_count
-            printer.info("Added %s bookmarks, Total Growth: %s", len(x), growth)
+            match x:
+                case BC.BookmarkCollection():
+                    pre_count = len(merged)
+                    merged += x
+                    growth = len(merged) - pre_count
+                    printer.info("Added %s bookmarks, Total Growth: %s", len(x), growth)
+                case _:
+                    raise doot.errors.DootActionError("Unknown type tried to merge into bookmarks", x)
 
         return { data_key : merged }
 
 class BookmarksToStr(Action_p):
-    _toml_kwargs = ["update_", "from_"]
+    _toml_kwargs = ["update_", "from"]
 
     def __call__(self, spec, task_state):
-        data_key                                      = expand_str(spec.kwargs.update_, spec, task_state)
-        source_data : set[BC.BookmarkCollection]      = expand_to_obj(spec.kwargs.from_, spec, task_state)
+        data_key                                      = UPDATE.redirect(spec)
+        source_data : BC.BookmarkCollection           = FROM_KEY.to_any(spec, task_state, type_=BC.BookmarkCollection)
 
         printer.info("Writing Bookmark Collection of size: %s", len(source_data))
         return { data_key : str(source_data) }
 
 
 class BookmarksRemoveDuplicates(Action_p):
-    _toml_kwargs = ["from_"]
+    _toml_kwargs = ["from"]
 
     def __call__(self, spec, task_state):
-        source_data : BC.BookmarkCollection      = expand_to_obj(spec.kwargs.from_, spec, task_state)
+        source_data : BC.BookmarkCollection      = FROM_KEY.to_any(spec, task_state, type_=BC.BookmarkCollection)
 
         pre_count = len(source_data)
         source_data.merge_duplicates()
