@@ -41,7 +41,7 @@ import bibtexparser
 import bibtexparser.model as model
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares.middleware import BlockMiddleware
-from bibtexparser.middlewares.names import parse_single_name_into_parts
+from bibtexparser.middlewares.names import parse_single_name_into_parts, NameParts
 
 from dootle.tags.structs import TagFile, NameFile
 
@@ -232,21 +232,24 @@ class FieldAwareLatexEncodingMiddleware(ms.LatexEncodingMiddleware):
         for field in entry.fields:
             if any(x in field.key for x in self._skip_fields):
                 continue
-            if isinstance(field.value, str):
-                field.value, e = self._transform_python_value_string(field.value)
-                errors.append(e)
-            elif isinstance(field.value, ms.NameParts):
-                field.value.first = self._transform_all_strings(
-                    field.value.first, errors
-                )
-                field.value.last = self._transform_all_strings(field.value.last, errors)
-                field.value.von = self._transform_all_strings(field.value.von, errors)
-                field.value.jr = self._transform_all_strings(field.value.jr, errors)
-            else:
-                logging.info(
-                    f" [{self.metadata_key()}] Cannot python-str transform field {field.key}"
-                    f" with value type {type(field.value)}"
-                )
+            match field.value:
+                case str() as val if val.startswith("{"):
+                    value, e = self._transform_python_value_string(val[1:-1])
+                    errors.append(e)
+                    field.value = "".join(["{", value,"}"])
+                case str() as val:
+                    field.value, e = self._transform_python_value_string(val)
+                    errors.append(e)
+                case ms.NameParts() as val:
+                    field.value.first = self._transform_all_strings(val.first, errors)
+                    field.value.last  = self._transform_all_strings(field.value.last, errors)
+                    field.value.von   = self._transform_all_strings(field.value.von, errors)
+                    field.value.jr    = self._transform_all_strings(field.value.jr, errors)
+                case _:
+                    logging.info(
+                        f" [{self.metadata_key()}] Cannot python-str transform field {field.key}"
+                        f" with value type {type(field.value)}"
+                    )
 
         errors = [e for e in errors if e != ""]
         if len(errors) > 0:
@@ -294,7 +297,7 @@ class FieldAwareLatexDecodingMiddleware(ms.LatexDecodingMiddleware):
 
 class TitleStripMiddleware(BlockMiddleware):
     """
-      Convert file paths in bibliography to pl.Path's, expanding relative paths according to lib_root
+      strip whitespace from the title
     """
 
     @staticmethod
@@ -328,5 +331,9 @@ class RelaxedSplitNameParts(ms.SplitNameParts):
                 "Make sure to use `SeparateCoAuthors` middleware"
                 "before using `SplitNameParts` middleware".format(name)
             )
+        result = []
+        for n in name:
+            wrapped = n.startswith("{") and n.endswith("}")
+            result.append(parse_single_name_into_parts(n, strict=False))
 
-        return [parse_single_name_into_parts(n, strict=False) for n in name]
+        return result

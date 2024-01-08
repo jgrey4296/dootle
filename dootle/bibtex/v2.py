@@ -93,15 +93,8 @@ class BibtexLoadAction(Action_p):
         year_key    = YEAR_KEY.redirect(spec)
         db          = UPDATE.to_type(spec, task_state, type_=b.Library|None, chain=DB_KEY)
         parse_stack = PARSE_STACK.to_type(spec, task_state, type_=list)
-        from_val    = FROM_KEY.redirect_multi(spec, task_state)
-        for val in from_val:
-            match val.to_type(spec, task_state):
-                case str() as s:
-                    file_list    = [DootKey.make(s).to_path(spec, task_state)]
-                case pl.Path():
-                    file_list    = [from_val]
-                case list():
-                    file_list    = [DootKey.make(x).to_path(spec, state) for x in from_val]
+        from_keys   = FROM_KEY.redirect_multi(spec)
+        file_list   = [x.to_path(spec, task_state) for x in from_keys]
 
         printer.debug("Starting to load %s files", len(file_list))
         for loc in file_list:
