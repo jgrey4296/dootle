@@ -40,16 +40,16 @@ logging = logmod.getLogger(__name__)
 import doot
 import doot.errors
 from doot._abstract import Action_p
-import doot.utils.expansion as exp
-
-from dootle.bookmarks.db_fns import extract
+from doot.structs import DootKey
+from dootle.bookmarks.pony_fns import extract as pony_extract
+from dootle.bookmarks.alchemy_fns import extract as alc_extract
 from dootle.bookmarks import structs as BC
 
 printer = logmod.getLogger("doot._printer")
 
 ##-- expansion keys
-FROM_KEY = exp.DootKey("from")
-UPDATE   = exp.DootKey("update_")
+FROM_KEY = DootKey("from")
+UPDATE   = DootKey("update_")
 
 ##-- end expansion keys
 
@@ -65,7 +65,25 @@ class BookmarksPonyExtraction(Action_p):
         debug          = spec.kwargs.on_fail(False).debug()
         try:
             printer.info("Starting Extraction")
-            result       = extract(db_loc, debug=debug)
+            result       = pony_extract(db_loc, debug=debug)
+            printer.info("Extraction Complete: %s results", len(result))
+            return { update_key : result }
+        except Exception as err:
+            raise doot.errors.DootActionError("Pony Errored: %s", str(err)) from err
+
+class BookmarksAlchemyExtraction(Action_p):
+    """
+      extract bookmarks from a sqlite firefox db using pony
+    """
+    _toml_kwargs = ["from", "update_", "debug"]
+
+    def __call__(self, spec, task_state):
+        db_loc         = FROM_KEY.to_path(spec, task_state)
+        update_key     = UPDATE.redirect(spec)
+        debug          = spec.kwargs.on_fail(False).debug()
+        try:
+            printer.info("Starting Extraction")
+            result       = alc_extract(db_loc, debug=debug)
             printer.info("Extraction Complete: %s results", len(result))
             return { update_key : result }
         except Exception as err:
