@@ -42,7 +42,7 @@ import doot
 import doot.errors
 from doot._abstract import Action_p
 from doot.enums import ActionResponseEnum as ActRE
-import doot.utils.expansion as exp
+from doot.structs import DootKey
 
 try:
     godot = sh.Command("godot4")
@@ -50,12 +50,12 @@ except sh.CommandNotFound as err:
     raise doot.errors.TaskLoadError("godot not found") from err
 
 ##-- expansion keys
-SCENE      : Final[exp.DootKey] = exp.DootKey("scene")
-UPDATE     : Final[exp.DootKey] = exp.DootKey("update")
-SCRIPT     : Final[exp.DootKey] = exp.DootKey("script")
-QUIT_AFTER : Final[exp.DootKey] = exp.DootKey("quit_after")
-PATH       : Final[exp.DootKey] = exp.DootKey("path")
-TARGET     : Final[exp.DootKey] = exp.DootKey("target")
+SCENE      : Final[DootKey] = DootKey.make("scene")
+UPDATE     : Final[DootKey] = DootKey.make("update")
+SCRIPT     : Final[DootKey] = DootKey.make("script")
+QUIT_AFTER : Final[DootKey] = DootKey.make("quit_after")
+PATH       : Final[DootKey] = DootKey.make("path")
+TARGET     : Final[DootKey] = DootKey.make("target")
 
 ##-- end expansion keys
 

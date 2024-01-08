@@ -44,7 +44,7 @@ from bibtexparser.middlewares.middleware import BlockMiddleware
 
 import doot
 from doot._abstract.task import Action_p
-import doot.utils.expansion as exp
+from doot.structs import DootKey
 from dootle.bibtex import middlewares as dmids
 
 NEWLINE_RE                 : Final[re.Pattern] = re.compile(r"\n+\s*")
@@ -53,13 +53,13 @@ default_convert_exclusions : Final[list]       = ["file", "url", "ID", "ENTRYTYP
 convert_exclusions         : Final[list]       = doot.config.on_fail(default_convert_exclusions, list).bibtex.convert_exclusions()
 
 ##-- expansion keys
-UPDATE      : Final[exp.DootKey] = exp.DootKey("update_")
-YEAR_KEY    : Final[exp.DootKey] = exp.DootKey("year_")
-PARSE_STACK : Final[exp.DootKey] = exp.DootKey("parse_stack")
-WRITE_STACK : Final[exp.DootKey] = exp.DootKey("write_stack")
-FROM_KEY    : Final[exp.DootKey] = exp.DootKey("from")
-DB_KEY      : Final[exp.DootKey] = exp.DootKey("bib_db")
-FORMAT_KEY  : Final[exp.DootKey] = exp.DootKey("bib_format")
+UPDATE      : Final[DootKey] = DootKey.make("update_")
+YEAR_KEY    : Final[DootKey] = DootKey.make("year_")
+PARSE_STACK : Final[DootKey] = DootKey.make("parse_stack")
+WRITE_STACK : Final[DootKey] = DootKey.make("write_stack")
+FROM_KEY    : Final[DootKey] = DootKey.make("from")
+DB_KEY      : Final[DootKey] = DootKey.make("bib_db")
+FORMAT_KEY  : Final[DootKey] = DootKey.make("bib_format")
 
 ##-- end expansion keys
 
@@ -69,7 +69,7 @@ class BibtexInitAction(Action_p):
 
       pass a callable as the spec.args value to use instead of _entry_transform
     """
-    _toml_kwargs = ["update_"]
+    _toml_kwargs = [UPDATE]
 
     def __call__(self, spec, task_state:dict):
         data_key = UPDATE.redirect(spec, chain=DB_KEY)
@@ -87,20 +87,21 @@ class BibtexLoadAction(Action_p):
       or subclass this and override self._entry_transform.
 
       """
-    _toml_kwargs = ["update_", "crossref", "parse_stack", "from", "year_"]
+    _toml_kwargs = [UPDATE, PARSE_STACK, FROM_KEY, YEAR_KEY, "crossref"]
 
     def __call__(self, spec, task_state:dict):
         year_key    = YEAR_KEY.redirect(spec)
         db          = UPDATE.to_type(spec, task_state, type_=b.Library|None, chain=DB_KEY)
         parse_stack = PARSE_STACK.to_type(spec, task_state, type_=list)
-        from_val    = FROM_KEY.to_type(spec, task_state, type_=list|pl.Path|str)
-        match from_val:
-            case str():
-                file_list    = [exp.to_path(from_val, spec, task_state)]
-            case pl.Path():
-                file_list    = [from_val]
-            case list():
-                file_list    = [exp.to_path(x, spec, state) for x in from_val]
+        from_val    = FROM_KEY.redirect_multi(spec, task_state)
+        for val in from_val:
+            match val.to_type(spec, task_state):
+                case str() as s:
+                    file_list    = [DootKey.make(s).to_path(spec, task_state)]
+                case pl.Path():
+                    file_list    = [from_val]
+                case list():
+                    file_list    = [DootKey.make(x).to_path(spec, state) for x in from_val]
 
         printer.debug("Starting to load %s files", len(file_list))
         for loc in file_list:

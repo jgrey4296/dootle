@@ -45,7 +45,7 @@ import doot
 import doot.errors
 from doot._abstract import Task_i
 from doot.structs import DootActionSpec
-import doot.utils.expansion as exp
+from doot.structs import DootKey
 
 TOOT_SIZE            : Final[int]                   = doot.config.on_fail(250, int).mastodon.toot_size()
 TOOT_IMAGE_SIZE      : Final[str]                   = doot.config.on_fail(8_000_000, int).mastodon.image_size()
@@ -54,13 +54,13 @@ RESOLUTION_RE        : Final[re.Pattern]            = re.compile(r".*?([0-9]+x[0
 TOOT_IMAGE_TYPES     : Final[list[str]]             = [".jpg", ".png", ".gif"]
 
 ##-- expansion keys
-INSTANCE_KEY           : Final[exp.DootKey]                        = exp.DootKey("mastodon")
-TEXT_KEY               : Final[exp.DootKey]                        = exp.DootKey("toot_text")
-IMAGE_KEY              : Final[exp.DootKey]                        = exp.DootKey("toot_image")
-IMAGE_DESC             : Final[exp.DootKey]                        = exp.DootKey("toot_desc")
-UPDATE                 : Final[exp.DootKey]                        = exp.DootKey("update_")
-FROM_KEY               : Final[exp.DootKey]                        = exp.DootKey("from")
-SECRETS                : Final[exp.DootKey]                        = exp.DootKey("mastodon_secrets")
+INSTANCE_KEY           : Final[DootKey]                        = DootKey.make("mastodon")
+TEXT_KEY               : Final[DootKey]                        = DootKey.make("toot_text")
+IMAGE_KEY              : Final[DootKey]                        = DootKey.make("toot_image")
+IMAGE_DESC             : Final[DootKey]                        = DootKey.make("toot_desc")
+UPDATE                 : Final[DootKey]                        = DootKey.make("update_")
+FROM_KEY               : Final[DootKey]                        = DootKey.make("from")
+SECRETS                : Final[DootKey]                        = DootKey.make("mastodon_secrets")
 ##-- end expansion keys
 
 

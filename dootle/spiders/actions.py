@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 
-
 See EOF for license/metadata/notes as applicable
 """
 
@@ -42,6 +41,10 @@ import doot
 import doot.errors
 from doot._abstract import Action_p
 from doot.mixins.importer import ImporterMixin
+from doot.structs import DootKey, DootCodeReference
+
+SPIDER  = DootKey.make("spider")
+CRAWLER = DootKey.make("crawler")
 
 class RunSpider(Action_p, ImporterMixin):
     """
@@ -49,17 +52,12 @@ class RunSpider(Action_p, ImporterMixin):
     """
 
     def __call__(self, spec, task_state):
-        spider_class = self.import_class(spec.kwargs.spider)
-        crawler      = task_state['_crawler']
+        spider_ref   = DootCodeReference.from_str(SPIDER.expand(spec, task_state))
+        spider_class = spider_ref.try_import()
+        crawler      = CRAWLER.to_type(spec, task_state)
+
         deferred     = crawler.crawl(spider_class)
+
         deferred.addCallback(lambda _: printer.warning("Crawl Complete"))
         printer.info("Crawler Started: %s", deferred)
         return deferred
-
-
-
-
-"""
-
-
-"""
