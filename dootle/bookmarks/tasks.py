@@ -32,14 +32,14 @@ logging = logmod.getLogger(__name__)
 
 import doot
 from doot.control import dir_walker
-from doot.control.tasker import DootTasker
+from doot.control.job import DootJob
 from dootle.utils.bookmarks import database_fns as db_fns
 from dootle.utils.formats import bookmarks as BC
 
 pl_expand     : Final[Callable] = lambda x: pl.Path(x).expanduser().resolve()
 database_name : Final[str]      = doot.config.on_fail("places.sqlite", str).tools.doot.bookmarks.database_name()
 
-class BookmarksUpdate(DootTasker):
+class BookmarksUpdate(DootJob):
     """
     ( -> ) copy firefox bookmarks databases, extract, merge with bookmarks file
     """
@@ -97,7 +97,7 @@ class BookmarksUpdate(DootTasker):
             self.total.merge_duplicates()
         logging.info(f"Bookmark Count: {original_amnt} -> {len(self.total)}")
 
-class BookmarksCleaner(DootTasker):
+class BookmarksCleaner(DootJob):
     """
     clean bookmarks file, removing duplicates, stripping urls
     """
@@ -124,7 +124,7 @@ class BookmarksCleaner(DootTasker):
         self.total = BC.BookmarkCollection.read(fpath)
         self.total.merge_duplicate()
 
-class TODOBookmarksSplit(DootTasker):
+class TODOBookmarksSplit(DootJob):
     """
     TODO Create several bookmarks files of selections
     """

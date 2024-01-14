@@ -33,11 +33,11 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import doot
-from doot.task.base_tasker import DootTasker
+from doot.task.base_job import DootJob
 from doot.task import dir_walker
 from dootle.mixins.task import android
 from doot.mixins.task.batch import BatchMixin
-from doot.mixins.tasker.targeted import TargetedMixin
+from doot.mixins.job.targeted import TargetedMixin
 
 
 android_base : Final[str] = doot.config.on_fail("/storage/6331-3162", str).tools.doot.android.base(wrapper=pl.Path)
@@ -118,7 +118,7 @@ class ADBUpload(android.ADBMixin, BatchMixin, TargetedMixin, dir_walker.DootDirW
 
         (self.locs.build / "adb_push.report").write_text("\n".join(report))
 
-class ADBDownload(android.ADBMixin, DootTasker, BatchMixin):
+class ADBDownload(android.ADBMixin, DootJob, BatchMixin):
     """
     pull files from device to local
     """
@@ -213,7 +213,7 @@ class ADBDownload(android.ADBMixin, DootTasker, BatchMixin):
         targets = [x.strip() for x in cache.read_text().split("\n")]
         return { 'remote_files': list(filter(bool, targets)) }
 
-class ADBDelete(android.ADBMixin, DootTasker, BatchMixin):
+class ADBDelete(android.ADBMixin, DootJob, BatchMixin):
     """
     delete all files specified in the provided list
     """

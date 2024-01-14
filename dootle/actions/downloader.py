@@ -9,18 +9,15 @@ from os.path import split
 from typing import (Any, Callable, ClassVar, Dict, Final, Generic, Iterable,
                     Iterator, List, Mapping, Match, MutableMapping, Optional,
                     Sequence, Set, Tuple, TypeVar, Union, cast)
-
-import doot
-import requests
-from doot import tasker
-
 ##-- end imports
 
 logging = logmod.getLogger(__name__)
 printer = logmod.getLogger("doot._printer")
 
+import requests
 import doot
 import doot.errors
+from doot import job
 from doot._abstract import Action_p
 
 CHECK_AMNT    : Final[int] = doot.config.on_fail(150, int).downloader.check_amnt()

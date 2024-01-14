@@ -64,7 +64,7 @@ import doot
 import doot.constants
 import doot.errors
 from doot.enums import ReportEnum, ActionResponseEnum as ActRE
-from doot._abstract import Tasker_i, Task_i, FailPolicy_p
+from doot._abstract import Job_i, Task_i, FailPolicy_p
 from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i, ReportLine_i, Action_p
 from doot.utils.signal_handler import SignalHandler
 from doot.structs import DootTaskSpec, DootActionSpec
@@ -134,8 +134,8 @@ class DootleReactorRunner(TaskRunner_i):
 
         self.step += 1
         match task:
-            case Tasker_i():
-                return defer.maybeDeferred(self._expand_tasker, task)
+            case Job_i():
+                return defer.maybeDeferred(self._expand_job, task)
             case Task_i():
                 return defer.maybeDeferred(self._execute_task, task)
             case _:
@@ -184,19 +184,19 @@ class DootleReactorRunner(TaskRunner_i):
 
 
 
-    def _expand_tasker(self, tasker:Tasker_i):
-        """ turn a tasker into all of its tasks, including teardowns """
-        logmod.debug("-- Expanding Tasker %s: %s", self.step, tasker.name)
-        self._set_print_level(tasker.spec.print_levels.on_fail(head_level).head())
-        printer.info("---- Tasker %s: %s", self.step, tasker.name, extra={"colour":"magenta"})
-        if bool(tasker.spec.actions):
-            printer.warning("-- Tasker %s: Actions were found in tasker spec, but taskers don't _run_next_task actions")
+    def _expand_job(self, job:Job_i):
+        """ turn a job into all of its tasks, including teardowns """
+        logmod.debug("-- Expanding Job %s: %s", self.step, job.name)
+        self._set_print_level(job.spec.print_levels.on_fail(head_level).head())
+        printer.info("---- Job %s: %s", self.step, job.name, extra={"colour":"magenta"})
+        if bool(job.spec.actions):
+            printer.warning("-- Job %s: Actions were found in job spec, but jobs don't _run_next_task actions")
         count = 0
-        self._set_print_level(tasker.spec.print_levels.on_fail(build_level).build())
-        for task in tasker.build():
+        self._set_print_level(job.spec.print_levels.on_fail(build_level).build())
+        for task in job.build():
             match task:
-                case Tasker_i():
-                    printer.warning("Taskers probably shouldn't build taskers: %s : %s", tasker.name, task.name)
+                case Job_i():
+                    printer.warning("Jobs probably shouldn't build jobs: %s : %s", job.name, task.name)
                     self.tracker.add_task(task, no_root_connection=True)
                     self.tracker.queue_task(task.name)
                 case Task_i():
@@ -206,12 +206,12 @@ class DootleReactorRunner(TaskRunner_i):
                     self.tracker.add_task(task, no_root_connection=True)
                     self.tracker.queue_task(task.name)
                 case _:
-                    raise doot.errors.DootTaskError("Tasker %s Built a Bad Value: %s", tasker.name, task, task=tasker.spec)
+                    raise doot.errors.DootTaskError("Job %s Built a Bad Value: %s", job.name, task, task=job.spec)
 
             count += 1
 
-        logmod.debug("-- Tasker %s Expansion produced: %s tasks", tasker.name, count)
-        return tasker
+        logmod.debug("-- Job %s Expansion produced: %s tasks", job.name, count)
+        return job
 
     def _execute_task(self, task:Task_i) -> defer.Deferred[Task]:
         """ execute a single task's actions """
