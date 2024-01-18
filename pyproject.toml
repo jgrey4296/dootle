@@ -22,6 +22,8 @@ dependencies   = [
     "scrapy",
     "mastodon.py>=1.8",
     "bibtexparser>=2.0.0b4",
+    "numpy",
+    "networkx",
 ]
 
 [project.optional-dependencies]
@@ -30,7 +32,7 @@ test     = ["pytest > 7.0" ]
 image    = ["Pillow"]
 net      = ["Requests", "beautifulsoup4"]
 bibtex   = ["bibtexparser", "pylatexenc"]
-data     = ["PyYAML", "pandas", "numpy", "scikit-learn", "xsdata", "networkx"]
+data     = ["PyYAML", "pandas", "scikit-learn", "xsdata"]
 visual   = ["matplotlib", "seaborn", "wordcloud"]
 pdf      = ["pdfrw", "pypandoc"]
 
@@ -51,6 +53,9 @@ changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md" # TODO
 ##-- entry-points
 [project.entry-points."doot.plugins.command"]
 example = "dootle.cmds.example_cmd:ExampleCmd"
+
+[project.entry-points."doot.plugins.action"]
+rng = "dootle.actions.nprandom:new_random"
 
 ##-- end entry-points
 
