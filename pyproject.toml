@@ -24,6 +24,7 @@ dependencies   = [
     "bibtexparser>=2.0.0b4",
     "numpy",
     "networkx",
+    "polars",
 ]
 
 [project.optional-dependencies]

@@ -72,7 +72,7 @@ class BibtexInitAction(Action_p):
     _toml_kwargs = [UPDATE]
 
     def __call__(self, spec, task_state:dict):
-        data_key = UPDATE.redirect(spec, chain=DB_KEY)
+        data_key = UPDATE.redirect(spec)
         if data_key in task_state:
             return True
 
@@ -91,7 +91,7 @@ class BibtexLoadAction(Action_p):
 
     def __call__(self, spec, task_state:dict):
         year_key    = YEAR_KEY.redirect(spec)
-        db          = UPDATE.to_type(spec, task_state, type_=b.Library|None, chain=DB_KEY)
+        db          = UPDATE.to_type(spec, task_state, type_=b.Library|None, chain=[DB_KEY])
         parse_stack = PARSE_STACK.to_type(spec, task_state, type_=list)
         from_keys   = FROM_KEY.redirect_multi(spec)
         file_list   = [x.to_path(spec, task_state) for x in from_keys]
@@ -130,7 +130,7 @@ class BibtexToStrAction(Action_p):
 
     def __call__(self, spec, task_state):
         data_key    = UPDATE.redirect(spec)
-        db          = FROM_KEY.to_type(spec, task_state, type_=b.library.Library|None, chain=DB_KEY)
+        db          = FROM_KEY.to_type(spec, task_state, type_=b.library.Library|None, chain=[DB_KEY])
         write_stack = WRITE_STACK.to_type(spec, task_state, type_=list)
         format      = FORMAT_KEY.to_type(spec, task_state, type_=b.BibtexFormat|None)
         if format is None:

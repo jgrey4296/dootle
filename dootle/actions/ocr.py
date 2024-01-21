@@ -16,8 +16,10 @@ from itertools import cycle, chain
 logging = logmod.getLogger(__name__)
 printer = logmod.getLogger("doot._printer")
 
+import sh
 import doot
 import doot.errors
+from doot.structs import DootKey
 from doot._abstract import Action_p
 
 import numpy as np
@@ -38,7 +40,8 @@ THUMB            : Final[tuple] = (200,200)
 
 ocr_out_ext      : Final[str] = doot.config.on_fail(".ocr", str).images.ocr_out()
 
-HashImages = hashing.HashAllFiles
+FROM         = DootKey.make("from")
+TO           = DootKey.make("to")
 
 def load_img(path:pl.Path):
     try:
@@ -56,21 +59,14 @@ def norm_img(img):
     return np.array(norm_c1).reshape((1,-1))
 
 
-@doot.check_protocol
-class OCRAction(Action_p):
 
-    def __call__(self, spec, state):
-        pass
+def ocr(spec, state):
+    """
+    outputs to cwd dst.txt
+    """
+    source = FROM.to_path(spec, state)
+    dest   = TO.to_path(spec, state)
+    tesseract_output = pl.Path(source.name).with_suffix(".txt")
 
-    def get_ocr_file_name(self, fpath):
-        return fpath.parent / f".{fpath.stem}{ocr_out_ext}"
-
-    def make_ocr_cmds(self, fpath, dst=None):
-        """
-        outputs to cwd dst.txt
-        """
-        dst = dst or self.get_ocr_file_name(fpath)
-        return [
-            self.make_cmd("tesseract", fpath, dst.stem, "--psm", "1",  "-l", "eng"),
-            self.make_cmd("mv", dst.with_suffix(".txt").name, dst)
-            ]
+    sh.tesseract(source, dest.stem, "--psm", "1",  "-l", "eng")
+    tesseract_output.move(dest)

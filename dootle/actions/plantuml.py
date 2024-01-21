@@ -32,29 +32,28 @@ logging = logmod.getLogger(__name__)
 
 printer = logmod.getLogger("doot._printer")
 
+import sh
 import doot
 import doot.errors
+from doot.structs import DootKey
 from doot._abstract import Action_p
+
+FROM         = DootKey.make("from")
+TO           = DootKey.make("to")
+EXT          = DootKey.make("ext")
 
 plant_ext    = doot.config.on_fail("png", str).plantuml.ext()
 
-class PlantUMLAction(Action_p)
+def run_plantuml(spec, state):
+    ext    = EXT.expand(spec, state)
+    source = FROM.to_path(spec, state)
+    dest   = TO.to_path(spec, state)
+    sh.plantuml(f"-t{ext}", "-output", dest.parent, "-filename", dest.stem, source)
+    return
 
-    def __call__(self, spec, state):
-        pass
 
-    def plantuml_params(self):
-        return [
-            { "name" : "ext",    "type": str,   "short": "e", "default": plant_ext}
-            ]
 
-    def plantuml_img(self, dst, src, check=False) -> list:
-        if check:
-            return ["plantuml", "-checkonly", src]
-
-        return [
-            "plantuml", f"-t{self.args['ext']}",
-            "-output", dst.resovle().parent,
-            "-filename", dst.stem,
-            src
-            ]
+def check_plantuml(spec, state):
+    source = FROM.to_path(spec, state)
+    sh.plantuml("-checkonly", source)
+    return

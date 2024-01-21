@@ -48,18 +48,6 @@ from dootle.tags.structs import TagFile, NameFile
 # BlockMiddleware - subclass for working on blocks
 # LibraryMiddleware - subclass for library wide transformations
 
-# TODO ideal stemmer
-# TODO library location enforcer
-# TODO field lowercaser
-# TODO year checker
-# TODO title split
-# TODO output name formatting
-# TODO ISBN formatting
-# TODO pdf metadata application
-# TODO Url way-backer
-# TODO &amp; -> \&
-# TODO reporters - author/editor counts, year entries, types, entries with files
-
 
 class ParsePathsMiddleware(BlockMiddleware):
     """
