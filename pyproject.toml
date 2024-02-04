@@ -57,6 +57,7 @@ example = "dootle.cmds.example_cmd:ExampleCmd"
 
 [project.entry-points."doot.plugins.action"]
 rng = "dootle.actions.nprandom:new_random"
+say = "dootle.actions.say:say"
 
 ##-- end entry-points
 
