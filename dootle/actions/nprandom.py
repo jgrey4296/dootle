@@ -47,14 +47,14 @@ SEED = DootKey.make("seed")
 RNG  = DootKey.make("_rng")
 NUM  = DootKey.make("num")
 
-def new_random(spec, state):
-    seed = SEED.to_type(spec, state, on_fail=None)
+@DootKey.kwrap.types("seed", on_fail=None)
+@DootKey.kwrap.returns("_rng")
+def new_random(spec, state, seed):
     rng = np.random.default_rng(seed=seed)
+    return { "_rng" : rng }
 
-    return { RNG : rng }
-
-def integers(spec, state):
-    rng = RNG.to_type(spec, state)
-    num = NUM.to_type(spec, state)
-    result = rng.integers(0, 10, num)
+@DootKey.kwrap.types("_rng")
+@DootKey.kwrap.types("num")
+def integers(spec, state, _rng, num):
+    result = _rng.integers(0, 10, num)
     printer.info("Got: %s", result)

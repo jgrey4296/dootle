@@ -45,17 +45,15 @@ from doot.structs import DootKey
 import sh
 import os
 
-ENV    = DootKey.make("env")
-UPDATE = DootKey.make("update_")
-
 class MambaEnv:
     """ Set up a mamba env to use, returns a baked command to pass to the normal shell action in shenv_ """
 
     _toml_kwargs = []
 
-    def __call__(self, spec, state):
-        update                       = UPDATE.redirect(spec) if UPDATE in spec.kwargs else None
-        match ENV.to_type(spec, state):
+    @DootKey.kwrap.types("env", type_=list|str)
+    @DootKey.kwrap.redirects("update_")
+    def __call__(self, spec, state, env, update):
+        match env
             case [x]:
                 env = x
             case str() as x:

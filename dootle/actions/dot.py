@@ -35,6 +35,7 @@ printer = logmod.getLogger("doot._printer")
 import doot
 import doot.errors
 from doot._abstract import Action_p
+from doot.structs import DootKey
 
 dot_scale  = doot.config.on_fail(72.0, float).dot_graph.scale()
 dot_layout = doot.config.on_fail("neato", str).dot_graph.layout()
@@ -43,7 +44,8 @@ dot_ext    = doot.config.on_fail("png", str).dot_graph.ext()
 @doot.check_protocol
 class DotAction(Action_p):
 
-    def __call__(self, spec, state):
+    @DootKey.kwrap.types("layout", "scale", "ext")
+    def __call__(self, spec, state, layout, scale, ext):
         pass
 
     def dot_params(self):

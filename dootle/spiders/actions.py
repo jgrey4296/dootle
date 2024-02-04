@@ -48,14 +48,14 @@ CRAWLER = DootKey.make("crawler")
 
 class RunSpider(Action_p, ImporterMixin):
     """
-      add a spider to the scrapy crawler that is in task_state
+      add a spider to the scrapy crawler that is in state
     """
 
-    def __call__(self, spec, task_state):
-        spider_ref   = DootCodeReference.from_str(SPIDER.expand(spec, task_state))
+    @DootKey.kwrap.expands("spider")
+    @DootKey.kwrap.types("crawler")
+    def __call__(self, spec, state, spider, crawler):
+        spider_ref   = DootCodeReference.from_str(spider)
         spider_class = spider_ref.try_import()
-        crawler      = CRAWLER.to_type(spec, task_state)
-
         deferred     = crawler.crawl(spider_class)
 
         deferred.addCallback(lambda _: printer.warning("Crawl Complete"))

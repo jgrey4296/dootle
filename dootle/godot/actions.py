@@ -198,7 +198,3 @@ class GodotCheckScriptsAction(Action_p):
         except sh.ErrorReturnCode as err:
             printer.error("Godot Failure: %s", err.stdout.decode())
             raise doot.errors.DootTaskFailed("Godot Failed") from err
-
-"""
-
-"""

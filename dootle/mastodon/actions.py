@@ -183,7 +183,3 @@ class MastodonPost:
             return { 'image': doot.locs.image_temp }
 
         return False
-
-"""
-
-"""
