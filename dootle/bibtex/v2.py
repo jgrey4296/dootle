@@ -72,8 +72,8 @@ class BibtexInitAction(Action_p):
     _toml_kwargs = [UPDATE]
 
     @DootKey.kwrap.redirects("update_")
-    def __call__(self, spec, state, update):
-        data_key = update
+    def __call__(self, spec, state, _update):
+        data_key = _update
         if data_key in state:
             return True
 
@@ -92,12 +92,12 @@ class BibtexLoadAction(Action_p):
 
     @DootKey.kwrap.redirects("year_")
     @DootKey.kwrap.redirects_many("from")
-    @DootKey.kwrap.types("parse_stack", type_=list)
-    @DootKey.kwrap.types("update_", type_=b.Library|None, chain=[DB_KEY])
-    def __call__(self, spec, state:dict, year, from_, parse_stack, update):
-        year_key    = YEAR_KEY.redirect(spec)
-        db          = update
-        file_list   = [x.to_path(spec, state) for x in from_]
+    @DootKey.kwrap.types("parse_stack", hint={"type_":list})
+    @DootKey.kwrap.types("update_", hint={"type_":b.Library|None, "chain":[DB_KEY]})
+    def __call__(self, spec, state, _year, from_ex, parse_stack, _update):
+        year_key    = _year
+        db          = _update
+        file_list   = [x.to_path(spec, state) for x in from_ex]
 
         printer.debug("Starting to load %s files", len(file_list))
         for loc in file_list:
@@ -131,13 +131,13 @@ class BibtexToStrAction(Action_p):
     """
     _toml_kwargs = [FROM_KEY, UPDATE, WRITE_STACK, FORMAT_KEY]
 
-    @DootKey.kwrap.types("from", type_=b.Library.Library|None, chain=[DB_KEY])
-    @DootKey.kwrap.types("write_stack", type_=list)
-    @DootKey.kwrap.type("bib_format", type_=b.BibtexFormat|None)
+    @DootKey.kwrap.types("from", hint={"type_":b.library.Library|None, "chain":[DB_KEY]})
+    @DootKey.kwrap.types("write_stack", hint={"type_":list})
+    @DootKey.kwrap.types("bib_format", hint={"type_": b.BibtexFormat|None})
     @DootKey.kwrap.redirects("update_")
-    def __call__(self, spec, state, from_, write_stack, bib_format, update):
-        data_key    = update
-        db          = from_
+    def __call__(self, spec, state, _from, write_stack, bib_format, _update):
+        data_key    = _update
+        db          = _from
         if bib_format is None:
             bib_format                              = b.BibtexFormat()
             bib_format.value_column                 = 15

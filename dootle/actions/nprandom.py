@@ -47,7 +47,7 @@ SEED = DootKey.make("seed")
 RNG  = DootKey.make("_rng")
 NUM  = DootKey.make("num")
 
-@DootKey.kwrap.types("seed", on_fail=None)
+@DootKey.kwrap.types("seed", hint={"on_fail":None})
 @DootKey.kwrap.returns("_rng")
 def new_random(spec, state, seed):
     rng = np.random.default_rng(seed=seed)

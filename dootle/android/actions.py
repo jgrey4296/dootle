@@ -169,9 +169,9 @@ class AndroidRemoteCmd(Action_p):
     @DootKey.kwrap.args
     @DootKey.kwrap.expands("transport", "cmd")
     @DootKey.kwrap.redirects("update_")
-    def __call__(self, spec, state, args, transport, cmd, update):
+    def __call__(self, spec, state, args, transport, cmd, _update):
         try:
-            data_key  = update
+            data_key  = _update
             adb_cmd   = adb.bake("-t", transport, "shell", "", _return_cmd=True)
             args      = [DootKey.make(x, explicit=True).expand(spec, state) for x in spec.args]
             printer.info("ADB Cmd: %s : %s", cmd, args)
