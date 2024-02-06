@@ -17,7 +17,7 @@ from bs4 import BeautifulSoup
 ##-- end imports
 
 import doot
-from doot.task import tasker, dir_walker
+from doot.task import job, dir_walker
 from doot.mixins.zipper import ZipperMixin
 
 ##-- logging
@@ -345,7 +345,7 @@ class EbookSplitTask(dir_walker.DootDirWalker):
     def action_convert(self, dependencies, targets):
         return ["ebook-convert", dependencies[0], targets[0]]
 
-class EbookNewTask(tasker.DootTasker):
+class EbookNewTask(job.DootJob):
     """
     (-> [src]) Create a new stub structure for an ebook
 

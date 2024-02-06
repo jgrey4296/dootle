@@ -37,21 +37,24 @@ import more_itertools as mitz
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
+printer = logmod.getLogger("doot._printer")
 
-class SphinxBuild(Action_p):
+import doot
+import doot.errors
+from doot.structs import DootKey
+import sh
+import os
 
-    def __call__(self, spec, task_state):
-        pass
+class MambaEnv:
+    """ Set up a mamba env to use, returns a baked command to pass to the normal shell action in shenv_ """
 
-class SphinxServe(Action_p):
-
-    def __call__(self, spec, task_state):
-        pass
-
-
-
-
-"""
-
-
-"""
+    @DootKey.kwrap.types("env", hint={"type_":list|str})
+    @DootKey.kwrap.redirects("update_")
+    def __call__(self, spec, state, env, _update):
+        match env:
+            case [x]:
+                env = x
+            case str() as x:
+                env = x
+        sh_ctxt = sh.mamba.bake("run", "-p", env, _return_cmd=True, _tty_out=False)
+        return { _update : sh_ctxt }

@@ -42,7 +42,7 @@ printer = logmod.getLogger("doot._printer")
 import sh
 import doot
 import doot.errors
-import doot.utils.expansion as exp
+from doot.structs import DootKey
 from doot._abstract import Action_p
 
 try:
@@ -53,11 +53,11 @@ except sh.CommandNotFound as err:
 TRANSPORT_RE = re.compile("transport_id:([0-9])")
 
 ##-- expansion keys
-TRANSPORT  : Final[exp.DootKey] = exp.DootKey("transport")
-LOCAL      : Final[exp.DootKey] = exp.DootKey("local")
-REMOTE     : Final[exp.DootKey] = exp.DootKey("remote")
-PACKAGE    : Final[exp.DootKey] = exp.DootKey("package")
-UPDATE     : Final[exp.DootKey] = exp.DootKey("update_")
+TRANSPORT  : Final[DootKey] = DootKey.make("transport")
+LOCAL      : Final[DootKey] = DootKey.make("local")
+REMOTE     : Final[DootKey] = DootKey.make("remote")
+PACKAGE    : Final[DootKey] = DootKey.make("package")
+UPDATE     : Final[DootKey] = DootKey.make("update_")
 
 ##-- end expansion keys
 
@@ -67,10 +67,11 @@ class AndroidRunning(Action_p):
       Start the adb server and connect to the device.
       internally identifies the transport id and adds it to the task state
     """
-    _toml_kwargs = ["update_", "transport"]
 
-    def __call__(self, spec, state):
-        data_key = TRANSPORT.redirect(spec)
+    @DootKey.kwrap.redirects("transport")
+    @DootKey.kwrap.returns("transport")
+    def __call__(self, spec, state, transport):
+        data_key = transport
         try:
             adb("start-server", _bg=True)
             transport = self._get_transport_id()
@@ -106,15 +107,12 @@ class AndroidRunning(Action_p):
 
 @doot.check_protocol
 class AndroidPush(Action_p):
-    _toml_kwargs = ["local", "remote", "transport"]
-    inState      = ["android_root"]
 
-    def __call__(self, spec, state):
+    @DootKey.kwrap.expands("transport")
+    @DootKey.kwrap.paths("local", "remote")
+    def __call__(self, spec, state, transport, local, remote):
         try:
-            transport   = TRANSPORT.expand(spec, state)
             push        = adb.bake("-t", transport, "push", "--sync", _return_cmd=True)
-            local       = LOCAL.to_path(spec, state)
-            remote      = REMOTE.expand(spec, state)
             printer.info("ADB Push: %s -> %s", local, remote)
             result = push(str(local), str(remote))
         except sh.ErrorReturnCode as err:
@@ -124,10 +122,10 @@ class AndroidPush(Action_p):
 
 @doot.check_protocol
 class AndroidPull(Action_p):
-    _toml_kwargs = ["local", "remote", "transport"]
-    inState      = ["android_root"]
 
-    def __call__(self, spec, state):
+    @DootKey.kwrap.expands("transport")
+    @DootKey.kwrap.paths("local", "remote")
+    def __call__(self, spec, state, transport, local, remote):
         result     = None
         transport  = TRANSPORT.expand(spec, state)
         try:
@@ -145,12 +143,14 @@ class AndroidPull(Action_p):
 
 @doot.check_protocol
 class AndroidInstall(Action_p):
-    _toml_kwargs = ["package", "transport"]
+    _toml_kwargs = [PACKAGE, TRANSPORT]
 
-    def __call__(self, spec, state):
+    @DootKey.kwrap.expands("transport")
+    @DootKey.kwrap.paths("package")
+    def __call__(self, spec, state, transport, package):
         try:
-            transport = TRANSPORT.expand(spec, state)
-            target   = PACKAGE.to_path(spec, state)
+            transport = transport
+            target   = package
             install  = adb.bake("-t", transport, "install", _return_cmd=True)
             printer.info("ADB Installing: %s", target)
             result = install(str(target))
@@ -163,24 +163,20 @@ class AndroidInstall(Action_p):
 
 @doot.check_protocol
 class AndroidRemoteCmd(Action_p):
-    inState      = ["transport", "android_root"]
+    inState      = [TRANSPORT, "android_root"]
     _toml_kwargs = ["cmd", "update_", "transport"]
 
-    def __call__(self, spec, state):
+    @DootKey.kwrap.args
+    @DootKey.kwrap.expands("transport", "cmd")
+    @DootKey.kwrap.redirects("update_")
+    def __call__(self, spec, state, args, transport, cmd, _update):
         try:
-            transport = TRANSPORT.expand(spec, state)
-            data_key  = UPDATE.redirect(spec)
-            cmd       = adb.bake("-t", transport, "shell", "", _return_cmd=True)
-            args      = [exp.to_str(x, spec, state) for x in spec.args]
-            printer.info("ADB Cmd: %s : %s", spec.kwargs.cmd, args)
-            result = cmd(spec.kwargs.cmd, *args)
+            data_key  = _update
+            adb_cmd   = adb.bake("-t", transport, "shell", "", _return_cmd=True)
+            args      = [DootKey.make(x, explicit=True).expand(spec, state) for x in spec.args]
+            printer.info("ADB Cmd: %s : %s", cmd, args)
+            result = adb_cmd(cmd, *args)
             return { data_key : result.stdout.decode() }
         except sh.ErrorReturnCode as err:
             printer.error("ADB Failure: %s : %s", err.stdout.decode(), err.stderr.decode())
             raise doot.errors.DootTaskFailed("Cmd Failed") from err
-
-
-"""
-
-
-"""

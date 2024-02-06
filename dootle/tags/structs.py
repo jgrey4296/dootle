@@ -37,7 +37,7 @@ class TagFile:
             try:
                 obj.update(tuple(x.strip() for x in line.split(obj.sep)))
             except Exception as err:
-                logging.warning("Failure Tag Reading %s (l:%s) : %s", fpath, i, err)
+                logging.warning("Failure Tag Reading %s (l:%s) : %s : %s", fpath, i, err, line)
 
         return obj
 
@@ -80,6 +80,8 @@ class TagFile:
                     continue
                 case str():
                     self._inc(val)
+                case [str() as key]:
+                    self._inc(key)
                 case (str() as key, str() as counts):
                     self._inc(key, amnt=int(counts))
                 case TagFile():

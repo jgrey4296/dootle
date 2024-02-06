@@ -9,65 +9,56 @@ from os.path import split
 from typing import (Any, Callable, ClassVar, Dict, Final, Generic, Iterable,
                     Iterator, List, Mapping, Match, MutableMapping, Optional,
                     Sequence, Set, Tuple, TypeVar, Union, cast)
-
-import doot
-import requests
-from doot import tasker
-
 ##-- end imports
 
 logging = logmod.getLogger(__name__)
 printer = logmod.getLogger("doot._printer")
 
+import requests
 import doot
 import doot.errors
+from doot.structs import DootKey
+from doot import job
 from doot._abstract import Action_p
 
 CHECK_AMNT    : Final[int] = doot.config.on_fail(150, int).downloader.check_amnt()
 speak_confirm : Final      = "Found a Large Group of Files, waiting for confirmation"
 
-@doot.check_protocol
-class Downloader(Action_p):
-    """
-    Download files in a url list to specified target,
-    skips files that already exist,
-    asks for confirmation if downloading more than CHECK_AMNT
-    """
+@DootKey.kwrap.paths("to")
+@DootKey.kwrap.expands("url")
+def download_media(spec, state, to, url):
+    """ Download all media mentioned in json files """
+    print("Downloading media %s to: %s" % (len(media), media_dir))
+    target = to
+    source = url
+    if not target.exists():
+        target.mkdir()
+    assert(target.is_dir())
+    download_to(target, [source])
 
-    def __call__(self, spec, state):
-        pass
+def download_to(fpath:pl.Path, urls:list):
+    remaining = [x for x in urls if x is not None and not (fpath / pl.Path(x).name).exists()]
 
-    def download_media(self, media_dir:pl.Path, media:list):
-        """ Download all media mentioned in json files """
-        print("Downloading media %s to: %s" % (len(media), media_dir))
-        if not media_dir.exists():
-            media_dir.mkdir()
-        assert(media_dir.is_dir())
-        self.download_to(media_dir, media)
+    if len(remaining) > CHECK_AMNT:
+        speak_confirm.execute()
+        result = input("Continue? [y/n] ")
+        if result != "y":
+            print("Skipping download")
+            return
 
-    def download_to(self, fpath:pl.Path, urls:list):
-        remaining = [x for x in urls if x is not None and not (fpath / pl.Path(x).name).exists()]
+    scaler = int(len(urls) / 100) + 1
+    for i, x in enumerate(urls):
+        if i % scaler == 0:
+            print("%s/100" % int(i/scaler))
 
-        if len(remaining) > CHECK_AMNT:
-            speak_confirm.execute()
-            result = input("Continue? [y/n] ")
-            if result != "y":
-                print("Skipping download")
-                return
+        filename = fpath / split(x)[1]
+        if filename.exists():
+            continue
 
-        scaler = int(len(urls) / 100) + 1
-        for i, x in enumerate(urls):
-            if i % scaler == 0:
-                print("%s/100" % int(i/scaler))
-
-            filename = fpath / split(x)[1]
-            if filename.exists():
-                continue
-
-            try:
-                request = requests.get(x)
-                with open(filename, 'wb') as f:
-                    f.write(request.content)
-            except Exception as e:
-                logging.warning("Error Downloading: %s", x)
-                logging.warning(str(e))
+        try:
+            request = requests.get(x)
+            with open(filename, 'wb') as f:
+                f.write(request.content)
+        except Exception as e:
+            logging.warning("Error Downloading: %s", x)
+            logging.warning(str(e))

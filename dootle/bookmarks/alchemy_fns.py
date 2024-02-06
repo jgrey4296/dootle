@@ -37,18 +37,20 @@ import more_itertools as mitz
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-class PelicanBuild(Action_p):
+from sqlalchemy import Column, ForeignKey, Integer, String
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from sqlalchemy import create_engine
 
-    def __call__(self, spec, task_state):
-        pass
+import doot
+import doot.errors
+from dootle.bookmarks import structs as BC
 
+Base = declarative_base()
 
-class PelicanCreatePost(Action_p):
+# define orm
+def extract(loc:pl.Path, debug=False) -> BC.BookmarkCollection:
+    engine_str : str = f"sqlite://{loc}"
+    engine           = create_engine(engine_str)
 
-    def __call__(self, spec, task_state):
-        pass
-
-class PelicanServer(Action_p):
-
-    def __call__(self, spec, task_state):
-        pass
+    return None

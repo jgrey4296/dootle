@@ -32,6 +32,7 @@ logging = logmod.getLogger(__name__)
 
 printer = logmod.getLogger("doot._printer")
 
+import sh
 import doot
 import doot.errors
 from doot._abstract import Action_p

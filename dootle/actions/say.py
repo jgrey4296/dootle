@@ -37,12 +37,11 @@ import more_itertools as mitz
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
+import sh
+import doot
+import doot.errors
+from doot.structs import DootKey
 
-
-
-
-
-"""
-
-
-"""
+@DootKey.kwrap.args
+def say(spec, state, args):
+    sh.spd_say(*args)

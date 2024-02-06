@@ -44,7 +44,7 @@ from bibtexparser.middlewares.middleware import BlockMiddleware
 
 import doot
 from doot._abstract.task import Action_p
-import doot.utils.expansion as exp
+from doot.structs import DootKey
 from dootle.bibtex import middlewares as dmids
 
 NEWLINE_RE                 : Final[re.Pattern] = re.compile(r"\n+\s*")
@@ -53,13 +53,13 @@ default_convert_exclusions : Final[list]       = ["file", "url", "ID", "ENTRYTYP
 convert_exclusions         : Final[list]       = doot.config.on_fail(default_convert_exclusions, list).bibtex.convert_exclusions()
 
 ##-- expansion keys
-UPDATE      : Final[exp.DootKey] = exp.DootKey("update_")
-YEAR_KEY    : Final[exp.DootKey] = exp.DootKey("year_")
-PARSE_STACK : Final[exp.DootKey] = exp.DootKey("parse_stack")
-WRITE_STACK : Final[exp.DootKey] = exp.DootKey("write_stack")
-FROM_KEY    : Final[exp.DootKey] = exp.DootKey("from")
-DB_KEY      : Final[exp.DootKey] = exp.DootKey("bib_db")
-FORMAT_KEY  : Final[exp.DootKey] = exp.DootKey("bib_format")
+UPDATE      : Final[DootKey] = DootKey.make("update_")
+YEAR_KEY    : Final[DootKey] = DootKey.make("year_")
+PARSE_STACK : Final[DootKey] = DootKey.make("parse_stack")
+WRITE_STACK : Final[DootKey] = DootKey.make("write_stack")
+FROM_KEY    : Final[DootKey] = DootKey.make("from")
+DB_KEY      : Final[DootKey] = DootKey.make("bib_db")
+FORMAT_KEY  : Final[DootKey] = DootKey.make("bib_format")
 
 ##-- end expansion keys
 
@@ -69,11 +69,12 @@ class BibtexInitAction(Action_p):
 
       pass a callable as the spec.args value to use instead of _entry_transform
     """
-    _toml_kwargs = ["update_"]
+    _toml_kwargs = [UPDATE]
 
-    def __call__(self, spec, task_state:dict):
-        data_key = UPDATE.redirect(spec, chain=DB_KEY)
-        if data_key in task_state:
+    @DootKey.kwrap.redirects("update_")
+    def __call__(self, spec, state, _update):
+        data_key = _update
+        if data_key in state:
             return True
 
         db                   = b.Library()
@@ -81,26 +82,22 @@ class BibtexInitAction(Action_p):
         return { data_key : db }
 
 class BibtexLoadAction(Action_p):
-    """ Parse all the bibtext files into a task_state database, in place.
+    """ Parse all the bibtext files into a state database, in place.
 
-      addFn to task_state[`_entry_transform`] to use a custom entry transformer,
+      addFn to state[`_entry_transform`] to use a custom entry transformer,
       or subclass this and override self._entry_transform.
 
       """
-    _toml_kwargs = ["update_", "crossref", "parse_stack", "from", "year_"]
+    _toml_kwargs = [UPDATE, PARSE_STACK, FROM_KEY, YEAR_KEY, "crossref"]
 
-    def __call__(self, spec, task_state:dict):
-        year_key    = YEAR_KEY.redirect(spec)
-        db          = UPDATE.to_type(spec, task_state, type_=b.Library|None, chain=DB_KEY)
-        parse_stack = PARSE_STACK.to_type(spec, task_state, type_=list)
-        from_val    = FROM_KEY.to_type(spec, task_state, type_=list|pl.Path|str)
-        match from_val:
-            case str():
-                file_list    = [exp.to_path(from_val, spec, task_state)]
-            case pl.Path():
-                file_list    = [from_val]
-            case list():
-                file_list    = [exp.to_path(x, spec, state) for x in from_val]
+    @DootKey.kwrap.redirects("year_")
+    @DootKey.kwrap.redirects_many("from")
+    @DootKey.kwrap.types("parse_stack", hint={"type_":list})
+    @DootKey.kwrap.types("update_", hint={"type_":b.Library|None, "chain":[DB_KEY]})
+    def __call__(self, spec, state, _year, from_ex, parse_stack, _update):
+        year_key    = _year
+        db          = _update
+        file_list   = [x.to_path(spec, state) for x in from_ex]
 
         printer.debug("Starting to load %s files", len(file_list))
         for loc in file_list:
@@ -134,23 +131,21 @@ class BibtexToStrAction(Action_p):
     """
     _toml_kwargs = [FROM_KEY, UPDATE, WRITE_STACK, FORMAT_KEY]
 
-    def __call__(self, spec, task_state):
-        data_key    = UPDATE.redirect(spec)
-        db          = FROM_KEY.to_type(spec, task_state, type_=b.library.Library|None, chain=DB_KEY)
-        write_stack = WRITE_STACK.to_type(spec, task_state, type_=list)
-        format      = FORMAT_KEY.to_type(spec, task_state, type_=b.BibtexFormat|None)
-        if format is None:
-            format                              = b.BibtexFormat()
-            format.value_column                 = 15
-            format.indent                       = " "
-            format.block_separator              = "\n"
-            format.trailing_comma               = True
+    @DootKey.kwrap.types("from", hint={"type_":b.library.Library|None, "chain":[DB_KEY]})
+    @DootKey.kwrap.types("write_stack", hint={"type_":list})
+    @DootKey.kwrap.types("bib_format", hint={"type_": b.BibtexFormat|None})
+    @DootKey.kwrap.redirects("update_")
+    def __call__(self, spec, state, _from, write_stack, bib_format, _update):
+        data_key    = _update
+        db          = _from
+        if bib_format is None:
+            bib_format                              = b.BibtexFormat()
+            bib_format.value_column                 = 15
+            bib_format.indent                       = " "
+            bib_format.block_separator              = "\n"
+            bib_format.trailing_comma               = True
 
-        result                                  = b.write_string(db, unparse_stack=write_stack, bibtex_format=format)
+        result                                  = b.write_string(db, unparse_stack=write_stack, bibtex_format=bib_format)
         return { data_key : result }
 
 # TODO library merge - lib.add(entries)
-
-"""
-
-"""

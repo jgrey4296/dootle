@@ -58,10 +58,3 @@ class AddToTagIndex(Action_p):
 
     def __call__(self, spec, task_state):
         pass
-
-
-
-"""
-
-
-"""

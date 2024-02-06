@@ -36,31 +36,25 @@ import more_itertools as mitz
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
+printer = logmod.getLogger("doot._printer")
 
+import numpy as np
+import doot
+import doot.errors
+from doot.structs import DootKey
 
-class IncrementVersionAction(Action_p):
-    "using bumpver"
+SEED = DootKey.make("seed")
+RNG  = DootKey.make("_rng")
+NUM  = DootKey.make("num")
 
-    def __call__(self, spec, task_state):
-        pass
+@DootKey.kwrap.types("seed", hint={"on_fail":None})
+@DootKey.kwrap.returns("_rng")
+def new_random(spec, state, seed):
+    rng = np.random.default_rng(seed=seed)
+    return { "_rng" : rng }
 
-class PipBuildAction(Action_p):
-
-    def __call__(self, spec, task_state):
-        pass
-
-class PipLocalInstall(Action_p):
-
-    def __call__(self, spec, task_state):
-        pass
-
-class PipReqsAction(Action_p):
-
-    def __call__(self, spec, task_state):
-        pass
-
-
-"""
-
-
-"""
+@DootKey.kwrap.types("_rng")
+@DootKey.kwrap.types("num")
+def integers(spec, state, _rng, num):
+    result = _rng.integers(0, 10, num)
+    printer.info("Got: %s", result)
