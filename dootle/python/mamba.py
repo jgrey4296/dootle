@@ -48,15 +48,13 @@ import os
 class MambaEnv:
     """ Set up a mamba env to use, returns a baked command to pass to the normal shell action in shenv_ """
 
-    _toml_kwargs = []
-
-    @DootKey.kwrap.types("env", type_=list|str)
+    @DootKey.kwrap.types("env", hint={"type_":list|str})
     @DootKey.kwrap.redirects("update_")
-    def __call__(self, spec, state, env, update):
-        match env
+    def __call__(self, spec, state, env, _update):
+        match env:
             case [x]:
                 env = x
             case str() as x:
                 env = x
-        sh_ctxt                      = sh.mamba.bake("run", "-p", env, _return_cmd=True, _tty_out=False)
-        return { update : sh_ctxt }
+        sh_ctxt = sh.mamba.bake("run", "-p", env, _return_cmd=True, _tty_out=False)
+        return { _update : sh_ctxt }
