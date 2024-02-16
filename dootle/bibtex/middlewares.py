@@ -40,7 +40,7 @@ printer = logmod.getLogger("doot._printer")
 import bibtexparser
 import bibtexparser.model as model
 from bibtexparser import middlewares as ms
-from bibtexparser.middlewares.middleware import BlockMiddleware
+from bibtexparser.middlewares.middleware import BlockMiddleware, LibraryMiddleware
 from bibtexparser.middlewares.names import parse_single_name_into_parts, NameParts
 
 from dootle.tags.structs import TagFile, NameFile
@@ -48,6 +48,22 @@ from dootle.tags.structs import TagFile, NameFile
 # BlockMiddleware - subclass for working on blocks
 # LibraryMiddleware - subclass for library wide transformations
 
+
+class DuplicateHandler(LibraryMiddleware):
+
+    def transform(self, library):
+        for block in library.failed_blocks:
+            match block:
+                case model.DuplicateBlockKeyBlock():
+                    uuid = uuid1().hex
+                    duplicate = block.ignore_error_block
+                    duplicate.key = f"{duplicate.key}_{uuid}"
+                    library.add(duplicate)
+                    library.remove(block)
+                case _:
+                    printer.warning("Bad Block: : %s", block.start_line)
+
+        return library
 
 class ParsePathsMiddleware(BlockMiddleware):
     """
