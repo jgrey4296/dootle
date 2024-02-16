@@ -25,6 +25,7 @@ dependencies   = [
     "numpy",
     "networkx",
     "polars",
+    "jsonlines",
 ]
 
 [project.optional-dependencies]

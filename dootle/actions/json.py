@@ -95,3 +95,10 @@ def xsdata_generate(spec, state):
     transformer           = SchemaTransformer(config=config, print=stdout)
     transformer.process(source.as_uri())
     return
+
+
+def jsonlines_load(spec, state):
+    raise NotImplementedError()
+
+def jsonlines_append(spec, state):
+    raise NotImplementedError()
