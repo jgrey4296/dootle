@@ -78,6 +78,7 @@ class BibtexInitAction(Action_p):
             return True
 
         db                   = b.Library()
+        db.source_files      = set()
         printer.info("Bibtex Database Initialised")
         return { data_key : db }
 
@@ -98,6 +99,7 @@ class BibtexLoadAction(Action_p):
         year_key    = _year
         db          = _update
         file_list   = [x.to_path(spec, state) for x in from_ex]
+        results     = {}
 
         printer.debug("Starting to load %s files", len(file_list))
         for loc in file_list:
@@ -105,10 +107,14 @@ class BibtexLoadAction(Action_p):
             try:
                 lib  = b.parse_file(loc, parse_stack=parse_stack)
                 db.add(lib.entries)
+                db.source_files.add(loc)
                 printer.info("Loaded: %s entries",  len(lib.entries))
-                for block in lib.failed_blocks:
-                    printer.error("Parse Failure: %s", block.error)
-                    lib.add(block)
+
+                if bool(lib.failed_blocks):
+                    failed = lib.failed_blocks.copy()
+                    results.update({"failed_blocks": failed})
+                    printer.warning("Parse Failures have been added to task state['failed_blocks']")
+
             except UnicodeDecodeError as err:
                 printer.error("Unicode Error in File: %s, Start: %s", loc, err.start)
                 return False
@@ -120,9 +126,9 @@ class BibtexLoadAction(Action_p):
         if len(file_list) == 1:
             loc = doot.locs[file_list[0]]
             printer.info("Current year: %s", loc.stem)
-            return { year_key: loc.stem }
+            results.update({ year_key: loc.stem })
 
-        return True
+        return results
 
 
 class BibtexToStrAction(Action_p):
@@ -149,3 +155,16 @@ class BibtexToStrAction(Action_p):
         return { data_key : result }
 
 # TODO library merge - lib.add(entries)
+
+
+class BibtexFailedBlocksWriteAction(Action_p):
+
+    def __call__(self, spec, state):
+        if "failed_blocks" not in state:
+            return
+
+        target = DootKey.make("target").to_path(spec, state)
+        blocks = state['failed_blocks']
+        with open(target, 'w') as f:
+            for block in blocks:
+                f.write(block.raw)
