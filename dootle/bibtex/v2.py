@@ -45,7 +45,6 @@ from bibtexparser.middlewares.middleware import BlockMiddleware
 import doot
 from doot._abstract.task import Action_p
 from doot.structs import DootKey
-from dootle.bibtex import middlewares as dmids
 
 NEWLINE_RE                 : Final[re.Pattern] = re.compile(r"\n+\s*")
 
@@ -62,6 +61,8 @@ DB_KEY      : Final[DootKey] = DootKey.make("bib_db")
 FORMAT_KEY  : Final[DootKey] = DootKey.make("bib_format")
 
 ##-- end expansion keys
+
+# TODO library merge - lib.add(entries)
 
 class BibtexInitAction(Action_p):
     """
@@ -130,7 +131,6 @@ class BibtexLoadAction(Action_p):
 
         return results
 
-
 class BibtexToStrAction(Action_p):
     """
       Convert a bib database to a string for writing to a file.
@@ -153,9 +153,6 @@ class BibtexToStrAction(Action_p):
 
         result                                  = b.write_string(db, unparse_stack=write_stack, bibtex_format=bib_format)
         return { data_key : result }
-
-# TODO library merge - lib.add(entries)
-
 
 class BibtexFailedBlocksWriteAction(Action_p):
 

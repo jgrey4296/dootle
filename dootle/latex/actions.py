@@ -45,11 +45,13 @@ class LatexCompileAction(Action_p):
         pass
 
 class LatexInstallRequirements(Action_p):
+    """ given a list of packages, installs them using tlmgr  """
 
     def __call__(self, spec, task_state):
         pass
 
 class LatexLintAction(Action_p):
+    """ link a tex file """
 
     def __call__(self, spec, task_state):
         pass
