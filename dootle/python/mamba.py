@@ -56,5 +56,5 @@ class MambaEnv:
                 env = x
             case str() as x:
                 env = x
-        sh_ctxt = sh.mamba.bake("run", "-p", env, _return_cmd=True, _tty_out=False)
+        sh_ctxt = sh.mamba.bake("run", "-n", env, _return_cmd=True, _tty_out=False)
         return { _update : sh_ctxt }

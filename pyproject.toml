@@ -57,8 +57,9 @@ changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md" # TODO
 example = "dootle.cmds.example_cmd:ExampleCmd"
 
 [project.entry-points."doot.plugins.action"]
-rng = "dootle.actions.nprandom:new_random"
-say = "dootle.actions.say:say"
+rng         = "dootle.actions.nprandom:new_random"
+say         = "dootle.actions.say:say"
+"mamba.env" = "dootle.python.mamba:MambaEnv"
 
 ##-- end entry-points
 
@@ -97,6 +98,7 @@ log_cli_level = "DEBUG"
 
 ##-- end pytest
 
+##-- bumpber
 [tool.bumpver]
 current_version    = "0.1.2"
 version_pattern    = "MAJOR.MINOR.PATCH"
@@ -115,3 +117,5 @@ tag_scope          = "default"
                    '^current_version\s+=\s+"{version}"'
 ]
 "dootle/__init__.py" = ['^__version__\s+=\s+"{version}"']
+
+##-- end bumpber
