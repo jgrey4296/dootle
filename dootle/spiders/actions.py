@@ -40,13 +40,13 @@ printer = logmod.getLogger("doot._printer")
 import doot
 import doot.errors
 from doot._abstract import Action_p
-from doot.mixins.importer import ImporterMixin
+from doot.mixins.importer import Importer_M
 from doot.structs import DootKey, DootCodeReference
 
 SPIDER  = DootKey.make("spider")
 CRAWLER = DootKey.make("crawler")
 
-class RunSpider(Action_p, ImporterMixin):
+class RunSpider(Action_p, Importer_M):
     """
       add a spider to the scrapy crawler that is in state
     """

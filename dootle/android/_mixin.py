@@ -42,7 +42,7 @@ batch_sleep    : Final[int|float] = doot.config.on_fail(2, int|float).subtask.sl
 pull_group_max : Final[int]       = doot.config.on_fail(100, int).android.pull.max_group()
 adb_path       : Final[str]       = shutil.which("adb")
 
-class ADBMixin:
+class ADB_M:
     """
     Mixin for tasks using ADB to push/pull to android
     """

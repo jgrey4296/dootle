@@ -31,13 +31,12 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import doot
-from doot.mixins.delayed import DelayedMixin
-from doot.mixins.targeted import TargetedMixin
+from doot.mixins.delayed import Delayed_M
 from doot import dir_walker
 from doot.utils.formats import bookmarks as BC
 
 
-class BookmarksReport(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker):
+class BookmarksReport(Delayed_M, dir_walker.DootDirWalker):
     """
     TODO Generate reports on bookmarks
     """

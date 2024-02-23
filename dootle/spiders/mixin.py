@@ -45,7 +45,7 @@ spider_settings        = doot.config.flatten_on().spiders().get_table()
 settings_with_defaults = default_toml.copy()
 settings_with_defaults.update(spider_settings)
 
-class SpiderMixin:
+class Spider_M:
     """
     Run a scrapy spider either with default doot settings,
     or passed in toml data

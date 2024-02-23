@@ -36,8 +36,8 @@ import doot
 from doot.task.base_job import DootJob
 from doot.task import dir_walker
 from dootle.mixins.task import android
-from doot.mixins.task.batch import BatchMixin
-from doot.mixins.job.targeted import TargetedMixin
+from doot.mixins.task.batch import Batch_M
+from doot.mixins.job.targeted import Targeted_M
 
 
 android_base : Final[str] = doot.config.on_fail("/storage/6331-3162", str).tools.doot.android.base(wrapper=pl.Path)
@@ -47,7 +47,7 @@ wait_time    : Final[int] = doot.config.on_fail(10, int).tools.doot.android.wait
 
 NICE         : Final[list] = ["nice", "-n", "10"]
 
-class ADBUpload(android.ADBMixin, BatchMixin, TargetedMixin, dir_walker.DootDirWalker):
+class ADBUpload(android.ADB_M, Batch_M, Targeted_M, dir_walker.DootDirWalker):
     """
     Push files from local to device
     """
@@ -118,7 +118,7 @@ class ADBUpload(android.ADBMixin, BatchMixin, TargetedMixin, dir_walker.DootDirW
 
         (self.locs.build / "adb_push.report").write_text("\n".join(report))
 
-class ADBDownload(android.ADBMixin, DootJob, BatchMixin):
+class ADBDownload(android.ADB_M, DootJob, Batch_M):
     """
     pull files from device to local
     """
@@ -213,7 +213,7 @@ class ADBDownload(android.ADBMixin, DootJob, BatchMixin):
         targets = [x.strip() for x in cache.read_text().split("\n")]
         return { 'remote_files': list(filter(bool, targets)) }
 
-class ADBDelete(android.ADBMixin, DootJob, BatchMixin):
+class ADBDelete(android.ADB_M, DootJob, Batch_M):
     """
     delete all files specified in the provided list
     """

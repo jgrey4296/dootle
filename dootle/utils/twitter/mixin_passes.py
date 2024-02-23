@@ -31,7 +31,7 @@ ID_STR : Final[str] = 'id_str'
 
 # TODO could refactor output into template files, ie: jinja.
 
-class TwGraphComponentMixin:
+class TwGraphComponent_M:
 
     tweet_graph : TwitterGraph
 
@@ -74,7 +74,7 @@ class TwGraphComponentMixin:
 
         return { "missing" : list(id_map.missing) }
 
-class TwThreadBuildMixin:
+class TwThreadBuild_M:
 
     def tw_construct_thread(self, fpath:pl.Path):
         """ dfs on components to get order  """
@@ -124,7 +124,7 @@ class TwThreadBuildMixin:
         except Exception as err:
             return None
 
-class TwThreadWritingMixin:
+class TwThreadWriting_M:
 
     def tw_construct_org_files(self, fpath):
         logging.info("Constructing org file from: %s \n\tto: %s", fpath, self.output)

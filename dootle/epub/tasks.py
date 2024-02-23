@@ -18,7 +18,7 @@ from bs4 import BeautifulSoup
 
 import doot
 from doot.task import job, dir_walker
-from doot.mixins.zipper import ZipperMixin
+from doot.mixins.zipper import Zipper_M
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -93,7 +93,7 @@ class EbookConvertTask(EbookGlobberBase):
     def action_convert(self, dependencies, targets):
         return ["ebook-convert", dependencies[0], targets[0] ]
 
-class EbookZipTask(EbookGlobberBase, ZipperMixin):
+class EbookZipTask(EbookGlobberBase, Zipper_M):
     """
     (GlobDirs: [src] -> temp) wrapper around ZipTask to build zips of epub directories
     """
