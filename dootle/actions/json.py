@@ -27,11 +27,11 @@ from xsdata.formats.dataclass.parsers import JsonParser
 from xsdata.models.config import GeneratorConfig
 from xsdata.codegen.transformer import SchemaTransformer
 
-FROM                = DootKey.make("from")
-CONFIG              = DootKey.make("config")
-TO                  = DootKey.make("to")
-PACKAGE             = DootKey.make("package")
-EXT                 = DootKey.make("ext")
+FROM                = DootKey.build("from")
+CONFIG              = DootKey.build("config")
+TO                  = DootKey.build("to")
+PACKAGE             = DootKey.build("package")
+EXT                 = DootKey.build("ext")
 
 def json_load(spec, state):
     source = FROM.to_path(spec, state)

@@ -38,9 +38,9 @@ import doot.errors
 from doot.structs import DootKey
 from doot._abstract import Action_p
 
-FROM         = DootKey.make("from")
-TO           = DootKey.make("to")
-EXT          = DootKey.make("ext")
+FROM         = DootKey.build("from")
+TO           = DootKey.build("to")
+EXT          = DootKey.build("ext")
 
 plant_ext    = doot.config.on_fail("png", str).plantuml.ext()
 

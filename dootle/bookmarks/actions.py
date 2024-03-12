@@ -48,8 +48,8 @@ from dootle.bookmarks import structs as BC
 printer = logmod.getLogger("doot._printer")
 
 ##-- expansion keys
-FROM_KEY = DootKey.make("from")
-UPDATE   = DootKey.make("update_")
+FROM_KEY = DootKey.build("from")
+UPDATE   = DootKey.build("update_")
 
 ##-- end expansion keys
 

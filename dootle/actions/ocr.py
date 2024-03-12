@@ -40,8 +40,8 @@ THUMB            : Final[tuple] = (200,200)
 
 ocr_out_ext      : Final[str] = doot.config.on_fail(".ocr", str).images.ocr_out()
 
-FROM         = DootKey.make("from")
-TO           = DootKey.make("to")
+FROM         = DootKey.build("from")
+TO           = DootKey.build("to")
 
 def load_img(path:pl.Path):
     try:

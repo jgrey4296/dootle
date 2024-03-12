@@ -43,8 +43,8 @@ from doot._abstract import Action_p
 from doot.mixins.importer import Importer_M
 from doot.structs import DootKey, DootCodeReference
 
-SPIDER  = DootKey.make("spider")
-CRAWLER = DootKey.make("crawler")
+SPIDER  = DootKey.build("spider")
+CRAWLER = DootKey.build("crawler")
 
 class RunSpider(Action_p, Importer_M):
     """

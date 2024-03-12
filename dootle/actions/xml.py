@@ -34,10 +34,10 @@ import doot.errors
 from doot.structs import DootKey, DootCodeReference
 from doot._abstract import Action_p
 
-FROM_K = DootKey.make("from")
-UPDATE = DootKey.make("update_")
-HANDLER = DootKey.make("handler")
-ERRORS  = DootKey.make("errors")
+FROM_K = DootKey.build("from")
+UPDATE = DootKey.build("update_")
+HANDLER = DootKey.build("handler")
+ERRORS  = DootKey.build("errors")
 
 xsdata_defaults = [ "--relative-imports", "--postponed-annotations", "--kw-only", "--frozen", "--no-unnest-clases", "--output", "dataclasses"]
 

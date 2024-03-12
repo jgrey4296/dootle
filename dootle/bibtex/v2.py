@@ -52,13 +52,13 @@ default_convert_exclusions : Final[list]       = ["file", "url", "ID", "ENTRYTYP
 convert_exclusions         : Final[list]       = doot.config.on_fail(default_convert_exclusions, list).bibtex.convert_exclusions()
 
 ##-- expansion keys
-UPDATE      : Final[DootKey] = DootKey.make("update_")
-YEAR_KEY    : Final[DootKey] = DootKey.make("year_")
-PARSE_STACK : Final[DootKey] = DootKey.make("parse_stack")
-WRITE_STACK : Final[DootKey] = DootKey.make("write_stack")
-FROM_KEY    : Final[DootKey] = DootKey.make("from")
-DB_KEY      : Final[DootKey] = DootKey.make("bib_db")
-FORMAT_KEY  : Final[DootKey] = DootKey.make("bib_format")
+UPDATE      : Final[DootKey] = DootKey.build("update_")
+YEAR_KEY    : Final[DootKey] = DootKey.build("year_")
+PARSE_STACK : Final[DootKey] = DootKey.build("parse_stack")
+WRITE_STACK : Final[DootKey] = DootKey.build("write_stack")
+FROM_KEY    : Final[DootKey] = DootKey.build("from")
+DB_KEY      : Final[DootKey] = DootKey.build("bib_db")
+FORMAT_KEY  : Final[DootKey] = DootKey.build("bib_format")
 
 ##-- end expansion keys
 
@@ -160,7 +160,7 @@ class BibtexFailedBlocksWriteAction(Action_p):
         if "failed_blocks" not in state:
             return
 
-        target = DootKey.make("target").to_path(spec, state)
+        target = DootKey.build("target").to_path(spec, state)
         blocks = state['failed_blocks']
         with open(target, 'w') as f:
             for block in blocks:

@@ -50,12 +50,12 @@ except sh.CommandNotFound as err:
     raise doot.errors.TaskLoadError("godot not found") from err
 
 ##-- expansion keys
-SCENE      : Final[DootKey] = DootKey.make("scene")
-UPDATE     : Final[DootKey] = DootKey.make("update")
-SCRIPT     : Final[DootKey] = DootKey.make("script")
-QUIT_AFTER : Final[DootKey] = DootKey.make("quit_after")
-PATH       : Final[DootKey] = DootKey.make("path")
-TARGET     : Final[DootKey] = DootKey.make("target")
+SCENE      : Final[DootKey] = DootKey.build("scene")
+UPDATE     : Final[DootKey] = DootKey.build("update")
+SCRIPT     : Final[DootKey] = DootKey.build("script")
+QUIT_AFTER : Final[DootKey] = DootKey.build("quit_after")
+PATH       : Final[DootKey] = DootKey.build("path")
+TARGET     : Final[DootKey] = DootKey.build("target")
 
 ##-- end expansion keys
 

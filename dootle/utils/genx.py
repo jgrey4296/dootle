@@ -31,8 +31,9 @@ logging = logmod.getLogger(__name__)
 # logging.setLevel(logmod.NOTSET)
 ##-- end logging
 
+import doot
 ##-- data
-data_path    : Final[pl.Path] = files("doot.__templates")
+data_path    : Final[pl.Path] = files(doot.constants.paths.TEMPLATE_PATH)
 xml_template : Final[pl.Path] = data_path.joinpath("xl_template")
 ##-- end data
 

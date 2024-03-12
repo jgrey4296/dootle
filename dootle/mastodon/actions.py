@@ -54,13 +54,13 @@ RESOLUTION_RE        : Final[re.Pattern]            = re.compile(r".*?([0-9]+x[0
 TOOT_IMAGE_TYPES     : Final[list[str]]             = [".jpg", ".png", ".gif"]
 
 ##-- expansion keys
-INSTANCE_KEY           : Final[DootKey]                        = DootKey.make("mastodon")
-TEXT_KEY               : Final[DootKey]                        = DootKey.make("toot_text")
-IMAGE_KEY              : Final[DootKey]                        = DootKey.make("toot_image")
-IMAGE_DESC             : Final[DootKey]                        = DootKey.make("toot_desc")
-UPDATE                 : Final[DootKey]                        = DootKey.make("update_")
-FROM_KEY               : Final[DootKey]                        = DootKey.make("from")
-SECRETS                : Final[DootKey]                        = DootKey.make("mastodon_secrets")
+INSTANCE_KEY           : Final[DootKey]                        = DootKey.build("mastodon")
+TEXT_KEY               : Final[DootKey]                        = DootKey.build("toot_text")
+IMAGE_KEY              : Final[DootKey]                        = DootKey.build("toot_image")
+IMAGE_DESC             : Final[DootKey]                        = DootKey.build("toot_desc")
+UPDATE                 : Final[DootKey]                        = DootKey.build("update_")
+FROM_KEY               : Final[DootKey]                        = DootKey.build("from")
+SECRETS                : Final[DootKey]                        = DootKey.build("mastodon_secrets")
 ##-- end expansion keys
 
 

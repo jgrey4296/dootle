@@ -53,11 +53,11 @@ except sh.CommandNotFound as err:
 TRANSPORT_RE = re.compile("transport_id:([0-9])")
 
 ##-- expansion keys
-TRANSPORT  : Final[DootKey] = DootKey.make("transport")
-LOCAL      : Final[DootKey] = DootKey.make("local")
-REMOTE     : Final[DootKey] = DootKey.make("remote")
-PACKAGE    : Final[DootKey] = DootKey.make("package")
-UPDATE     : Final[DootKey] = DootKey.make("update_")
+TRANSPORT  : Final[DootKey] = DootKey.build("transport")
+LOCAL      : Final[DootKey] = DootKey.build("local")
+REMOTE     : Final[DootKey] = DootKey.build("remote")
+PACKAGE    : Final[DootKey] = DootKey.build("package")
+UPDATE     : Final[DootKey] = DootKey.build("update_")
 
 ##-- end expansion keys
 
@@ -173,7 +173,7 @@ class AndroidRemoteCmd(Action_p):
         try:
             data_key  = _update
             adb_cmd   = adb.bake("-t", transport, "shell", "", _return_cmd=True)
-            args      = [DootKey.make(x, explicit=True).expand(spec, state) for x in spec.args]
+            args      = [DootKey.build(x, explicit=True).expand(spec, state) for x in spec.args]
             printer.info("ADB Cmd: %s : %s", cmd, args)
             result = adb_cmd(cmd, *args)
             return { data_key : result.stdout.decode() }

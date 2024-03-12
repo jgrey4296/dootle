@@ -43,9 +43,9 @@ import doot
 import doot.errors
 from doot.structs import DootKey
 
-SEED = DootKey.make("seed")
-RNG  = DootKey.make("_rng")
-NUM  = DootKey.make("num")
+SEED = DootKey.build("seed")
+RNG  = DootKey.build("_rng")
+NUM  = DootKey.build("num")
 
 @DootKey.kwrap.types("seed", hint={"on_fail":None})
 @DootKey.kwrap.returns("_rng")

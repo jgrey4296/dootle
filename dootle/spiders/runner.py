@@ -61,7 +61,6 @@ printer = logmod.getLogger("doot._printer")
 
 from collections import defaultdict
 import doot
-import doot.constants
 import doot.errors
 from doot.enums import ReportEnum, ActionResponseEnum as ActRE
 from doot._abstract import Job_i, Task_i, FailPolicy_p
@@ -78,11 +77,11 @@ from scrapy.crawler import CrawlerRunner
 import scrapy
 
 dry_run                    = doot.args.on_fail(False).cmd.args.dry_run()
-head_level    : Final[str] = doot.constants.DEFAULT_HEAD_LEVEL
-build_level   : Final[str] = doot.constants.DEFAULT_BUILD_LEVEL
-action_level  : Final[str] = doot.constants.DEFAULT_ACTION_LEVEL
-sleep_level   : Final[str] = doot.constants.DEFAULT_SLEEP_LEVEL
-execute_level : Final[str] = doot.constants.DEFAULT_EXECUTE_LEVEL
+head_level    : Final[str] = doot.constants.printer.DEFAULT_HEAD_LEVEL
+build_level   : Final[str] = doot.constants.printer.DEFAULT_BUILD_LEVEL
+action_level  : Final[str] = doot.constants.printer.DEFAULT_ACTION_LEVEL
+sleep_level   : Final[str] = doot.constants.printer.DEFAULT_SLEEP_LEVEL
+execute_level : Final[str] = doot.constants.printer.DEFAULT_EXECUTE_LEVEL
 
 reactor_timeout = doot.config.on_fail(2, int).settings.tasks.reactor_timeout()
 
@@ -180,7 +179,7 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
 
         with logctx(job.spec.print_levels.on_fail(build_level).build()):
             count = 0
-            for task in job.build():
+            for task in job.make():
                 match task:
                     case Job_i():
                         printer.warning("Jobs probably shouldn't build jobs: %s : %s", str(job.name), str(task.name))

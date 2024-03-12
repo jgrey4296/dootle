@@ -36,10 +36,6 @@ from doot._abstract import Command_i
 from doot.structs import TaskStub
 from collections import defaultdict
 
-##-- data
-data_path = doot.constants.TOML_TEMPLATE
-##-- end data
-
 class ExampleCmd(Command_i):
     """
       For checking doot finds system installed entry points
