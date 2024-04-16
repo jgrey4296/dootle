@@ -44,7 +44,7 @@ dot_ext    = doot.config.on_fail("png", str).dot_graph.ext()
 @doot.check_protocol
 class DotAction(Action_p):
 
-    @DootKey.kwrap.types("layout", "scale", "ext")
+    @DootKey.dec.types("layout", "scale", "ext")
     def __call__(self, spec, state, layout, scale, ext):
         pass
 

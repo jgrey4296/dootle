@@ -24,8 +24,8 @@ from doot._abstract import Action_p
 CHECK_AMNT    : Final[int] = doot.config.on_fail(150, int).downloader.check_amnt()
 speak_confirm : Final      = "Found a Large Group of Files, waiting for confirmation"
 
-@DootKey.kwrap.paths("to")
-@DootKey.kwrap.expands("url")
+@DootKey.dec.paths("to")
+@DootKey.dec.expands("url")
 def download_media(spec, state, to, url):
     """ Download all media mentioned in json files """
     print("Downloading media %s to: %s" % (len(media), media_dir))

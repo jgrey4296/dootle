@@ -68,9 +68,9 @@ def setup_firefox(spec, state):
     driver = Firefox(options=options, service=service)
     return { FF_DRIVER : driver }
 
-@DootKey.kwrap.expands("url")
-@DootKey.kwrap.paths("to")
-@DootKey.kwrap.types(FF_DRIVER)
+@DootKey.dec.expands("url")
+@DootKey.dec.paths("to")
+@DootKey.dec.types(FF_DRIVER)
 def save_pdf(spec, state, url, _to, _driver):
     """ prints a url to a pdf file using selenium """
     printer.info("Saving: %s", url)
@@ -86,7 +86,7 @@ def save_pdf(spec, state, url, _to, _driver):
         f.write(pdf_bytes)
 
 
-@DootKey.kwrap.types(FF_DRIVER)
+@DootKey.dec.types(FF_DRIVER)
 def close_firefox(spec, state, _driver):
     printer.info("Closing Firefox")
     _driver.quit()

@@ -51,8 +51,8 @@ class RunSpider(Action_p, Importer_M):
       add a spider to the scrapy crawler that is in state
     """
 
-    @DootKey.kwrap.expands("spider")
-    @DootKey.kwrap.types("crawler")
+    @DootKey.dec.expands("spider")
+    @DootKey.dec.types("crawler")
     def __call__(self, spec, state, spider, crawler):
         spider_ref   = DootCodeReference.from_str(spider)
         spider_class = spider_ref.try_import()

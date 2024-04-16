@@ -72,7 +72,7 @@ class BibtexInitAction(Action_p):
     """
     _toml_kwargs = [UPDATE]
 
-    @DootKey.kwrap.redirects("update_")
+    @DootKey.dec.redirects("update_")
     def __call__(self, spec, state, _update):
         data_key = _update
         if data_key in state:
@@ -92,10 +92,10 @@ class BibtexLoadAction(Action_p):
       """
     _toml_kwargs = [UPDATE, PARSE_STACK, FROM_KEY, YEAR_KEY, "crossref"]
 
-    @DootKey.kwrap.redirects("year_")
-    @DootKey.kwrap.redirects_many("from")
-    @DootKey.kwrap.types("parse_stack", hint={"type_":list})
-    @DootKey.kwrap.types("update_", hint={"type_":b.Library|None, "chain":[DB_KEY]})
+    @DootKey.dec.redirects("year_")
+    @DootKey.dec.redirects_many("from")
+    @DootKey.dec.types("parse_stack", hint={"type_":list})
+    @DootKey.dec.types("update_", hint={"type_":b.Library|None, "chain":[DB_KEY]})
     def __call__(self, spec, state, _year, from_ex, parse_stack, _update):
         year_key    = _year
         db          = _update
@@ -137,10 +137,10 @@ class BibtexToStrAction(Action_p):
     """
     _toml_kwargs = [FROM_KEY, UPDATE, WRITE_STACK, FORMAT_KEY]
 
-    @DootKey.kwrap.types("from", hint={"type_":b.library.Library|None, "chain":[DB_KEY]})
-    @DootKey.kwrap.types("write_stack", hint={"type_":list})
-    @DootKey.kwrap.types("bib_format", hint={"type_": b.BibtexFormat|None})
-    @DootKey.kwrap.redirects("update_")
+    @DootKey.dec.types("from", hint={"type_":b.library.Library|None, "chain":[DB_KEY]})
+    @DootKey.dec.types("write_stack", hint={"type_":list})
+    @DootKey.dec.types("bib_format", hint={"type_": b.BibtexFormat|None})
+    @DootKey.dec.redirects("update_")
     def __call__(self, spec, state, _from, write_stack, bib_format, _update):
         data_key    = _update
         db          = _from
@@ -165,3 +165,12 @@ class BibtexFailedBlocksWriteAction(Action_p):
         with open(target, 'w') as f:
             for block in blocks:
                 f.write(block.raw)
+
+
+class BibtexRunTransformsOnEntry(Action_p):
+    """ run a callable on each entry of a library """
+
+    @DootKey.dec.types("bib_db")
+    @DootKey.dec.references("transforms")
+    def __call__(self, spec, state, _db, _ts):
+     raise NotImplementedError("TODO")

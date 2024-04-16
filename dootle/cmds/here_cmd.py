@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-
+TODO Here Command. - run the system doot at this cwd, using either a local, nearest parent, or global doot toml and tasks
 
 See EOF for license/metadata/notes as applicable
 """
@@ -36,25 +36,3 @@ import more_itertools as mitz
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
-
-printer = logmod.getLogger("doot._printer")
-
-import doot
-import doot.errors
-from doot.structs import DootKey
-import sh
-import os
-
-class MambaEnv:
-    """ Set up a mamba env to use, returns a baked command to pass to the normal shell action in shenv_ """
-
-    @DootKey.dec.types("env", hint={"type_":list|str})
-    @DootKey.dec.redirects("update_")
-    def __call__(self, spec, state, env, _update):
-        match env:
-            case [x]:
-                env = x
-            case str() as x:
-                env = x
-        sh_ctxt = sh.mamba.bake("run", "-n", env, _return_cmd=True, _tty_out=False)
-        return { _update : sh_ctxt }

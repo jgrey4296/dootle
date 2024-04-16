@@ -61,15 +61,14 @@ UPDATE     : Final[DootKey] = DootKey.build("update_")
 
 ##-- end expansion keys
 
-@doot.check_protocol
 class AndroidRunning(Action_p):
     """
       Start the adb server and connect to the device.
       internally identifies the transport id and adds it to the task state
     """
 
-    @DootKey.kwrap.redirects("transport")
-    @DootKey.kwrap.returns("transport")
+    @DootKey.dec.redirects("transport")
+    @DootKey.dec.returns("transport")
     def __call__(self, spec, state, transport):
         data_key = transport
         try:
@@ -105,11 +104,10 @@ class AndroidRunning(Action_p):
                 return input("Transport Id: ")
 
 
-@doot.check_protocol
 class AndroidPush(Action_p):
 
-    @DootKey.kwrap.expands("transport")
-    @DootKey.kwrap.paths("local", "remote")
+    @DootKey.dec.expands("transport")
+    @DootKey.dec.paths("local", "remote")
     def __call__(self, spec, state, transport, local, remote):
         try:
             push        = adb.bake("-t", transport, "push", "--sync", _return_cmd=True)
@@ -120,11 +118,10 @@ class AndroidPush(Action_p):
             raise doot.errors.DootTaskFailed("Push Failed") from err
 
 
-@doot.check_protocol
 class AndroidPull(Action_p):
 
-    @DootKey.kwrap.expands("transport")
-    @DootKey.kwrap.paths("local", "remote")
+    @DootKey.dec.expands("transport")
+    @DootKey.dec.paths("local", "remote")
     def __call__(self, spec, state, transport, local, remote):
         result     = None
         transport  = TRANSPORT.expand(spec, state)
@@ -141,12 +138,11 @@ class AndroidPull(Action_p):
             raise doot.errors.DootTaskFailed("Pull Failed") from err
 
 
-@doot.check_protocol
 class AndroidInstall(Action_p):
     _toml_kwargs = [PACKAGE, TRANSPORT]
 
-    @DootKey.kwrap.expands("transport")
-    @DootKey.kwrap.paths("package")
+    @DootKey.dec.expands("transport")
+    @DootKey.dec.paths("package")
     def __call__(self, spec, state, transport, package):
         try:
             transport = transport
@@ -161,14 +157,13 @@ class AndroidInstall(Action_p):
 
 
 
-@doot.check_protocol
 class AndroidRemoteCmd(Action_p):
     inState      = [TRANSPORT, "android_root"]
     _toml_kwargs = ["cmd", "update_", "transport"]
 
-    @DootKey.kwrap.args
-    @DootKey.kwrap.expands("transport", "cmd")
-    @DootKey.kwrap.redirects("update_")
+    @DootKey.dec.args
+    @DootKey.dec.expands("transport", "cmd")
+    @DootKey.dec.redirects("update_")
     def __call__(self, spec, state, args, transport, cmd, _update):
         try:
             data_key  = _update

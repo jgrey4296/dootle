@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """
 
-
-See EOF for license/metadata/notes as applicable
 """
-
-##-- builtin imports
+##-- imports
 from __future__ import annotations
 
 # import abc
-import datetime
-import enum
+# import datetime
+# import enum
 import functools as ftz
 import itertools as itz
 import logging as logmod
@@ -18,30 +15,30 @@ import pathlib as pl
 import re
 import time
 import types
-import weakref
 # from copy import deepcopy
 # from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     Iterable, Iterator, Mapping, Match, MutableMapping,
                     Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable, Generator)
-from uuid import UUID, uuid1
+                    cast, final, overload, runtime_checkable)
+# from uuid import UUID, uuid1
+# from weakref import ref
 
-##-- end builtin imports
-
-##-- lib imports
-import more_itertools as mitz
-##-- end lib imports
+##-- end imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
+printer = logmod.getLogger("doot._printer")
 
-import sh
 import doot
-import doot.errors
-from doot.structs import DootKey
+from doot._abstract import Command_i
 
-@DootKey.dec.args
-def say(spec, state, args):
-    sh.spd_say(*args)
+class CompleteCmd(Command_i):
+
+    @property
+    def param_specs(self) -> list:
+        return super().param_specs + []
+
+    def __call__(self, tasks, plugins):
+        pass
