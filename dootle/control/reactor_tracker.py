@@ -82,7 +82,7 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
     state_e = TaskStateEnum
 
     def __init__(self, shadowing:bool=False, *, policy=None):
-        super().__init__(policy=policy) # self.tasks
+        super().__init__(shadowing=shadowing, policy=policy) # -> self.tasks
 
     def add_task(self, task:DootTaskSpec|TaskBase_i, *, no_root_connection=False) -> None:
         """ add a task description into the tracker, but don't queue it
@@ -91,6 +91,7 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
 
         task : TaskBase_i = self._prep_task(task)
         assert(isinstance(task, TaskBase_i))
+
         # Store it
         self.tasks[task.name] = task
 
@@ -98,12 +99,22 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
         self.task_graph.add_node(task.name, state=self.INITIAL_TASK_STATE, priority=task.spec.priority)
 
         # Then connect it:
-        if not no_root_connection:
-            self.task_graph.add_edge(ROOT, task.name)
+        if not no_root_connection and task.name:
+            self.task_graph.add_edge(task.name, ROOT)
 
         self._insert_dependencies(task)
         self._insert_dependents(task)
-        self._insert_according_to_queue_behaviour(task)
+        self._maybe_implicit_queue(task)
+
+        # To Stop heads having heads
+        if task.spec.name == task.spec.name.task_head():
+            return
+        if not isinstance(task, Job_i):
+            return
+
+        head_spec = self._build_head(task.spec)
+        self.add_task(head_spec, no_root_connection=True)
+
 
     def update_state(self, task:str|TaskBase_i|DootTaskArtifact, state:self.state_e):
         """ update the state of a task in the dependency graph """
@@ -113,8 +124,8 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
                 self.task_graph.nodes[task]['state'] = state
             case TaskBase_i(), self.state_e() if task.name in self.task_graph:
                 self.task_graph.nodes[task.name]['state'] = state
-            case DootTaskArtifact(), self.state_e() if task in self.task_graph:
-                self.task_graph.nodes[task]['state'] = state
+            case DootTaskArtifact(), self.state_e() if str(task) in self.task_graph:
+                self.task_graph.nodes[str(task)]['state'] = state
             case _, _:
                 raise doot.errors.DootTaskTrackingError("Bad task update state args", task, state)
 
@@ -124,7 +135,6 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
             self.queue_task(target, silent=True)
 
         focus : str | DootTaskArtifact | None = None
-        adj                                   = dict(self.task_graph.adjacency())
         while bool(self.task_queue):
             focus : str = self.task_queue.peek()
             logging.debug("Task: %s  State: %s, Stack: %s", focus, self.task_state(focus), self.active_set)
@@ -136,6 +146,7 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
             match self.task_state(focus):
                 case self.state_e.SUCCESS: # remove task on completion
                     self.deque_task()
+                    self._reactive_queue(focus)
                 case self.state_e.EXISTS:  # remove artifact when it exists
                     for pred in self.task_graph.pred[focus].keys():
                         logging.debug("Propagating Artifact existence to disable: %s", pred)
@@ -155,11 +166,15 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
                     return None
                 case self.state_e.RUNNING:
                     logging.debug("Got Running Task: %s, continuing", focus)
+                    # then loop and try the next task to try
+
                 case self.state_e.READY if focus in self.execution_path: # error on running the same task twice
                     raise doot.errors.DootTaskTrackingError("Task Attempted to run twice: %s", focus)
                 case self.state_e.READY:   # return the task if its ready
+                    # NOTE: see how task is updated to RUNNING
                     self.execution_path.append(focus)
                     self.update_state(focus, self.state_e.RUNNING)
+                    # TODO check this, it might not affect the priority queue
                     self.task_graph.nodes[focus][PRIORITY] -= 1
                     return self.tasks.get(focus, None)
                 case self.state_e.ARTIFACT if bool(self.artifacts[focus]): # if an artifact exists, mark it so
