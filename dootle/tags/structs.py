@@ -37,9 +37,14 @@ class TagFile:
             try:
                 obj.update(tuple(x.strip() for x in line.split(obj.sep)))
             except Exception as err:
-                logging.warning("Failure Tag Reading %s (l:%s) : %s : %s", fpath, i, err, line)
+                logging.warning("Failure Tag Read: (l:%s) : %s : %s : (file: %s)", i, err, line, fpath)
 
         return obj
+
+    def __post_init__(self):
+        orig = self.counts
+        self.counts = defaultdict(lambda: 0)
+        self.counts.update({self.norm_tag(x):y for x,y in orig.items()})
 
     def __iter__(self):
         return iter(self.counts)
@@ -59,7 +64,7 @@ class TagFile:
     def __repr__(self):
         return f"<{self.__class__.__name__}: {len(self)}>"
 
-    def __iadd__(self, values:TagFile|str|list|set):
+    def __iadd__(self, values:TagFile|str|dict|set):
         """  merge tags, updating their counts as well. """
         return self.update(values)
 
@@ -76,23 +81,21 @@ class TagFile:
         self.counts[norm_key] += amnt
         return norm_key
 
-    def update(self, *values:str|list|TagFile|set|dict):
+    def update(self, *values:str|TagFile|set|dict):
         for val in values:
             match val:
                 case None | "":
                     continue
                 case str():
                     self._inc(val)
-                case [str() as key]:
-                    self._inc(key)
-                case (str() as key, str() as counts):
-                    self._inc(key, amnt=int(counts))
+                case list() | set():
+                    self.update(*val)
                 case dict():
                     self.update(*val.items())
+                case (str() as key, int()|str() as counts):
+                    self._inc(key, amnt=int(counts))
                 case TagFile():
-                    self.update(*values.counts.items())
-                case set():
-                    self.update(*val)
+                    self.update(*val.counts.items())
         return self
 
     def to_set(self) -> Set[str]:
@@ -131,6 +134,9 @@ class SubstitutionFile(TagFile):
 
         return "\n".join(all_lines)
 
+    def __getitem__(self, key) -> set[str]:
+        return self.sub(key)
+
     def canonical(self) -> TagFile:
         """ create a tagfile of just canonical tags"""
         # All substitutes are canonical
@@ -140,13 +146,16 @@ class SubstitutionFile(TagFile):
     def sub(self, value:str) -> set[str]:
         """ apply a substitution if it exists """
         normed = self.norm_tag(value)
-        if normed in self.substitutions and bool(self.substitutions[normed]):
+        if bool(self.substitutions.get(normed, None)):
             return self.substitutions[normed]
 
         return set([normed])
 
     def has_sub(self, value):
-        return value in self.substitutions
+        normed = self.norm_tag(value)
+        if normed != value:
+            return True
+        return bool(self.substitutions.get(normed, None))
 
     def update(self, *values:str|Tuple|dict|SubstitutionFile|TagFile|set):
         for val in values:
@@ -155,21 +164,19 @@ class SubstitutionFile(TagFile):
                     continue
                 case str(): # just a tag
                     self._inc(val)
-                case (str() as key, str() as counts): # tag and count
-                    self._inc(key, amnt=int(counts))
-                case (str() as key, str() as counts, *subs) if self.norm_tag(key) is None:
-                    pass
-                case (str() as key, str() as counts, *subs):
-                    self._inc(key, amnt=int(counts))
-                    norm_subs = [normed for x in subs if (normed:=self.norm_tag(x)) is not None]
-                    self.update({x:1 for x in norm_subs}) # Add to normal counts too
-                    self.substitutions[norm_key].update(norm_subs)
+                case list() | set():
+                    for key in val:
+                        self._inc(key)
                 case dict(): # tag and count
                     for key, val in val.items():
                         self._inc(key, amnt=val)
-                case set():
-                    for key in val:
-                        self._inc(key)
+                case (str() as key, int() | str() as counts): # tag and count
+                    self._inc(key, amnt=int(counts))
+                case (str() as key, int() | str() as counts, *subs):
+                    norm_key  = self._inc(key, amnt=int(counts))
+                    norm_subs = [normed for x in subs if (normed:=self.norm_tag(x)) is not None]
+                    self.update({x:1 for x in norm_subs}) # Add to normal counts too
+                    self.substitutions[norm_key].update(norm_subs)
                 case SubstitutionFile():
                     self.update(val.counts)
                     for tag, subs in val.substitutions.items():
