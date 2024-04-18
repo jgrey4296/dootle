@@ -135,11 +135,12 @@ class SubstitutionFile(TagFile):
         """ create a tagfile of just canonical tags"""
         # All substitutes are canonical
         canon = {x:1 for x in iter(self) if not self.has_sub(x)}
+        return TagFile(canon)
 
     def sub(self, value:str) -> set[str]:
         """ apply a substitution if it exists """
         normed = self.norm_tag(value)
-        if normed in self.substitutions:
+        if normed in self.substitutions and bool(self.substitutions[normed]):
             return self.substitutions[normed]
 
         return set([normed])
