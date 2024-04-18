@@ -42,8 +42,8 @@ import doot
 import doot.errors
 from doot.structs import DootKey
 from doot.enums import ActionResponseEnum
-from dootle.tags.structs import TagFile
-from dootle.bookmarks.structs import BookmarkCollection
+
+from jgdv.files.bookmarks.collection import BookmarkCollection
 
 from selenium.webdriver import FirefoxOptions, FirefoxService, Firefox
 from selenium.webdriver.common.print_page_options import PrintOptions
@@ -84,7 +84,6 @@ def save_pdf(spec, state, url, _to, _driver):
 
     with open(_to, "wb") as f:
         f.write(pdf_bytes)
-
 
 @DootKey.dec.types(FF_DRIVER)
 def close_firefox(spec, state, _driver):

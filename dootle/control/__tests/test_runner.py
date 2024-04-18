@@ -19,7 +19,7 @@ from doot.enums import TaskStateEnum
 from doot.structs import DootTaskSpec, DootActionSpec
 from doot._abstract import Job_i, Task_i, TaskTracker_i, TaskRunner_i, ReportLine_i, Action_p, Reporter_i
 from doot.utils import mock_gen
-from dootle.spiders.runner import DootleReactorRunner
+from dootle.control.reactor_runner import DootleReactorRunner
 
 logging = logmod.root
 

@@ -44,12 +44,12 @@ from sqlalchemy import create_engine
 
 import doot
 import doot.errors
-from dootle.bookmarks import structs as BC
+from jgdv.files.bookmarks.collection import BookmarkCollection
 
 Base = declarative_base()
 
 # define orm
-def extract(loc:pl.Path, debug=False) -> BC.BookmarkCollection:
+def extract(loc:pl.Path, debug=False) -> BookmarkCollection:
     engine_str : str = f"sqlite://{loc}"
     engine           = create_engine(engine_str)
 

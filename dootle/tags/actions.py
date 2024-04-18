@@ -41,20 +41,20 @@ logging = logmod.getLogger(__name__)
 class GetTagsFromFileAction(Action_p):
 
     def __call__(self, spec, task_state):
-        pass
+        raise NotImplementedError()
 
 class CleanTagsInFileAction(Action_p):
 
     def __call__(self, spec, task_state):
-        pass
+        raise NotImplementedError()
 
 class InitTagIndex(Action_p):
 
     def __call__(self, spec, task_state):
-        pass
+        raise NotImplementedError()
 
 
 class AddToTagIndex(Action_p):
 
     def __call__(self, spec, task_state):
-        pass
+        raise NotImplementedError()

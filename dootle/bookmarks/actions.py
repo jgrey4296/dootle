@@ -35,6 +35,7 @@ import more_itertools as mitz
 
 ##-- logging
 logging = logmod.getLogger(__name__)
+printer = logmod.getLogger("doot._printer")
 ##-- end logging
 
 import doot
@@ -43,14 +44,11 @@ from doot._abstract import Action_p
 from doot.structs import DootKey
 from dootle.bookmarks.pony_fns import extract as pony_extract
 from dootle.bookmarks.alchemy_fns import extract as alc_extract
-from dootle.bookmarks import structs as BC
-
-printer = logmod.getLogger("doot._printer")
+from jgdv.files.bookmarks.collection import BookmarkCollection
 
 ##-- expansion keys
 FROM_KEY = DootKey.build("from")
 UPDATE   = DootKey.build("update_")
-
 ##-- end expansion keys
 
 class BookmarksPonyExtraction(Action_p):
@@ -98,7 +96,7 @@ class BookmarksLoad(Action_p):
         load_path = FROM_KEY.to_path(spec, task_state)
         data_key  = UPDATE.redirect(spec)
         printer.info("Loading Bookmarks from: %s", load_path)
-        result    = BC.BookmarkCollection.read(load_path)
+        result    = BookmarkCollection.read(load_path)
         printer.info("Loaded %s Bookmarks", len(result))
         return { data_key : result }
 
@@ -111,10 +109,10 @@ class BookmarksMerge(Action_p):
         source_keys   : list[DootKey]               = FROM_KEY.redirect_multi(spec)
         source_values : list                        = [y for x in source_keys for y in x.to_type(spec, task_state, type_=list)]
 
-        merged                                      = BC.BookmarkCollection()
+        merged                                      = BookmarkCollection()
         for x in source_values:
             match x:
-                case BC.BookmarkCollection():
+                case BookmarkCollection():
                     pre_count = len(merged)
                     merged   += x
                     growth    = len(merged) - pre_count
@@ -129,7 +127,7 @@ class BookmarksToStr(Action_p):
 
     def __call__(self, spec, task_state):
         data_key                                      = UPDATE.redirect(spec)
-        source_data : BC.BookmarkCollection           = FROM_KEY.to_type(spec, task_state, type_=BC.BookmarkCollection)
+        source_data : BookmarkCollection           = FROM_KEY.to_type(spec, task_state, type_=BookmarkCollection)
 
         printer.info("Writing Bookmark Collection of size: %s", len(source_data))
         return { data_key : str(source_data) }
@@ -139,7 +137,7 @@ class BookmarksRemoveDuplicates(Action_p):
     _toml_kwargs = [FROM_KEY]
 
     def __call__(self, spec, task_state):
-        source_data : BC.BookmarkCollection      = FROM_KEY.to_type(spec, task_state, type_=BC.BookmarkCollection)
+        source_data : BookmarkCollection      = FROM_KEY.to_type(spec, task_state, type_=BookmarkCollection)
 
         pre_count = len(source_data)
         source_data.merge_duplicates()
