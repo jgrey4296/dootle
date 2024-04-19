@@ -55,7 +55,7 @@ changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md" # TODO
 
 ##-- entry-points
 [project.entry-points."doot.plugins.command"]
-example = "dootle.cmds.example_cmd:ExampleCmd"
+# example = "dootle.cmds.example_cmd:ExampleCmd"
 
 [project.entry-points."doot.plugins.action"]
 rng         = "dootle.actions.nprandom:new_random"
