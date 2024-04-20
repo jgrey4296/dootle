@@ -63,4 +63,4 @@ class BibtexInitAction(Action_p):
         db                   = b.Library()
         db.source_files      = set()
         printer.info("Bibtex Database Initialised")
-        return { data_key : db }
+        return { _update : db }
