@@ -38,7 +38,7 @@ import doot
 import doot.errors
 from doot.enums import TaskStateEnum
 from doot._abstract import Job_i, Task_i, FailPolicy_p
-from doot.structs import DootTaskArtifact, DootTaskSpec, DootTaskName
+from doot.structs import TaskArtifact, TaskSpec, TaskName
 from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i
 from doot.task.base_task import DootTask
 from doot.control.tracker import _TrackerEdgeType, DootTracker
@@ -66,7 +66,7 @@ class DootDateTracker(DootTracker):
         # self._modification_db = STORAGE_FILE.read_text()
         raise NotImplementedError()
 
-    def update_state(self, task:str|TaskBase_i|DootTaskArtifact|DootTaskName, state:self.state_e):
+    def update_state(self, task:str|TaskBase_i|TaskArtifact|TaskName, state:self.state_e):
         now = datetime.datetime.now()
         match state:
             case self.state_e.EXISTS:

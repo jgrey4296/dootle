@@ -100,7 +100,7 @@ def extract(fpath, debug=False) -> BookmarkCollection:
 
     tag_names                          = {}
     bookmark_tags                      = defaultdict(lambda: set())
-    collection : BookmarkCollection = BookmarkCollection()
+    collection : BookmarkCollection    = BookmarkCollection()
 
     ##-- bind database and mappings
     db.bind(provider='sqlite', filename=str(fpath), create_db=False)
@@ -119,7 +119,7 @@ def extract(fpath, debug=False) -> BookmarkCollection:
         query  = pony.select(b for b in DBBookmark if b.title is not None and b.fk is not None)
         result = query[:]
         for x in result:
-            bkmk : Bookmark = Bookmark(DBURL[x.fk].url, bookmark_tags[x.fk], x.title)
+            bkmk : Bookmark = Bookmark(url=DBURL[x.fk].url, tags=bookmark_tags[x.fk], name=x.title)
             collection += bkmk
     ##-- end session use
 

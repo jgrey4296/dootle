@@ -66,7 +66,7 @@ from doot.enums import ReportEnum, ActionResponseEnum as ActRE
 from doot._abstract import Job_i, Task_i, FailPolicy_p
 from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i, ReportLine_i, Action_p
 from doot.utils.signal_handler import SignalHandler
-from doot.structs import DootTaskSpec, DootActionSpec
+from doot.structs import TaskSpec, ActionSpec
 from doot.control.base_runner import BaseRunner, logctx
 
 from zope.interface import implementer
@@ -188,7 +188,7 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
                     case Task_i():
                         self.tracker.add_task(task, no_root_connection=True)
                         self.tracker.queue_task(task.name)
-                    case DootTaskSpec():
+                    case TaskSpec():
                         self.tracker.add_task(task, no_root_connection=True)
                         self.tracker.queue_task(task.name)
                     case _:
@@ -211,9 +211,9 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
         with logctx(task.spec.print_levels.on_fail(build_level).build()) as p:
             for action in task.actions:
                 match action:
-                    case DootActionSpec() if action.fun is None:
+                    case ActionSpec() if action.fun is None:
                         raise doot.errors.DootTaskError("Task %s Failed: Produced an action with no callable: %s", task.name, action, task=task.spec)
-                    case DootActionSpec():
+                    case ActionSpec():
                         match self._execute_action(action_count, action, task):
                             case ActRE.SKIP:
                                 action_result = ActRE.SKIP

@@ -256,7 +256,7 @@ class TestTracker:
             tracker.add_task(task)
 
         next_task = tracker.next_for("task1")
-        assert(isinstance(next_task, doot.structs.DootTaskArtifact))
+        assert(isinstance(next_task, doot.structs.TaskArtifact))
 
     def test_task_artifact_exists(self, ctor, mocker):
         """
@@ -273,7 +273,7 @@ class TestTracker:
 
 
         next_task = tracker.next_for("task1")
-        assert(isinstance(next_task, doot.structs.DootTaskArtifact))
+        assert(isinstance(next_task, doot.structs.TaskArtifact))
 
     def test_task_artifact_doesnt_exists(self, ctor, mocker):
         mocker.patch.object(pl.Path, "exists", return_value=False)
@@ -286,7 +286,7 @@ class TestTracker:
             tracker.add_task(task)
 
         next_task = tracker.next_for("task1")
-        assert(isinstance(next_task, doot.structs.DootTaskArtifact))
+        assert(isinstance(next_task, doot.structs.TaskArtifact))
 
     def test_task_artifact_partial_exists(self, ctor, mocker):
 
@@ -303,4 +303,4 @@ class TestTracker:
             tracker.add_task(task)
 
         next_task = tracker.next_for("task1")
-        assert(isinstance(next_task, doot.structs.DootTaskArtifact))
+        assert(isinstance(next_task, doot.structs.TaskArtifact))
