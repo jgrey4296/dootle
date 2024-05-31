@@ -1,0 +1,86 @@
+#+TITLE: Dootle Todos
+
+* Dootle
+** cmds
+*** pre-commit yaml stub
+** actions                                      :actions:
+*** dot
+*** downloader
+*** ocr
+*** pdf
+*** plantuml
+*** xml
+*** rng
+*** calender write
+*** csv read / write
+** android
+** bibtex
+*** middlewares
+**** ideal stemmer
+**** library location enforcer
+**** field lowercaser
+**** year checker
+**** title split
+**** output name formatting
+**** ISBN formatting
+**** pdf metadata application
+**** Url way-backer / checker
+**** &amp; -> \&
+**** reporters - author/editor counts, year entries, types, entries with files
+**** journal/booktitle caps normalization
+**** warn on missing doi/tags/url
+**** DONE bibtex metadata task
+** bookmarks
+*** alchemy fns
+
+** epub
+*** compile
+*** split
+
+** godot
+** latex
+** python
+*** DONE increment version
+*** DONE pip build
+*** local install
+*** pipreqs
+*** code line count
+*** coverage
+** sphinx
+*** build
+*** serve
+** pelican
+** spiders
+*** tests
+*** locations integration
+** tags
+*** clean
+
+** encryption
+** gradle
+** clingo
+
+** Twitter archive processing
+** org -> html
+** html -> epub** Experiments                   :experiment:
+** TDMQ option instead of individual task listing
+** floweaver                                    :add:
+https://github.com/ricklupton/floweaver
+
+** DONE isbn
+https://github.com/JNRowe/pyisbn
+https://github.com/WhyNotHugo/python-barcode
+https://github.com/TorKlingberg/isbn_hyphenate
+** railroad diagrams
+https://github.com/tabatkins/railroad-diagrams
+** readthedocs
+https://docs.readthedocs.io/en/stable/
+** quote images -> text
+** wayback
+https://akamhy.github.io/waybackpy/
+** control
+*** date tracker
+** docs
+
+
+* Links
