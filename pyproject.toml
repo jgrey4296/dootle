@@ -120,3 +120,44 @@ tag_scope          = "default"
 "dootle/__init__.py" = ['^__version__\s+=\s+"{version}"']
 
 ##-- end bumpber
+
+##-- isort
+# https://pycqa.github.io/isort/docs/configuration/options.html
+[tool.isort]
+color_output           = false
+py_version             = 311
+# profile                = "hug"
+comment_prefix         = "# "
+sections               = [
+"FUTURE", "STDLIB", "THIRDPARTY", "FIRSTPARTY", "LOCALFOLDER"
+]
+default_section        = "THIRDPARTY"
+lines_after_imports    = -1
+lines_between_sections = 1
+lines_between_types    = 0
+
+import_heading_future      = "Imports:"
+import_heading_stdlib      = "##-- stdlib imports"
+import_heading_thirdparty  = "##-- 3rd party imports"
+import_heading_firstparty  = "##-- 1st party imports"
+import_heading_localfolder = ""
+
+import_footer_future      = ""
+import_footer_stdlib      = "##-- end stdlib imports"
+import_footer_thirdparty  = "##-- end 3rd party imports"
+import_footer_firstparty  = "##-- end 1st party imports"
+import_footer_localfolder = ""
+
+add_imports            = [
+"from __future__ import annotations",
+"import datetime",
+"import enum",
+"import functools as ftz",
+"import itertools as itz",
+"import logging as logmod",
+"import pathlib as pl",
+"from uuid import UUID, uuid1",
+"from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic, Iterable, Iterator, Mapping, Match, MutableMapping, Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar, cast, final, overload, runtime_checkable, Generator)",
+]
+
+##-- end isort
