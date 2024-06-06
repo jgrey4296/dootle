@@ -1,86 +1,74 @@
 #+TITLE: Dootle Todos
+#+STARTUP: agenda
 
 * Dootle
 ** cmds
-*** pre-commit yaml stub
+*** [∅] pre-commit yaml stub
 ** actions                                      :actions:
-*** dot
-*** downloader
-*** ocr
-*** pdf
-*** plantuml
-*** xml
-*** rng
-*** calender write
-*** csv read / write
+*** [∅] dot
+*** [∅] downloader
+*** [∅] ocr
+*** [∅] pdf
+*** [∅] plantuml
+*** [∅] xml
+*** [∅] rng
+*** [∅] calender write
+*** [∅] csv read / write
 ** android
 ** bibtex
-*** middlewares
-**** ideal stemmer
-**** library location enforcer
-**** field lowercaser
-**** year checker
-**** title split
-**** output name formatting
-**** ISBN formatting
-**** pdf metadata application
-**** Url way-backer / checker
-**** &amp; -> \&
-**** reporters - author/editor counts, year entries, types, entries with files
-**** journal/booktitle caps normalization
-**** warn on missing doi/tags/url
-**** DONE bibtex metadata task
 ** bookmarks
-*** alchemy fns
+*** [∅] alchemy fns
 
 ** epub
-*** compile
-*** split
+*** [∅] compile
+*** [∅] split
 
 ** godot
-** latex
+** TODO latex
+- State "TODO"       from              [2024-06-03 Mon 05:21]
 ** python
 *** DONE increment version
 *** DONE pip build
-*** local install
-*** pipreqs
-*** code line count
-*** coverage
+*** [∅] local install
+*** [∅] pipreqs
+*** [∅] code line count
+*** [∅] coverage
 ** sphinx
-*** build
-*** serve
-** pelican
-** spiders
+*** [∅] build
+*** [∅] serve
+** TODO pelican
+- State "TODO"       from              [2024-06-03 Mon 05:22]
+** TODO spiders
+- State "TODO"       from              [2024-06-03 Mon 05:22]
 *** tests
 *** locations integration
-** tags
+** TODO tags
+- State "TODO"       from              [2024-06-03 Mon 05:22]
 *** clean
 
-** encryption
-** gradle
-** clingo
+** [∅] encryption
+** [∅] gradle
+** [∅] clingo
 
-** Twitter archive processing
-** org -> html
-** html -> epub** Experiments                   :experiment:
-** TDMQ option instead of individual task listing
-** floweaver                                    :add:
+** [∅] org -> html
+** [∅] TDMQ option instead of individual task listing
+** [∅] floweaver :add:
 https://github.com/ricklupton/floweaver
 
 ** DONE isbn
 https://github.com/JNRowe/pyisbn
 https://github.com/WhyNotHugo/python-barcode
 https://github.com/TorKlingberg/isbn_hyphenate
-** railroad diagrams
+** [∅] railroad diagrams
 https://github.com/tabatkins/railroad-diagrams
-** readthedocs
+** [∅] readthedocs
 https://docs.readthedocs.io/en/stable/
-** quote images -> text
-** wayback
+** [∅] quote images -> text
+** [∅] wayback
 https://akamhy.github.io/waybackpy/
-** control
+** [∅] control
 *** date tracker
-** docs
+** [∅] docs
 
 
 * Links
