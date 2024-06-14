@@ -36,7 +36,6 @@ logging = logmod.getLogger(__name__)
 from collections import defaultdict
 import doot
 import doot.errors
-from doot.enums import TaskStateEnum
 from doot._abstract import Job_i, Task_i, FailPolicy_p
 from doot.structs import TaskArtifact, TaskSpec, TaskName
 from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i

@@ -32,7 +32,7 @@ import sh
 import doot
 import doot.errors
 from doot.structs import DootKey, TaskName, CodeReference
-from doot.enums import LoopControl
+from doot.enums import LoopControl_e
 from doot.mixins.path_manip import PathManip_m
 
 ##-- logging
@@ -65,7 +65,7 @@ class GetChangedFilesByCommit:
 
     (`recursive` is not used.)
     """
-    control_e = LoopControl
+    control_e = LoopControl_e
 
     @DootKey.dec.types("roots", "exts")
     @DootKey.dec.references("fn")

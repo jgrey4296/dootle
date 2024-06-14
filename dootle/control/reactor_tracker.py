@@ -61,7 +61,7 @@ from collections import defaultdict
 from queue import PriorityQueue
 import doot
 import doot.errors
-from doot.enums import TaskStateEnum
+from doot.enums import TaskStatus_e
 from doot._abstract import Job_i, Task_i, FailPolicy_p
 from doot.structs import TaskArtifact, TaskSpec, CodeReference, TaskName
 from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i
@@ -79,7 +79,7 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
 
     the `task_graph` stores nodes as full names of tasks
     """
-    state_e = TaskStateEnum
+    state_e = TaskStatus_e
 
     def __init__(self, shadowing:bool=False, *, policy=None):
         super().__init__(shadowing=shadowing, policy=policy) # -> self.tasks

@@ -62,7 +62,7 @@ printer = logmod.getLogger("doot._printer")
 from collections import defaultdict
 import doot
 import doot.errors
-from doot.enums import ReportEnum, ActionResponseEnum as ActRE
+from doot.enums import Report_f, ActionResponse_e as ActRE
 from doot._abstract import Job_i, Task_i, FailPolicy_p
 from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i, ReportLine_i, Action_p
 from doot.utils.signal_handler import SignalHandler

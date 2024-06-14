@@ -41,7 +41,7 @@ import sh
 import doot
 import doot.errors
 from doot._abstract import Action_p
-from doot.enums import ActionResponseEnum as ActRE
+from doot.enums import ActionResponse_e as ActRE
 from doot.structs import DootKey
 
 try:

@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
 """
 
-
 See EOF for license/metadata/notes as applicable
 """
 
+# Imports:
 from __future__ import annotations
 
+# ##-- stdlib imports
 import datetime
 import enum
 import functools as ftz
 import itertools as itz
 import logging as logmod
 import pathlib as pl
+import random
 import re
+import shutil
 import time
 import types
 import weakref
@@ -24,20 +27,23 @@ from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
                     runtime_checkable)
 from uuid import UUID, uuid1
 
+# ##-- end stdlib imports
+
+# ##-- 3rd party imports
+import doot
+import doot.errors
+from doot._abstract import Action_p
+from doot.actions.postbox import _DootPostBox
+from doot.mixins.path_manip import PathManip_m
+from doot.structs import CodeReference, DootKey, TaskName, TaskSpec
+from tomlguard import TomlGuard
+
+# ##-- end 3rd party imports
+
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = logmod.getLogger("doot._printer")
 ##-- end logging
-
-import random
-import shutil
-from tomlguard import TomlGuard
-import doot
-import doot.errors
-from doot._abstract import Action_p
-from doot.structs import DootKey, TaskSpec, TaskName, CodeReference
-from doot.mixins.path_manip import PathManip_m
-from doot.actions.postbox import _DootPostBox
 
 class InjectMultiShadow:
     """
@@ -63,7 +69,6 @@ class InjectMultiShadow:
             updates : list[pl.Path] = self._shadow_paths(x.extra[_key], roots)
             x.model_extra.update(dict(**x.extra, **{"shadow_paths": updates}))
 
-
     def _shadow_paths(self, rpath:pl.Path, shadow_roots:list[pl.Path]) -> list[pl.Path]:
         """ take a relative path, apply it onto a multiple roots to the shadow directories """
         assert(isinstance(rpath, pl.Path))
@@ -76,7 +81,6 @@ class InjectMultiShadow:
             shadow_dirs.append(result.parent)
 
         return shadow_dirs
-
 
 class MultiBackupAction(PathManip_m):
     """
@@ -91,10 +95,13 @@ class MultiBackupAction(PathManip_m):
     @DootKey.dec.paths("from")
     @DootKey.dec.types("pattern")
     @DootKey.dec.types("shadow_paths")
+    @DootKey.dec.types("tolerance", hint={"type_":int, "on_fail":10_000_000})
     @DootKey.dec.taskname
-    def __call__(self, spec, state, _from, pattern, shadow_paths, _name) -> dict|bool|None:
+    def __call__(self, spec, state, _from, pattern, shadow_paths, tolerance, _name) -> dict|bool|None:
         source_loc = _from
         pattern_key = DootKey.build(pattern)
+
+        printer.info("Backing up : %s", source_loc)
         for shadow_path in shadow_paths:
             state['shadow_path'] = shadow_path
             dest_loc             = pattern_key.to_path(spec, state)
@@ -102,14 +109,18 @@ class MultiBackupAction(PathManip_m):
             if self._is_write_protected(dest_loc):
                 raise doot.errors.DootLocationError("Tried to write a protected location", dest_loc)
 
-
             dest_loc.parent.mkdir(parents=True, exist_ok=True)
 
-            if dest_loc.exists() and source_loc.stat().st_mtime_ns <= dest_loc.stat().st_mtime_ns:
+            # ExFat FS has lower resolution timestamps
+            # So guard by having a tolerance:
+            source_ns       = source_loc.stat().st_mtime_ns
+            dest_ns         = dest_loc.stat().st_mtime_ns
+            difference      = int(max(source_ns, dest_ns) - min(source_ns, dest_ns))
+            below_tolerance = difference <= tolerance
+            if dest_loc.exists() and below_tolerance:
                 continue
 
-            printer.warning("Backing up : %s", source_loc)
-            printer.warning("Destination: %s", dest_loc)
+            printer.info("Destination: %s", dest_loc)
             _DootPostBox.put(_name, dest_loc)
             shutil.copy2(source_loc,dest_loc)
         else:
