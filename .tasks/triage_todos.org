@@ -1,0 +1,61 @@
+#+TITLE: Triage Todos
+#+STARTUP: agenda
+
+
+* Triage
+** [∅] create a pandas/seaborn/matplotlib chart
+**** create subclass actions: artifactReader, artifactWriter
+** QUEUED logging secret filter
+- subclass a key
+- override str and repr to not leak
+- add as a filter to logging
+** [#A] doot memory guard
+possibly use https://psutil.readthedocs.io/en/latest/
+#+NAME: memory
+#+begin_src python :results output
+	def memory():
+    """
+    Get node total memory and memory usage
+      from https://stackoverflow.com/questions/17718449/
+    """
+    with open('/proc/meminfo', 'r') as mem:
+        ret = {}
+        tmp = 0
+        for i in mem:
+            sline = i.split()
+            if str(sline[0]) == 'MemTotal:':
+                ret['total'] = int(sline[1])
+            elif str(sline[0]) in ('MemFree:', 'Buffers:', 'Cached:'):
+                tmp += int(sline[1])
+        ret['free'] = tmp
+        ret['used'] = int(ret['total']) - int(ret['free'])
+    return ret
+#+end_src
+** [∅] easier task/job subclass for reusable patterns
+- like: walk->expand to subtask->queue
+- and: load file->parse->transform->write
+** [∅] date tracker
+** [⇒] update task spec version
+:LOGBOOK:
+CLOCK: [2024-06-13 Thu 22:46]--[2024-06-13 Thu 23:23] =>  0:37
+:END:
+[[file:/media/john/data/github/python/dootle/dootle/utils/version_struct.py::class Version_s(BaseModel, arbitrary_types_allowed=True, extra="allow"):][implementation]]
+#+begin_src toml :results output
+[[tasks.group]]
+name = "blah"
+# Old:
+version = "0.1"
+# New:
+version = {"task": "0.1", "doot": ">0.5.1", "dootle" : "<0.2.1" ... }
+# and check the version on build
+# similarly:
+depends_on = ["another::task, 0.2.1","and::another, >0.1"]
+#+end_src
+
+see:
+https://packaging.python.org/en/latest/specifications/dependency-specifiers/
+https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html
+** [∅] predicate/skip tests
+staleness, recency, size, contains, hashcmp...
+** [∅] regex filter shell action to replace called sed
+** [∅] here command
