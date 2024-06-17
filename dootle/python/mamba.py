@@ -41,15 +41,15 @@ printer = logmod.getLogger("doot._printer")
 
 import doot
 import doot.errors
-from doot.structs import DootKey
+from doot.structs import DKey, DKeyed
 import sh
 import os
 
 class MambaEnv:
     """ Set up a mamba env to use, returns a baked command to pass to the normal shell action in shenv_ """
 
-    @DootKey.dec.types("env", hint={"type_":list|str})
-    @DootKey.dec.redirects("update_")
+    @DKeyed.types("env", check=list|str)
+    @DKeyed.redirects("update_")
     def __call__(self, spec, state, env, _update):
         match env:
             case [x]:

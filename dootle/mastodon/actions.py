@@ -45,7 +45,7 @@ import doot
 import doot.errors
 from doot._abstract import Task_i
 from doot.structs import DootActionSpec
-from doot.structs import DootKey
+from doot.structs import DKey
 
 TOOT_SIZE            : Final[int]                   = doot.config.on_fail(250, int).mastodon.toot_size()
 TOOT_IMAGE_SIZE      : Final[str]                   = doot.config.on_fail(8_000_000, int).mastodon.image_size()
@@ -54,13 +54,13 @@ RESOLUTION_RE        : Final[re.Pattern]            = re.compile(r".*?([0-9]+x[0
 TOOT_IMAGE_TYPES     : Final[list[str]]             = [".jpg", ".png", ".gif"]
 
 ##-- expansion keys
-INSTANCE_KEY           : Final[DootKey]                        = DootKey.build("mastodon")
-TEXT_KEY               : Final[DootKey]                        = DootKey.build("toot_text")
-IMAGE_KEY              : Final[DootKey]                        = DootKey.build("toot_image")
-IMAGE_DESC             : Final[DootKey]                        = DootKey.build("toot_desc")
-UPDATE                 : Final[DootKey]                        = DootKey.build("update_")
-FROM_KEY               : Final[DootKey]                        = DootKey.build("from")
-SECRETS                : Final[DootKey]                        = DootKey.build("mastodon_secrets")
+INSTANCE_KEY           : Final[DKey]                        = DKey("mastodon")
+TEXT_KEY               : Final[DKey]                        = DKey("toot_text")
+IMAGE_KEY              : Final[DKey]                        = DKey("toot_image")
+IMAGE_DESC             : Final[DKey]                        = DKey("toot_desc")
+UPDATE                 : Final[DKey]                        = DKey("update_")
+FROM_KEY               : Final[DKey]                        = DKey("from")
+SECRETS                : Final[DKey]                        = DKey("mastodon_secrets")
 ##-- end expansion keys
 
 
@@ -77,7 +77,7 @@ class MastodonSetup:
 
         if MastodonSetup.instance is None:
             printer.info("---------- Initialising Mastodon", extra={"colour": "green"})
-            secrets_path = FROM_KEY.to_path(spec, task_state, chain=SECRETS)
+            secrets_path = FROM_KEY.expand(spec, task_state, chain=SECRETS)
             secrets = tomlguard.load(secrets_path)
             MastodonSetup.instance = mastodon.Mastodon(
                 access_token = secrets.mastodon.access_token,
@@ -96,9 +96,9 @@ class MastodonPost:
     _toml_kwargs = [INSTANCE_KEY, FROM_KEY, IMAGE_KEY, IMAGE_DESC, TEXT_KEY]
 
     def __call__(self, spec, task_state):
-        instance           = INSTANCE_KEY.to_type(spec, task_state, type_=Mastodon.Mastodon)
-        text               = FROM_KEY.redirect(spec, chain=TEXT_KEY).expand(spec, task_state)
-        image_path         = IMAGE_KEY.to_path(spec, task_state)
+        instance           = INSTANCE_KEY.expand(spec, task_state, check=Mastodon.Mastodon)
+        text               = FROM_KEY.expand(spec, task_state)
+        image_path         = IMAGE_KEY.expand(spec, task_state)
         image_desc         = IMAGE_DESC.expand(spec, task_state)
 
         try:

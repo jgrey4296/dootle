@@ -35,7 +35,7 @@ import doot.errors
 from doot._abstract import Action_p
 from doot.actions.postbox import _DootPostBox
 from doot.mixins.path_manip import PathManip_m
-from doot.structs import CodeReference, DootKey, TaskName, TaskSpec
+from doot.structs import CodeReference, DKey, TaskName, TaskSpec, DKeyed
 from tomlguard import TomlGuard
 
 # ##-- end 3rd party imports
@@ -54,9 +54,9 @@ class InjectMultiShadow:
       For use with multibackupaction,
     """
 
-    @DootKey.dec.types("onto", hint={"type_": TaskSpec|list})
-    @DootKey.dec.types("shadow_roots")
-    @DootKey.dec.redirects("key_")
+    @DKeyed.types("onto", check=TaskSpec|list)
+    @DKeyed.types("shadow_roots")
+    @DKeyed.redirects("key_")
     def __call__(self, spec, state, _onto, _shadow_roots, _key):
         match _onto:
             case list():
@@ -64,7 +64,7 @@ class InjectMultiShadow:
             case TaskSpec() as spec:
                 _onto = [spec]
 
-        roots = [DootKey.build(x).to_path(spec, state) for x in _shadow_roots]
+        roots = [DKey(x, mark=DKey.mark.PATH).expand(spec, state) for x in _shadow_roots]
         for x in _onto:
             updates : list[pl.Path] = self._shadow_paths(x.extra[_key], roots)
             x.model_extra.update(dict(**x.extra, **{"shadow_paths": updates}))
@@ -92,19 +92,19 @@ class MultiBackupAction(PathManip_m):
       will create the destination directory if necessary
     """
 
-    @DootKey.dec.paths("from")
-    @DootKey.dec.types("pattern")
-    @DootKey.dec.types("shadow_paths")
-    @DootKey.dec.types("tolerance", hint={"type_":int, "on_fail":10_000_000})
-    @DootKey.dec.taskname
+    @DKeyed.paths("from")
+    @DKeyed.types("pattern")
+    @DKeyed.types("shadow_paths")
+    @DKeyed.types("tolerance", check=int, fallback=10_000_000)
+    @DKeyed.taskname
     def __call__(self, spec, state, _from, pattern, shadow_paths, tolerance, _name) -> dict|bool|None:
         source_loc = _from
-        pattern_key = DootKey.build(pattern)
+        pattern_key = DKey(pattern, mark=DKey.mark.PATH)
 
         printer.info("Backing up : %s", source_loc)
         for shadow_path in shadow_paths:
             state['shadow_path'] = shadow_path
-            dest_loc             = pattern_key.to_path(spec, state)
+            dest_loc             = pattern_key.expand(spec, state)
 
             if self._is_write_protected(dest_loc):
                 raise doot.errors.DootLocationError("Tried to write a protected location", dest_loc)

@@ -42,7 +42,7 @@ printer = logmod.getLogger("doot._printer")
 import sh
 import doot
 import doot.errors
-from doot.structs import DootKey
+from doot.structs import DKey, DKeyed
 from doot._abstract import Action_p
 
 try:
@@ -53,11 +53,11 @@ except sh.CommandNotFound as err:
 TRANSPORT_RE = re.compile("transport_id:([0-9])")
 
 ##-- expansion keys
-TRANSPORT  : Final[DootKey] = DootKey.build("transport")
-LOCAL      : Final[DootKey] = DootKey.build("local")
-REMOTE     : Final[DootKey] = DootKey.build("remote")
-PACKAGE    : Final[DootKey] = DootKey.build("package")
-UPDATE     : Final[DootKey] = DootKey.build("update_")
+TRANSPORT  : Final[DKey] = DKey("transport")
+LOCAL      : Final[DKey] = DKey("local")
+REMOTE     : Final[DKey] = DKey("remote")
+PACKAGE    : Final[DKey] = DKey("package")
+UPDATE     : Final[DKey] = DKey("update_")
 
 ##-- end expansion keys
 
@@ -67,8 +67,8 @@ class AndroidRunning(Action_p):
       internally identifies the transport id and adds it to the task state
     """
 
-    @DootKey.dec.redirects("transport")
-    @DootKey.dec.returns("transport")
+    @DKeyed.redirects("transport")
+    @DKeyed.returns("transport")
     def __call__(self, spec, state, transport):
         data_key = transport
         try:
@@ -106,8 +106,8 @@ class AndroidRunning(Action_p):
 
 class AndroidPush(Action_p):
 
-    @DootKey.dec.expands("transport")
-    @DootKey.dec.paths("local", "remote")
+    @DKeyed.expands("transport")
+    @DKeyed.paths("local", "remote")
     def __call__(self, spec, state, transport, local, remote):
         try:
             push        = adb.bake("-t", transport, "push", "--sync", _return_cmd=True)
@@ -120,15 +120,15 @@ class AndroidPush(Action_p):
 
 class AndroidPull(Action_p):
 
-    @DootKey.dec.expands("transport")
-    @DootKey.dec.paths("local", "remote")
+    @DKeyed.expands("transport")
+    @DKeyed.paths("local", "remote")
     def __call__(self, spec, state, transport, local, remote):
         result     = None
         transport  = TRANSPORT.expand(spec, state)
         try:
             pull   = adb.bake("-t", transport, "pull", "-a", _return_cmd=True)
-            local  = LOCAL.to_path(spec, state)
-            remote = REMOTE.to_path(spec, state)
+            local  = LOCAL.expand(spec, state)
+            remote = REMOTE.expand(spec, state)
             printer.info("ADB Pull: %s -> %s", remote, local)
             # TODO get list of local files, list of remote files, diff, pull those lacking.
 
@@ -141,8 +141,8 @@ class AndroidPull(Action_p):
 class AndroidInstall(Action_p):
     _toml_kwargs = [PACKAGE, TRANSPORT]
 
-    @DootKey.dec.expands("transport")
-    @DootKey.dec.paths("package")
+    @DKeyed.expands("transport")
+    @DKeyed.paths("package")
     def __call__(self, spec, state, transport, package):
         try:
             transport = transport
@@ -161,14 +161,14 @@ class AndroidRemoteCmd(Action_p):
     inState      = [TRANSPORT, "android_root"]
     _toml_kwargs = ["cmd", "update_", "transport"]
 
-    @DootKey.dec.args
-    @DootKey.dec.expands("transport", "cmd")
-    @DootKey.dec.redirects("update_")
+    @DKeyed.args
+    @DKeyed.expands("transport", "cmd")
+    @DKeyed.redirects("update_")
     def __call__(self, spec, state, args, transport, cmd, _update):
         try:
             data_key  = _update
             adb_cmd   = adb.bake("-t", transport, "shell", "", _return_cmd=True)
-            args      = [DootKey.build(x, explicit=True).expand(spec, state) for x in spec.args]
+            args      = [DKey(x, explicit=True).expand(spec, state) for x in spec.args]
             printer.info("ADB Cmd: %s : %s", cmd, args)
             result = adb_cmd(cmd, *args)
             return { data_key : result.stdout.decode() }

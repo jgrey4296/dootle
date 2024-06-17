@@ -45,9 +45,9 @@ from bibtexparser.middlewares.middleware import BlockMiddleware
 
 import doot
 from doot._abstract.task import Action_p
-from doot.structs import DootKey
+from doot.structs import DKey, DKeyed
 
-DB_KEY      : Final[DootKey] = DootKey.build("bib_db")
+DB_KEY      : Final[DKey] = DKey("bib_db")
 
 class BibtexLoadAction(Action_p):
     """ Parse all the bibtext files into a state database, in place.
@@ -57,14 +57,14 @@ class BibtexLoadAction(Action_p):
 
       """
 
-    @DootKey.dec.redirects("year_")
-    @DootKey.dec.redirects_many("from")
-    @DootKey.dec.types("parse_stack", hint={"type_":list})
-    @DootKey.dec.types("update_", hint={"type_":b.Library|None, "chain":[DB_KEY]})
+    @DKeyed.redirects("year_")
+    @DKeyed.redirects("from", multi=True, re_mark=DKey.mark.PATH)
+    @DKeyed.types("parse_stack", check=list)
+    @DKeyed.types("update", check=b.Library|None)
     def __call__(self, spec, state, _year, from_ex, parse_stack, _update):
         year_key    = _year
-        db          = _update
-        file_list   = [x.to_path(spec, state) for x in from_ex]
+        db          = _update or DB_KEY.expand(spec, state)
+        file_list   = [x.expand(spec, state) for x in from_ex]
         results     = {}
 
         printer.debug("Starting to load %s files", len(file_list))

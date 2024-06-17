@@ -32,7 +32,7 @@ from string import Template
 # ##-- 3rd party imports
 import doot
 import doot.errors
-from doot.structs import DootKey
+from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
 
@@ -46,9 +46,9 @@ class TemplateExpansion:
       Expand string templates
     """
 
-    @DootKey.dec.types("template", hint={"type_":str|Template})
-    @DootKey.dec.types("safe", hint={"on_fail":False})
-    @DootKey.dec.redirects("update_")
+    @DKeyed.types("template", check=str|Template)
+    @DKeyed.types("safe", fallback=False)
+    @DKeyed.redirects("update_")
     def __call__(self, spec, state, template, safe, _update):
         match template:
             case str():
@@ -59,7 +59,7 @@ class TemplateExpansion:
         # Expand kwargs first
         mapping = {}
         for key_s in template.get_identifiers():
-            mapping[key_s] = DootKey.build(key_s).expand(spec, state, rec=True)
+            mapping[key_s] = DKey(key_s).expand(spec, state)
 
         match safe:
             case False:

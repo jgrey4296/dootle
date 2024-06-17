@@ -45,21 +45,21 @@ from bibtexparser.middlewares.middleware import BlockMiddleware
 
 import doot
 from doot._abstract.task import Action_p
-from doot.structs import DootKey
+from doot.structs import DKey, DKeyed
 
-DB_KEY      : Final[DootKey] = DootKey.build("bib_db")
+DB_KEY      : Final[DKey] = DKey("bib_db")
 
 class BibtexToStrAction(Action_p):
     """
       Convert a bib database to a string for writing to a file.
     """
 
-    @DootKey.dec.types("from", hint={"type_":b.library.Library|None, "chain":[DB_KEY]})
-    @DootKey.dec.types("write_stack", hint={"type_":list})
-    @DootKey.dec.types("bib_format", hint={"type_": b.BibtexFormat|None})
-    @DootKey.dec.redirects("update_")
+    @DKeyed.types("from", check=b.library.Library|None)
+    @DKeyed.types("write_stack", check=list)
+    @DKeyed.types("bib_format", check=b.BibtexFormat|None)
+    @DKeyed.redirects("update_")
     def __call__(self, spec, state, _from, write_stack, bib_format, _update):
-        db          = _from
+        db          = _from or DKey(DB_KEY).expand(spec, state)
         if bib_format is None:
             bib_format                              = b.BibtexFormat()
             bib_format.value_column                 = 15

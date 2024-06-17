@@ -41,31 +41,32 @@ printer = logmod.getLogger("doot._printer")
 import doot
 import doot.errors
 from doot._abstract import Action_p
-from doot.structs import DootKey
+from doot.structs import DKey, DKeyed
+
 from dootle.bookmarks.pony_fns import extract as pony_extract
 from dootle.bookmarks.alchemy_fns import extract as alc_extract
 from jgdv.files.bookmarks.collection import BookmarkCollection
 
 ##-- expansion keys
-FROM_KEY = DootKey.build("from")
-UPDATE   = DootKey.build("update_")
+FROM_KEY = DKey("from", mark=DKey.mark.PATH)
+UPDATE   = DKey("update_", mark=DKey.mark.REDIRECT)
 ##-- end expansion keys
 
 class BookmarksPonyExtraction(Action_p):
     """
       extract bookmarks from a sqlite firefox db using pony
     """
-    _toml_kwargs = [FROM_KEY, UPDATE, "debug"]
 
-    def __call__(self, spec, task_state):
-        db_loc         = FROM_KEY.to_path(spec, task_state)
-        update_key     = UPDATE.redirect(spec)
-        debug          = spec.kwargs.on_fail(False).debug()
+    @DKeyed.paths("from")
+    @DKeyed.types("debug", fallback=False)
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, _from, debug, _update):
+        db_loc         = _from
         try:
             printer.info("Starting Extraction")
             result       = pony_extract(db_loc, debug=debug)
             printer.info("Extraction Complete: %s results", len(result))
-            return { update_key : result }
+            return { _update : result }
         except Exception as err:
             raise doot.errors.DootActionError("Pony Errored: %s", str(err)) from err
 
@@ -73,28 +74,29 @@ class BookmarksAlchemyExtraction(Action_p):
     """
       extract bookmarks from a sqlite firefox db using pony
     """
-    _toml_kwargs = [FROM_KEY, UPDATE, "debug"]
 
-    def __call__(self, spec, task_state):
-        db_loc         = FROM_KEY.to_path(spec, task_state)
-        update_key     = UPDATE.redirect(spec)
-        debug          = spec.kwargs.on_fail(False).debug()
+    @DKeyed.paths("from")
+    @DKeyed.types("debug", fallback=False)
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, _from, debug, _update):
+        db_loc         = _from
         try:
             printer.info("Starting Extraction")
             result       = alc_extract(db_loc, debug=debug)
             printer.info("Extraction Complete: %s results", len(result))
-            return { update_key : result }
+            return { _update : result }
         except Exception as err:
             raise doot.errors.DootActionError("Pony Errored: %s", str(err)) from err
 
 
 class BookmarksLoad(Action_p):
 
-    _toml_kwargs = [FROM_KEY, UPDATE]
 
-    def __call__(self, spec, task_state):
-        load_path = FROM_KEY.to_path(spec, task_state)
-        data_key  = UPDATE.redirect(spec)
+    @DKeyed.paths("from")
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, _from, _update):
+        load_path = _from
+        data_key  = _update
         printer.info("Loading Bookmarks from: %s", load_path)
         result    = BookmarkCollection.read(load_path)
         printer.info("Loaded %s Bookmarks", len(result))
@@ -102,12 +104,12 @@ class BookmarksLoad(Action_p):
 
 class BookmarksMerge(Action_p):
 
-    _toml_kwargs = [FROM_KEY, UPDATE]
 
-    def __call__(self, spec, task_state):
-        data_key                                    = UPDATE.redirect(spec)
-        source_keys   : list[DootKey]               = FROM_KEY.redirect_multi(spec)
-        source_values : list                        = [y for x in source_keys for y in x.to_type(spec, task_state, type_=list)]
+    @DKeyed.redirects("from", multi=True)
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, _from, _update):
+        source_keys   : list[DKey]                  = _from
+        source_values : list                        = [y for x in source_keys for y in x.expand(spec, state, check=list)]
 
         merged                                      = BookmarkCollection()
         for x in source_values:
@@ -120,24 +122,25 @@ class BookmarksMerge(Action_p):
                 case _:
                     raise doot.errors.DootActionError("Unknown type tried to merge into bookmarks", x)
 
-        return { data_key : merged }
+        return { _update : merged }
 
 class BookmarksToStr(Action_p):
-    _toml_kwargs = [FROM_KEY, UPDATE]
 
-    def __call__(self, spec, task_state):
-        data_key                                      = UPDATE.redirect(spec)
-        source_data : BookmarkCollection           = FROM_KEY.to_type(spec, task_state, type_=BookmarkCollection)
+    @DKeyed.types("from", check=BookmarkCollection)
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, _from, _update):
+        source_data : BookmarkCollection           = _from
 
         printer.info("Writing Bookmark Collection of size: %s", len(source_data))
-        return { data_key : str(source_data) }
+        return { _update : str(source_data) }
 
 
 class BookmarksRemoveDuplicates(Action_p):
-    _toml_kwargs = [FROM_KEY]
 
-    def __call__(self, spec, task_state):
-        source_data : BookmarkCollection      = FROM_KEY.to_type(spec, task_state, type_=BookmarkCollection)
+    @DKeyed.types("from")
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, _from, _update):
+        source_data : BookmarkCollection      = _from
 
         pre_count = len(source_data)
         source_data.merge_duplicates()

@@ -40,7 +40,7 @@ printer = logmod.getLogger("doot._printer")
 import base64
 import doot
 import doot.errors
-from doot.structs import DootKey
+from doot.structs import DKey, DKeyed
 from doot.enums import ActionResponse_e
 
 from jgdv.files.bookmarks.collection import BookmarkCollection
@@ -68,9 +68,9 @@ def setup_firefox(spec, state):
     driver = Firefox(options=options, service=service)
     return { FF_DRIVER : driver }
 
-@DootKey.dec.expands("url")
-@DootKey.dec.paths("to")
-@DootKey.dec.types(FF_DRIVER)
+@DKeyed.expands("url")
+@DKeyed.paths("to")
+@DKeyed.types(FF_DRIVER)
 def save_pdf(spec, state, url, _to, _driver):
     """ prints a url to a pdf file using selenium """
     printer.info("Saving: %s", url)
@@ -85,7 +85,7 @@ def save_pdf(spec, state, url, _to, _driver):
     with open(_to, "wb") as f:
         f.write(pdf_bytes)
 
-@DootKey.dec.types(FF_DRIVER)
+@DKeyed.types(FF_DRIVER)
 def close_firefox(spec, state, _driver):
     printer.info("Closing Firefox")
     _driver.quit()

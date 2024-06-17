@@ -46,7 +46,7 @@ from bibtexparser.middlewares.middleware import BlockMiddleware
 
 import doot
 from doot._abstract.task import Action_p
-from doot.structs import DootKey
+from doot.structs import DKey, DKeyed
 
 class BibtexInitAction(Action_p):
     """
@@ -55,7 +55,7 @@ class BibtexInitAction(Action_p):
       pass a callable as the spec.args value to use instead of _entry_transform
     """
 
-    @DootKey.dec.redirects("update_")
+    @DKeyed.redirects("update_")
     def __call__(self, spec, state, _update):
         if _update in state:
             return True

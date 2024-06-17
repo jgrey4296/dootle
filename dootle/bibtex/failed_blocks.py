@@ -46,7 +46,7 @@ from bibtexparser.middlewares.middleware import BlockMiddleware
 
 import doot
 from doot._abstract.task import Action_p
-from doot.structs import DootKey
+from doot.structs import DKey
 
 class BibtexFailedBlocksWriteAction(Action_p):
 
@@ -54,7 +54,7 @@ class BibtexFailedBlocksWriteAction(Action_p):
         if "failed_blocks" not in state:
             return
 
-        target = DootKey.build("target").to_path(spec, state)
+        target = DKey("target", mark=DKey.mark.PATH).expand(spec, state)
         blocks = state['failed_blocks']
         with open(target, 'w') as f:
             for block in blocks:

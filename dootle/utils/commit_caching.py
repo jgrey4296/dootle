@@ -31,7 +31,7 @@ import sh
 
 import doot
 import doot.errors
-from doot.structs import DootKey, TaskName, CodeReference
+from doot.structs import DKey, TaskName, CodeReference, DKeyed
 from doot.enums import LoopControl_e
 from doot.mixins.path_manip import PathManip_m
 
@@ -51,7 +51,7 @@ def _build_cache_path(cache:None|pl.Path, taskname:TaskName) -> pl.Path:
         return cache
 
     root_taskname   = taskname.root()
-    cache : pl.Path = DootKey.build("{temp}/" + CACHE_PATTERN.format(root_taskname))
+    cache : pl.Path = DKey("{temp}/" + CACHE_PATTERN.format(root_taskname), mark=DKey.mark.PATH).expand()
     return cache
 
 class GetChangedFilesByCommit:
@@ -67,11 +67,11 @@ class GetChangedFilesByCommit:
     """
     control_e = LoopControl_e
 
-    @DootKey.dec.types("roots", "exts")
-    @DootKey.dec.references("fn")
-    @DootKey.dec.paths("cache", hint={"on_fail": None})
-    @DootKey.dec.taskname
-    @DootKey.dec.redirects("update_")
+    @DKeyed.types("roots", "exts")
+    @DKeyed.references("fn")
+    @DKeyed.paths("cache", fallback=None)
+    @DKeyed.taskname
+    @DKeyed.redirects("update_")
     def __call__(self, spec, state, roots, exts, fn, cache, _taskname, _update):
         cache = _build_cache_path(cache, _taskname)
         potentials : list[pl.Path] = []
@@ -92,7 +92,7 @@ class GetChangedFilesByCommit:
 
     def _test_files(self, spec, state, roots, exts, fn, potentials) -> list[pl.Path]:
         exts    = {y for x in (exts or []) for y in [x.lower(), x.upper()]}
-        roots   = [DootKey.build(x).to_path(spec, state) for x in roots]
+        roots   = [DKey(x, mark=DKey.mark.PATH).expand(spec, state) for x in roots]
         match fn:
             case CodeReference():
                 accept_fn = fn.try_import()
@@ -119,8 +119,8 @@ class CacheGitCommit(PathManip_m):
     Record the head commit hash id in a cache file
     """
 
-    @DootKey.dec.paths("cache", hint={"on_fail": None})
-    @DootKey.dec.taskname
+    @DKeyed.paths("cache", fallback=None)
+    @DKeyed.taskname
     def __call__(self, spec, state, cache, _taskname):
         cache = _build_cache_path(cache, _taskname)
 
