@@ -51,7 +51,7 @@ def _build_cache_path(cache:None|pl.Path, taskname:TaskName) -> pl.Path:
         return cache
 
     root_taskname   = taskname.root()
-    cache : pl.Path = DKey("{temp}/" + CACHE_PATTERN.format(root_taskname), mark=DKey.mark.PATH).expand()
+    cache : pl.Path = DKey("{temp}/" + CACHE_PATTERN.format(root_taskname), explicit=True, mark=DKey.mark.PATH).expand()
     return cache
 
 class GetChangedFilesByCommit:
@@ -75,17 +75,18 @@ class GetChangedFilesByCommit:
     def __call__(self, spec, state, roots, exts, fn, cache, _taskname, _update):
         cache = _build_cache_path(cache, _taskname)
         potentials : list[pl.Path] = []
-        match cache.exists():
+        match cache.exists() and cache.is_file():
             case True:
                 printer.info("Reading Cache: %s", cache)
                 cached_commit  = cache.read_text().strip()
+                printer.info("Diffing From %s to HEAD", cached_commit)
                 text_result    = git_diff(cached_commit, "HEAD")
                 potentials     = [pl.Path(x) for x in text_result.split("\n")]
             case False:
                 printer.warning("Commit Cache not found for task, expected: %s", cache)
                 printer.warning("Using files from HEAD only")
                 text_result    = git_diff("HEAD~1", "HEAD")
-                potentials     = [pl.Path(x) for x in text_result.split("\n")]
+                potentials     = [pl.Path(x) for x in text_result.strip().split("\n")]
 
         result = self._test_files(spec, state, roots, exts, fn, potentials)
         return { _update : result }
@@ -102,9 +103,11 @@ class GetChangedFilesByCommit:
 
         result : list[pl.Path] = []
         for x in potentials:
-            if fn(x) in [None, False, self.control_e.no, self.control_e.noBut]:
+            if accept_fn(x) in [None, False, self.control_e.no, self.control_e.noBut]:
                 continue
-            elif (bool(exts) and x.suffix in exts):
+            elif (bool(exts) and x.suffix not in exts):
+                continue
+            elif not x.is_file():
                 continue
 
             result.append(x)
