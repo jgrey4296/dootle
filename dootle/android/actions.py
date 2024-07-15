@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 
-
 See EOF for license/metadata/notes as applicable
 """
 
@@ -52,15 +51,6 @@ except sh.CommandNotFound as err:
 
 TRANSPORT_RE = re.compile("transport_id:([0-9])")
 
-##-- expansion keys
-TRANSPORT  : Final[DKey] = DKey("transport")
-LOCAL      : Final[DKey] = DKey("local")
-REMOTE     : Final[DKey] = DKey("remote")
-PACKAGE    : Final[DKey] = DKey("package")
-UPDATE     : Final[DKey] = DKey("update_")
-
-##-- end expansion keys
-
 class AndroidRunning(Action_p):
     """
       Start the adb server and connect to the device.
@@ -103,10 +93,9 @@ class AndroidRunning(Action_p):
                 printer.info("%s", xs)
                 return input("Transport Id: ")
 
-
 class AndroidPush(Action_p):
 
-    @DKeyed.expands("transport")
+    @DKeyed.formats("transport")
     @DKeyed.paths("local", "remote")
     def __call__(self, spec, state, transport, local, remote):
         try:
@@ -117,18 +106,14 @@ class AndroidPush(Action_p):
             printer.error("ADB Failure: %s", err.stdout.decode())
             raise doot.errors.DootTaskFailed("Push Failed") from err
 
-
 class AndroidPull(Action_p):
 
-    @DKeyed.expands("transport")
+    @DKeyed.formats("transport")
     @DKeyed.paths("local", "remote")
     def __call__(self, spec, state, transport, local, remote):
         result     = None
-        transport  = TRANSPORT.expand(spec, state)
         try:
             pull   = adb.bake("-t", transport, "pull", "-a", _return_cmd=True)
-            local  = LOCAL.expand(spec, state)
-            remote = REMOTE.expand(spec, state)
             printer.info("ADB Pull: %s -> %s", remote, local)
             # TODO get list of local files, list of remote files, diff, pull those lacking.
 
@@ -137,11 +122,9 @@ class AndroidPull(Action_p):
             printer.error("ADB Failure: %s", err.stdout.decode())
             raise doot.errors.DootTaskFailed("Pull Failed") from err
 
-
 class AndroidInstall(Action_p):
-    _toml_kwargs = [PACKAGE, TRANSPORT]
 
-    @DKeyed.expands("transport")
+    @DKeyed.formats("transport")
     @DKeyed.paths("package")
     def __call__(self, spec, state, transport, package):
         try:
@@ -154,15 +137,10 @@ class AndroidInstall(Action_p):
             printer.error("ADB Failure: %s", err.stdout.decode())
             raise doot.errors.DootTaskFailed("Install Failed") from err
 
-
-
-
 class AndroidRemoteCmd(Action_p):
-    inState      = [TRANSPORT, "android_root"]
-    _toml_kwargs = ["cmd", "update_", "transport"]
 
     @DKeyed.args
-    @DKeyed.expands("transport", "cmd")
+    @DKeyed.formats("transport", "cmd")
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, args, transport, cmd, _update):
         try:

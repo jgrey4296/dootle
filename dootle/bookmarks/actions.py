@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 
-
 See EOF for license/metadata/notes as applicable
 """
 
@@ -47,11 +46,6 @@ from dootle.bookmarks.pony_fns import extract as pony_extract
 from dootle.bookmarks.alchemy_fns import extract as alc_extract
 from jgdv.files.bookmarks.collection import BookmarkCollection
 
-##-- expansion keys
-FROM_KEY = DKey("from", mark=DKey.mark.PATH)
-UPDATE   = DKey("update_", mark=DKey.mark.REDIRECT)
-##-- end expansion keys
-
 class BookmarksPonyExtraction(Action_p):
     """
       extract bookmarks from a sqlite firefox db using pony
@@ -88,9 +82,7 @@ class BookmarksAlchemyExtraction(Action_p):
         except Exception as err:
             raise doot.errors.DootActionError("Pony Errored: %s", str(err)) from err
 
-
 class BookmarksLoad(Action_p):
-
 
     @DKeyed.paths("from")
     @DKeyed.redirects("update_")
@@ -103,7 +95,6 @@ class BookmarksLoad(Action_p):
         return { data_key : result }
 
 class BookmarksMerge(Action_p):
-
 
     @DKeyed.redirects("from", multi=True)
     @DKeyed.redirects("update_")
@@ -133,7 +124,6 @@ class BookmarksToStr(Action_p):
 
         printer.info("Writing Bookmark Collection of size: %s", len(source_data))
         return { _update : str(source_data) }
-
 
 class BookmarksRemoveDuplicates(Action_p):
 
