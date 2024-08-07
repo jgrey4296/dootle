@@ -70,9 +70,10 @@ class GetChangedFilesByCommit:
     @DKeyed.types("roots", "exts")
     @DKeyed.references("fn")
     @DKeyed.paths("cache", fallback=None)
+    @DKeyed.types("head_count", fallback=1, check=int)
     @DKeyed.taskname
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, roots, exts, fn, cache, _taskname, _update):
+    def __call__(self, spec, state, roots, exts, fn, cache, head_count, _taskname, _update):
         cache = _build_cache_path(cache, _taskname)
         potentials : list[pl.Path] = []
         match cache.exists() and cache.is_file():
@@ -84,16 +85,19 @@ class GetChangedFilesByCommit:
                 potentials     = [pl.Path(x) for x in text_result.split("\n")]
             case False:
                 printer.warning("Commit Cache not found for task, expected: %s", cache)
-                printer.warning("Using files from HEAD only")
-                text_result    = git_diff("HEAD~1", "HEAD")
+                printer.warning("Using files from HEAD~%s -> HEAD", head_count)
+                text_result    = git_diff(f"HEAD~{head_count}", "HEAD")
                 potentials     = [pl.Path(x) for x in text_result.strip().split("\n")]
 
         result = self._test_files(spec, state, roots, exts, fn, potentials)
         return { _update : result }
 
     def _test_files(self, spec, state, roots, exts, fn, potentials) -> list[pl.Path]:
+        """
+          filter found potential files by roots, exts, and a test fn
+        """
         exts    = {y for x in (exts or []) for y in [x.lower(), x.upper()]}
-        roots   = [DKey(x, mark=DKey.mark.PATH).expand(spec, state) for x in roots]
+        roots   = [DKey(x, mark=DKey.mark.PATH).expand(spec, state) for x in (roots or [])]
         match fn:
             case CodeReference():
                 accept_fn = fn.try_import()
@@ -106,6 +110,8 @@ class GetChangedFilesByCommit:
             if accept_fn(x) in [None, False, self.control_e.no, self.control_e.noBut]:
                 continue
             elif (bool(exts) and x.suffix not in exts):
+                continue
+            elif (bool(roots) and not any(x.resolve().is_relative_to(y) for y in roots)):
                 continue
             elif not x.is_file():
                 continue
