@@ -94,7 +94,7 @@ class MultiBackupAction(PathManip_m):
 
     @DKeyed.paths("from")
     @DKeyed.types("pattern")
-    @DKeyed.types("shadow_paths")
+    @DKeyed.types("shadow_paths", check=list)
     @DKeyed.types("tolerance", check=int, fallback=10_000_000)
     @DKeyed.taskname
     def __call__(self, spec, state, _from, pattern, shadow_paths, tolerance, _name) -> dict|bool|None:
