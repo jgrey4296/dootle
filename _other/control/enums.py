@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 
-
 See EOF for license/metadata/notes as applicable
 """
 
@@ -30,27 +29,37 @@ from uuid import UUID, uuid1
 ##-- end builtin imports
 
 ##-- lib imports
-import more_itertools as mitz
+# import more_itertools as mitz
+# from boltons import
 ##-- end lib imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from sqlalchemy import create_engine
+class TaskPolicyEnum(enum.Flag):
+    """
+      Combinable Policy Types:
+      breaker  : fails fast
+      bulkhead : limits extent of problem and continues
+      retry    : trys to do the action again to see if its resolved
+      timeout  : waits then fails
+      cache    : reuses old results
+      fallback : uses defined alternatives
+      cleanup  : uses defined cleanup actions
+      debug    : triggers pdb
+      pretend  : pretend everything went fine
+      accept   : accept the failure
 
-import doot
-import doot.errors
-from jgdv.files.bookmarks.collection import BookmarkCollection
-
-Base = declarative_base()
-
-# define orm
-def extract(loc:pl.Path, debug=False) -> BookmarkCollection:
-    engine_str : str = f"sqlite://{loc}"
-    engine           = create_engine(engine_str)
-
-    return None
+      breaker will overrule bulkhead
+    """
+    BREAKER  = enum.auto()
+    BULKHEAD = enum.auto()
+    RETRY    = enum.auto()
+    TIMEOUT  = enum.auto()
+    CACHE    = enum.auto()
+    FALLBACK = enum.auto()
+    CLEANUP  = enum.auto()
+    DEBUG    = enum.auto()
+    PRETEND  = enum.auto()
+    ACCEPT   = enum.auto()

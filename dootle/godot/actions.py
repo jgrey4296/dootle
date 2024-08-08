@@ -41,8 +41,8 @@ import sh
 import doot
 import doot.errors
 from doot._abstract import Action_p
-from doot.enums import ActionResponseEnum as ActRE
-from doot.structs import DootKey
+from doot.enums import ActionResponse_e as ActRE
+from doot.structs import DKey
 
 try:
     godot = sh.Command("godot4")
@@ -50,12 +50,12 @@ except sh.CommandNotFound as err:
     raise doot.errors.TaskLoadError("godot not found") from err
 
 ##-- expansion keys
-SCENE      : Final[DootKey] = DootKey.make("scene")
-UPDATE     : Final[DootKey] = DootKey.make("update")
-SCRIPT     : Final[DootKey] = DootKey.make("script")
-QUIT_AFTER : Final[DootKey] = DootKey.make("quit_after")
-PATH       : Final[DootKey] = DootKey.make("path")
-TARGET     : Final[DootKey] = DootKey.make("target")
+SCENE      : Final[DKey] = DKey("scene")
+UPDATE     : Final[DKey] = DKey("update")
+SCRIPT     : Final[DKey] = DKey("script")
+QUIT_AFTER : Final[DKey] = DKey("quit_after")
+PATH       : Final[DKey] = DKey("path")
+TARGET     : Final[DKey] = DKey("target")
 
 ##-- end expansion keys
 
@@ -89,8 +89,8 @@ class GodotRunSceneAction(Action_p):
     def __call__(self, spec, task_state):
         try:
             godot_b    = godot.bake("--path", doot.locs.root, _return_cmd=True)
-            scene_file = SCENE.to_path(spec, task_state)
-            quit_after = QUIT_AFTER.to_type(spec, task_state, type_=int|str|None)
+            scene_file = SCENE.expand(spec, task_state)
+            quit_after = QUIT_AFTER.expand(spec, task_state, check=int|str|None)
             if quit_after:
                 result = godot_b("--quit-after", quit_after, str(scene_file))
             else:
@@ -111,8 +111,8 @@ class GodotRunScriptAction(Action_p):
         try:
             godot_b     = godot.bake("--path", doot.locs.root, _return_cmd=True)
             date_key    = UPDATE.redirect(spec)
-            script_file = SCRIPT.to_path(spec, task_state)
-            quit_after  = QUIT_AFTER.to_type(spec, task_state, type_=int|str|None)
+            script_file = SCRIPT.expand(spec, task_state)
+            quit_after  = QUIT_AFTER.expand(spec, task_state, check=int|str|None)
             if quit_after:
                 result = godot_b("--quit-after", quit_after, "--headless", "--script", str(script_file))
             else:
@@ -139,7 +139,7 @@ class GodotBuildAction(Action_p):
                 case _:
                     raise doot.errors.DootActionError("Bad export type specified, should be `release` or `debug`")
 
-            path_loc = PATH.to_path(spec, task_state)
+            path_loc = PATH.expand(spec, task_state)
             data_key = UPDATE.expand(spec, task_state)
             result      = godot_b(spec.kwargs.preset, str(path_loc))
             printer.info("Godot Result: %s", result.stdout.decode())
@@ -190,7 +190,7 @@ class GodotCheckScriptsAction(Action_p):
         try:
             godot_b     = godot.bake("--path", doot.locs.root, "--headless", _return_cmd=True)
             data_key    = UPDATE.expand(spec, task_state)
-            script_file = TARGET.to_path(spec, task_state)
+            script_file = TARGET.expand(spec, task_state)
             result      = godot_b("--check-only", "--script", str(script_file))
             printer.info("Godot Result: %s", result.stdout.decode())
             return { data_key : result.stdout.decode() }

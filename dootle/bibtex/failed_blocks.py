@@ -30,27 +30,32 @@ from uuid import UUID, uuid1
 ##-- end builtin imports
 
 ##-- lib imports
-import more_itertools as mitz
+# import more_itertools as mitz
+# from boltons import
 ##-- end lib imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
+printer = logmod.getLogger("doot._printer")
 ##-- end logging
 
-from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from sqlalchemy import create_engine
+import bibtexparser as b
+import bibtexparser.model as model
+from bibtexparser import middlewares as ms
+from bibtexparser.middlewares.middleware import BlockMiddleware
 
 import doot
-import doot.errors
-from jgdv.files.bookmarks.collection import BookmarkCollection
+from doot._abstract.task import Action_p
+from doot.structs import DKey
 
-Base = declarative_base()
+class BibtexFailedBlocksWriteAction(Action_p):
 
-# define orm
-def extract(loc:pl.Path, debug=False) -> BookmarkCollection:
-    engine_str : str = f"sqlite://{loc}"
-    engine           = create_engine(engine_str)
+    def __call__(self, spec, state):
+        if "failed_blocks" not in state:
+            return
 
-    return None
+        target = DKey("target", mark=DKey.mark.PATH).expand(spec, state)
+        blocks = state['failed_blocks']
+        with open(target, 'w') as f:
+            for block in blocks:
+                f.write(block.raw)

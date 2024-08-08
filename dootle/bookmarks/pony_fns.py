@@ -31,7 +31,8 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import pony.orm as pony
-from dootle.bookmarks import structs as BC
+from jgdv.files.bookmarks.collection import BookmarkCollection
+from jgdv.files.bookmarks.bookmark import Bookmark
 
 def init_db():
     db = pony.Database()
@@ -92,14 +93,14 @@ def init_db():
     ##-- end ORM
     return db, DBBookmark, DBURL
 
-def extract(fpath, debug=False) -> BC.BookmarkCollection:
+def extract(fpath, debug=False) -> BookmarkCollection:
     db, DBBookmark, DBURL = init_db()
 
     pony.set_sql_debug(debug)
 
     tag_names                          = {}
     bookmark_tags                      = defaultdict(lambda: set())
-    collection : BC.BookmarkCollection = BC.BookmarkCollection()
+    collection : BookmarkCollection    = BookmarkCollection()
 
     ##-- bind database and mappings
     db.bind(provider='sqlite', filename=str(fpath), create_db=False)
@@ -118,9 +119,7 @@ def extract(fpath, debug=False) -> BC.BookmarkCollection:
         query  = pony.select(b for b in DBBookmark if b.title is not None and b.fk is not None)
         result = query[:]
         for x in result:
-            bkmk : BC.Bookmark = BC.Bookmark(DBURL[x.fk].url,
-                                             bookmark_tags[x.fk],
-                                             x.title)
+            bkmk : Bookmark = Bookmark(url=DBURL[x.fk].url, tags=bookmark_tags[x.fk], name=x.title)
             collection += bkmk
     ##-- end session use
 

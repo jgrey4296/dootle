@@ -31,20 +31,18 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import doot
-from doot.mixins.delayed import DelayedMixin
-from doot.mixins.targeted import TargetedMixin
+from doot.mixins.delayed import Delayed_M
 from doot import dir_walker
-from doot.utils.formats import bookmarks as BC
+from jgdv.files.bookmarks.collection import BookmarkCollection
 
-
-class BookmarksReport(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker):
+class BookmarksReport(Delayed_M, dir_walker.DootDirWalker):
     """
     TODO Generate reports on bookmarks
     """
 
     def __init__(self, name="report::bookmarks", locs=None, roots=None, rec=False, exts=None):
         super().__init__(name, locs, roots or [locs.bookmarks], rec=rec, exts=exts or [".bookmarks"])
-        self.bookmarks = BC.BookmarkCollection()
+        self.bookmarks = BookmarkCollection()
         self.output = locs.build
 
     def filter(self, fpath):
@@ -69,7 +67,7 @@ class BookmarksReport(DelayedMixin, TargetedMixin, dir_walker.DootDirWalker):
         return task
 
     def add_bookmarks(self, fpath):
-        self.bookmarks.update(BC.BookmarkCollection.read(fpath))
+        self.bookmarks.update(BookmarkCollection.read(fpath))
 
     def gen_report(self):
         return { "report" : "TODO report" }

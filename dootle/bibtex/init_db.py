@@ -30,27 +30,37 @@ from uuid import UUID, uuid1
 ##-- end builtin imports
 
 ##-- lib imports
-import more_itertools as mitz
+# import more_itertools as mitz
+# from boltons import
 ##-- end lib imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
+printer = logmod.getLogger("doot._printer")
 ##-- end logging
 
-from sqlalchemy import Column, ForeignKey, Integer, String
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
-from sqlalchemy import create_engine
+import bibtexparser as b
+import bibtexparser.model as model
+from bibtexparser import middlewares as ms
+from bibtexparser.middlewares.middleware import BlockMiddleware
 
 import doot
-import doot.errors
-from jgdv.files.bookmarks.collection import BookmarkCollection
+from doot._abstract.task import Action_p
+from doot.structs import DKey, DKeyed
 
-Base = declarative_base()
+class BibtexInitAction(Action_p):
+    """
+      Initialise a bibtex database. Override '_entry_transform' for customisation of loading.
 
-# define orm
-def extract(loc:pl.Path, debug=False) -> BookmarkCollection:
-    engine_str : str = f"sqlite://{loc}"
-    engine           = create_engine(engine_str)
+      pass a callable as the spec.args value to use instead of _entry_transform
+    """
 
-    return None
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, _update):
+        if _update in state:
+            return True
+
+        db                   = b.Library()
+        db.source_files      = set()
+        printer.info("Bibtex Database Initialised")
+        return { _update : db }

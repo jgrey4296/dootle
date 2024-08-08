@@ -1,0 +1,75 @@
+#+TITLE: Dootle Todos
+#+STARTUP: agenda
+
+* Dootle
+** cmds
+*** [∅] pre-commit yaml stub
+** actions                                      :actions:
+*** [∅] dot
+*** [∅] downloader
+*** [∅] ocr
+*** [∅] pdf
+*** [∅] plantuml
+*** [∅] xml
+*** [∅] rng
+*** [∅] calender write
+*** [∅] csv read / write
+*** [∅] newer/older than control flows
+** android
+** bibtex
+** bookmarks
+*** [∅] alchemy fns
+
+** epub
+*** [∅] compile
+*** [∅] split
+
+** godot
+** TODO latex
+- State "TODO"       from              [2024-06-03 Mon 05:21]
+** python
+*** DONE increment version
+*** DONE pip build
+*** [∅] local install
+*** [∅] pipreqs
+*** [∅] code line count
+*** [∅] coverage
+** sphinx
+*** [∅] build
+*** [∅] serve
+** TODO pelican
+- State "TODO"       from              [2024-06-03 Mon 05:22]
+** TODO spiders
+- State "TODO"       from              [2024-06-03 Mon 05:22]
+*** tests
+*** locations integration
+** TODO tags
+- State "TODO"       from              [2024-06-03 Mon 05:22]
+*** clean
+
+** [∅] encryption
+** [∅] gradle
+** [∅] clingo
+
+** [∅] org -> html
+** [∅] TDMQ option instead of individual task listing
+** [∅] floweaver :add:
+https://github.com/ricklupton/floweaver
+
+** DONE isbn
+https://github.com/JNRowe/pyisbn
+https://github.com/WhyNotHugo/python-barcode
+https://github.com/TorKlingberg/isbn_hyphenate
+** [∅] railroad diagrams
+https://github.com/tabatkins/railroad-diagrams
+** [∅] readthedocs
+https://docs.readthedocs.io/en/stable/
+** [∅] quote images -> text
+** [∅] wayback
+https://akamhy.github.io/waybackpy/
+** [∅] control
+*** date tracker
+** [∅] docs
+
+
+* Links
