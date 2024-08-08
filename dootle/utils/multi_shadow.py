@@ -127,10 +127,17 @@ class MultiBackupAction(PathManip_m):
             # ExFat FS has lower resolution timestamps
             # So guard by having a tolerance:
             source_ns       = source_loc.stat().st_mtime_ns
-            dest_ns         = dest_loc.stat().st_mtime_ns
+            match dest_loc.exists():
+                case True:
+                    dest_ns = dest_loc.stat().st_mtime_ns
+                case False:
+                    dest_ns = 1
+            source_newer    = source_ns > dest_ns
             difference      = int(max(source_ns, dest_ns) - min(source_ns, dest_ns))
             below_tolerance = difference <= tolerance
-            if dest_loc.exists() and below_tolerance:
+
+            printer.info("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
+            if (not source_newer) or below_tolerance:
                 continue
 
             printer.info("Destination: %s", dest_loc)
