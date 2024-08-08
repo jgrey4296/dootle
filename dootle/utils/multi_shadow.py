@@ -45,6 +45,19 @@ logging = logmod.getLogger(__name__)
 printer = logmod.getLogger("doot._printer")
 ##-- end logging
 
+def _shadow_paths(rpath:pl.Path, shadow_roots:list[pl.Path]) -> list[pl.Path]:
+    """ take a relative path, apply it onto a multiple roots to the shadow directories """
+    assert(isinstance(rpath, pl.Path))
+    assert(not rpath.is_absolute())
+    shadow_dirs = []
+    for root in shadow_roots:
+        result      = root / rpath
+        if result == doot.locs[rpath]:
+            raise doot.errors.DootLocationError("Shadowed Path is same as original", fpath)
+        shadow_dirs.append(result.parent)
+
+    return shadow_dirs
+
 class InjectMultiShadow:
     """
       Inject multiple shadow paths into each task entry, using the target key which
@@ -64,23 +77,23 @@ class InjectMultiShadow:
             case TaskSpec() as spec:
                 _onto = [spec]
 
-        roots = [DKey(x, mark=DKey.mark.PATH).expand(spec, state) for x in _shadow_roots]
+        roots = [DKey(x, explicit=True, mark=DKey.mark.PATH).expand(spec, state) for x in _shadow_roots]
         for x in _onto:
-            updates : list[pl.Path] = self._shadow_paths(x.extra[_key], roots)
+            updates : list[pl.Path] = _shadow_paths(x.extra[_key], roots)
             x.model_extra.update(dict(**x.extra, **{"shadow_paths": updates}))
 
-    def _shadow_paths(self, rpath:pl.Path, shadow_roots:list[pl.Path]) -> list[pl.Path]:
-        """ take a relative path, apply it onto a multiple roots to the shadow directories """
-        assert(isinstance(rpath, pl.Path))
-        assert(not rpath.is_absolute())
-        shadow_dirs = []
-        for root in shadow_roots:
-            result      = root / rpath
-            if result == doot.locs[rpath]:
-                raise doot.errors.DootLocationError("Shadowed Path is same as original", fpath)
-            shadow_dirs.append(result.parent)
+class CalculateShadowDirs:
+    """
+      Take a relative path, and apply it to a list of shadow roots,
+      adding 'shadow_paths' to the task state
+    """
 
-        return shadow_dirs
+    @DKeyed.types("shadow_roots")
+    @DKeyed.types("rpath")
+    def __call__(self, spec, state, _sroots, rpath):
+        _sroots = [DKey(x, explicit=True, mark=DKey.mark.PATH).expand(spec, state) for x in _sroots]
+        result : list[pl.Path] = _shadow_paths(rpath,  _sroots)
+        return { "shadow_paths" : result}
 
 class MultiBackupAction(PathManip_m):
     """
@@ -99,7 +112,7 @@ class MultiBackupAction(PathManip_m):
     @DKeyed.taskname
     def __call__(self, spec, state, _from, pattern, shadow_paths, tolerance, _name) -> dict|bool|None:
         source_loc = _from
-        pattern_key = DKey(pattern, mark=DKey.mark.PATH)
+        pattern_key = DKey(pattern, explicit=True, mark=DKey.mark.PATH)
 
         printer.info("Backing up : %s", source_loc)
         for shadow_path in shadow_paths:
