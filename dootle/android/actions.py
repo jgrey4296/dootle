@@ -146,7 +146,7 @@ class AndroidRemoteCmd(Action_p):
         try:
             data_key  = _update
             adb_cmd   = adb.bake("-t", transport, "shell", "", _return_cmd=True)
-            args      = [DKey(x, explicit=True).expand(spec, state) for x in spec.args]
+            args      = [DKey(x).expand(spec, state) for x in spec.args]
             printer.info("ADB Cmd: %s : %s", cmd, args)
             result = adb_cmd(cmd, *args)
             return { data_key : result.stdout.decode() }
