@@ -51,7 +51,8 @@ def _build_cache_path(cache:None|pl.Path, taskname:TaskName) -> pl.Path:
         return cache
 
     root_taskname   = taskname.root()
-    cache : pl.Path = DKey("{temp}/" + CACHE_PATTERN.format(root_taskname), mark=DKey.mark.PATH).expand()
+    cache_key       = DKey("{temp}/" + CACHE_PATTERN.format(root_taskname), mark=DKey.mark.PATH)
+    cache           = cache_key.expand()
     return cache
 
 class GetChangedFilesByCommit:

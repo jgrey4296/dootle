@@ -59,7 +59,7 @@ class TemplateExpansion:
         # Expand kwargs first
         mapping = {}
         for key_s in template.get_identifiers():
-            mapping[key_s] = DKey(key_s).expand(spec, state)
+            mapping[key_s] = DKey(key_s, implicit=True).expand(spec, state)
 
         match safe:
             case False:

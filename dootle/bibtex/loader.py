@@ -47,7 +47,7 @@ import doot
 from doot._abstract.task import Action_p
 from doot.structs import DKey, DKeyed
 
-DB_KEY      : Final[DKey] = DKey("bib_db")
+DB_KEY      : Final[DKey] = DKey("bib_db", implicit=True)
 
 class BibtexLoadAction(Action_p):
     """ Parse all the bibtext files into a state database, in place.

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 
-
 See EOF for license/metadata/notes as applicable
 """
 
@@ -53,59 +52,46 @@ RESOLUTION_BLACKLIST : Final[list]                  = doot.locs.image_blacklist
 RESOLUTION_RE        : Final[re.Pattern]            = re.compile(r".*?([0-9]+x[0-9]+)")
 TOOT_IMAGE_TYPES     : Final[list[str]]             = [".jpg", ".png", ".gif"]
 
-##-- expansion keys
-INSTANCE_KEY           : Final[DKey]                        = DKey("mastodon")
-TEXT_KEY               : Final[DKey]                        = DKey("toot_text")
-IMAGE_KEY              : Final[DKey]                        = DKey("toot_image")
-IMAGE_DESC             : Final[DKey]                        = DKey("toot_desc")
-UPDATE                 : Final[DKey]                        = DKey("update_")
-FROM_KEY               : Final[DKey]                        = DKey("from")
-SECRETS                : Final[DKey]                        = DKey("mastodon_secrets")
-##-- end expansion keys
-
-
 class MastodonSetup:
     """ Default Mastodon Setup, using secrets from doot.locs.mastodon_secrets
       loads the secrets as a tomlguard, and accesses mastodon.access_token and mastodon.url
       ensures thers an "image_temp" location
     """
-    instance = None
-    _toml_kwargs = [INSTANCE_KEY, FROM_KEY]
+    _instance = None
 
-    def __call__(self, spec, task_state) -> dict|bool|None:
-        data_key = INSTANCE_KEY.redirect(spec)
+    DKeyed.redirects("mastodon")
+    DKeyed.paths("mastodon_secrets")
 
-        if MastodonSetup.instance is None:
+    def __call__(self, spec, state, _data_key, _secrets) -> dict|bool|None:
+
+        if MastodonSetup._instance is None:
             printer.info("---------- Initialising Mastodon", extra={"colour": "green"})
-            secrets_path = FROM_KEY.expand(spec, task_state, chain=SECRETS)
-            secrets = tomlguard.load(secrets_path)
-            MastodonSetup.instance = mastodon.Mastodon(
+            secrets = tomlguard.load(_secrets)
+            MastodonSetup._instance = mastodon.Mastodon(
                 access_token = secrets.mastodon.access_token,
                 api_base_url = secrets.mastodon.url
             )
-            doot.locs.ensure("image_temp", task=task_state['_task_name'])
+            doot.locs.ensure("image_temp", task=state['_task_name'])
         else:
             printer.debug("Reusing Instance")
 
-        return { data_key : MastodonSetup.instance }
-
-
+        return { _data_key : MastodonSetup._instance }
 
 class MastodonPost:
     """ Default Mastodon Poster  """
-    _toml_kwargs = [INSTANCE_KEY, FROM_KEY, IMAGE_KEY, IMAGE_DESC, TEXT_KEY]
 
-    def __call__(self, spec, task_state):
-        instance           = INSTANCE_KEY.expand(spec, task_state, check=Mastodon.Mastodon)
-        text               = FROM_KEY.expand(spec, task_state)
-        image_path         = IMAGE_KEY.expand(spec, task_state)
-        image_desc         = IMAGE_DESC.expand(spec, task_state)
+    DKeyed.types("mastodon", check=Mastodon.Mastodon)
+    DKeyed.formats("from", "toot_desc")
+    DKeyed.paths("toot_image")
+    DKeyed.format("toot_desc")
+
+    def __call__(self, spec, state, _instance, _text, _image_desc, _image_path):
 
         try:
-            if image_path.exists():
-                return self._post_image(instance, text, image_path, image_desc)
+            if _image_path.exists():
+                return self._post_image(_instance, text, _image_path, _image_desc)
             else:
-                return self._post_text(instance, text)
+                return self._post_text(_instance, text)
         except mastodon.MastodonAPIError as err:
             general, errcode, form, detail = err.args
             resolution                     = RESOLUTION_RE.match(detail) if detail else None
@@ -121,24 +107,24 @@ class MastodonPost:
             printer.error("Mastodon Post Failed: %s", repr(err))
             return False
 
-    def _post_text(self, instance, text):
+    def _post_text(self, _instance, text):
         printer.info("Posting Text Toot: %s", text)
         if len(text) >= TOOT_SIZE:
             printer.warning("Resulting Toot too long for mastodon: %s\n%s", len(text), text)
             return False
 
-        result = instance.status_post(text)
+        result = _instance.status_post(text)
         return True
 
-    def _post_image(self, instance, text, image_path, image_desc):
+    def _post_image(self, _instance, text, _image_path, _image_desc):
         printer.info("Posting Image Toot")
 
-        assert(image_path.exists()), f"File Doesn't Exist {image_path}"
-        assert(image_path.stat().st_size < TOOT_IMAGE_SIZE), "Image to large, needs to be smaller than 8MB"
-        assert(image_path.suffix.lower() in TOOT_IMAGE_TYPES), "Bad Type, needs to be a jpg, png or gif"
+        assert(_image_path.exists()), f"File Doesn't Exist {_image_path}"
+        assert(_image_path.stat().st_size < TOOT_IMAGE_SIZE), "Image to large, needs to be smaller than 8MB"
+        assert(_image_path.suffix.lower() in TOOT_IMAGE_TYPES), "Bad Type, needs to be a jpg, png or gif"
 
-        media_id = instance.media_post(str(image_path), description=image_desc)
-        instance.status_post(text, media_ids=media_id)
+        media_id = _instance.media_post(str(_image_path), description=_image_desc)
+        _instance.status_post(text, media_ids=media_id)
         logging.debug("Image Toot Posted")
         return True
 

@@ -50,12 +50,12 @@ except sh.CommandNotFound as err:
     raise doot.errors.TaskLoadError("godot not found") from err
 
 ##-- expansion keys
-SCENE      : Final[DKey] = DKey("scene")
-UPDATE     : Final[DKey] = DKey("update")
-SCRIPT     : Final[DKey] = DKey("script")
-QUIT_AFTER : Final[DKey] = DKey("quit_after")
-PATH       : Final[DKey] = DKey("path")
-TARGET     : Final[DKey] = DKey("target")
+SCENE      : Final[DKey] = DKey("scene",      implicit=True)
+UPDATE     : Final[DKey] = DKey("update",     implicit=True)
+SCRIPT     : Final[DKey] = DKey("script",     implicit=True)
+QUIT_AFTER : Final[DKey] = DKey("quit_after", implicit=True)
+PATH       : Final[DKey] = DKey("path",       implicit=True)
+TARGET     : Final[DKey] = DKey("target",     implicit=True)
 
 ##-- end expansion keys
 
@@ -84,8 +84,6 @@ class GodotTestAction(Action_p):
 @doot.check_protocol
 class GodotRunSceneAction(Action_p):
 
-    _toml_kwargs = [QUIT_AFTER, SCENE]
-
     def __call__(self, spec, task_state):
         try:
             godot_b    = godot.bake("--path", doot.locs.root, _return_cmd=True)
@@ -105,7 +103,6 @@ class GodotRunSceneAction(Action_p):
 @doot.check_protocol
 class GodotRunScriptAction(Action_p):
 
-    _toml_kwargs = [UPDATE, QUIT_AFTER, SCRIPT]
 
     def __call__(self, spec, task_state):
         try:
@@ -127,7 +124,6 @@ class GodotRunScriptAction(Action_p):
 @doot.check_protocol
 class GodotBuildAction(Action_p):
 
-    _toml_kwargs = [PATH, UPDATE, "preset"]
 
     def __call__(self, spec, task_state):
         try:
@@ -155,7 +151,6 @@ class GodotNewSceneAction(Action_p):
       Generate a template new template scene
       to write with write!
     """
-    _toml_kwargs = ["name", "template"]
     outState = ["sceneText"]
 
     def __call__(self, spec, task_state):
@@ -171,7 +166,6 @@ class GodotNewScriptAction(Action_p):
       Generate a template new gdscript
       to write with write!
     """
-    _toml_kwargs = ["name", "template"]
     outState = ["scriptText"]
 
     def __call__(self, spec, task_state):
@@ -184,7 +178,6 @@ class GodotNewScriptAction(Action_p):
 @doot.check_protocol
 class GodotCheckScriptsAction(Action_p):
 
-    _toml_kwargs = [UPDATE, TARGET]
 
     def __call__(self, spec, task_state):
         try:
