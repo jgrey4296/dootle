@@ -4,8 +4,10 @@
 See EOF for license/metadata/notes as applicable
 """
 
+# Imports:
 from __future__ import annotations
 
+# ##-- stdlib imports
 import datetime
 import enum
 import functools as ftz
@@ -23,15 +25,20 @@ from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
                     runtime_checkable)
 from uuid import UUID, uuid1
 
-##-- logging
-logging = logmod.getLogger(__name__)
-printer = logmod.getLogger("doot._printer")
-##-- end logging
+# ##-- end stdlib imports
 
+# ##-- 3rd party imports
 import doot
 import doot.errors
-from doot.structs import DKeyed
 from doot.enums import ActionResponse_e as ActE
+from doot.structs import DKeyed
+
+# ##-- end 3rd party imports
+
+##-- logging
+logging = logmod.getLogger(__name__)
+printer = doot.subprinter()
+##-- end logging
 
 TODAY                       = datetime.datetime.now().date()
 

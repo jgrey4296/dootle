@@ -4,9 +4,10 @@
 See EOF for license/metadata/notes as applicable
 """
 
-##-- builtin imports
+# Imports:
 from __future__ import annotations
 
+# ##-- stdlib imports
 # import abc
 import datetime
 import enum
@@ -20,32 +21,35 @@ import types
 import weakref
 # from copy import deepcopy
 # from dataclasses import InitVar, dataclass, field
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable, Generator)
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
+                    Generic, Iterable, Iterator, Mapping, Match,
+                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
+                    TypeGuard, TypeVar, cast, final, overload,
+                    runtime_checkable)
 from uuid import UUID, uuid1
 
-##-- end builtin imports
+# ##-- end stdlib imports
 
-##-- lib imports
+# ##-- 3rd party imports
+import doot
+import doot.errors
 import more_itertools as mitz
-##-- end lib imports
+from doot._abstract import Action_p
+from doot.structs import DKey, DKeyed
+from jgdv.files.bookmarks.collection import BookmarkCollection
+
+# ##-- end 3rd party imports
+
+# ##-- 1st party imports
+from dootle.bookmarks.alchemy_fns import extract as alc_extract
+from dootle.bookmarks.pony_fns import extract as pony_extract
+
+# ##-- end 1st party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = logmod.getLogger("doot._printer")
+printer = doot.subprinter()
 ##-- end logging
-
-import doot
-import doot.errors
-from doot._abstract import Action_p
-from doot.structs import DKey, DKeyed
-
-from dootle.bookmarks.pony_fns import extract as pony_extract
-from dootle.bookmarks.alchemy_fns import extract as alc_extract
-from jgdv.files.bookmarks.collection import BookmarkCollection
-
 class BookmarksPonyExtraction(Action_p):
     """
       extract bookmarks from a sqlite firefox db using pony

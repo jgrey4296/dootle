@@ -4,9 +4,10 @@
 See EOF for license/metadata/notes as applicable
 """
 
-##-- builtin imports
+# Imports:
 from __future__ import annotations
 
+# ##-- stdlib imports
 # import abc
 import datetime
 import enum
@@ -20,31 +21,29 @@ import types
 import weakref
 # from copy import deepcopy
 # from dataclasses import InitVar, dataclass, field
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable, Generator)
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
+                    Generic, Iterable, Iterator, Mapping, Match,
+                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
+                    TypeGuard, TypeVar, cast, final, overload,
+                    runtime_checkable)
 from uuid import UUID, uuid1
 
-##-- end builtin imports
+# ##-- end stdlib imports
 
-##-- lib imports
-import more_itertools as mitz
-##-- end lib imports
+# ##-- 3rd party imports
+import doot
+import doot.errors
+import mastodon
+import tomlguard
+from doot._abstract import Task_i
+from doot.structs import DKey, DootActionSpec
+
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
+printer = doot.subprinter()
 ##-- end logging
-
-printer = logmod.getLogger("doot._printer")
-
-import mastodon
-import tomlguard
-import doot
-import doot.errors
-from doot._abstract import Task_i
-from doot.structs import DootActionSpec
-from doot.structs import DKey
 
 TOOT_SIZE            : Final[int]                   = doot.config.on_fail(250, int).mastodon.toot_size()
 TOOT_IMAGE_SIZE      : Final[str]                   = doot.config.on_fail(8_000_000, int).mastodon.image_size()

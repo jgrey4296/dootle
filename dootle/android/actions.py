@@ -34,9 +34,8 @@ import more_itertools as mitz
 
 ##-- logging
 logging = logmod.getLogger(__name__)
+printer = doot.subprinter()
 ##-- end logging
-
-printer = logmod.getLogger("doot._printer")
 
 import sh
 import doot

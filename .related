@@ -4,6 +4,8 @@
 ;; Others are :{name} : {path} pairs
 ;; paths are relative
 
+:pyproject   : pyproject.toml
+:doot        : doot.toml
 :data        : data
 :docs        : docs
 :github      : .github/workflows

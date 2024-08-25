@@ -15,8 +15,8 @@ classifiers     = [
 ]
 
 dependencies   = [
-    "doot",
-    "jgdv",
+    "doot>=0.12",
+    "jgdv>0.2",
     "itemadapter",
     "w3lib",
     "pony",

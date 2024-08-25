@@ -4,9 +4,10 @@
 See EOF for license/metadata/notes as applicable
 """
 
-##-- builtin imports
+# Imports:
 from __future__ import annotations
 
+# ##-- stdlib imports
 # import abc
 import datetime
 import enum
@@ -20,29 +21,30 @@ import types
 import weakref
 # from copy import deepcopy
 # from dataclasses import InitVar, dataclass, field
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable, Generator)
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
+                    Generic, Iterable, Iterator, Mapping, Match,
+                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
+                    TypeGuard, TypeVar, cast, final, overload,
+                    runtime_checkable)
 from uuid import UUID, uuid1
 
-##-- end builtin imports
+# ##-- end stdlib imports
 
-##-- lib imports
-import more_itertools as mitz
-##-- end lib imports
-
-##-- logging
-logging = logmod.getLogger(__name__)
-##-- end logging
-printer = logmod.getLogger("doot._printer")
-
-import sh
+# ##-- 3rd party imports
 import doot
 import doot.errors
+import more_itertools as mitz
+import sh
 from doot._abstract import Action_p
 from doot.enums import ActionResponse_e as ActRE
 from doot.structs import DKey
+
+# ##-- end 3rd party imports
+
+##-- logging
+logging = logmod.getLogger(__name__)
+printer = doot.subprinter()
+##-- end logging
 
 try:
     godot = sh.Command("godot4")

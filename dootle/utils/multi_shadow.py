@@ -42,7 +42,8 @@ from tomlguard import TomlGuard
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = logmod.getLogger("doot._printer")
+printer = doot.subprinter()
+
 ##-- end logging
 
 def _shadow_paths(rpath:pl.Path, shadow_roots:list[pl.Path]) -> list[pl.Path]:

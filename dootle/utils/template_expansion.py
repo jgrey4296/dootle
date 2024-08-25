@@ -38,7 +38,7 @@ from doot.structs import DKey, DKeyed
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = logmod.getLogger("doot._printer")
+printer = doot.subprinter()
 ##-- end logging
 
 class TemplateExpansion:

@@ -27,17 +27,19 @@ from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
-import sh
-
+# ##-- 3rd party imports
 import doot
 import doot.errors
-from doot.structs import DKey, TaskName, CodeReference, DKeyed
+import sh
 from doot.enums import LoopControl_e
 from doot.mixins.path_manip import PathManip_m
+from doot.structs import CodeReference, DKey, DKeyed, TaskName
+
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = logmod.getLogger("doot._printer")
+printer = doot.subprinter()
 ##-- end logging
 
 # or use --no-pager for git
