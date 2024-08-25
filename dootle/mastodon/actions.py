@@ -58,9 +58,8 @@ class MastodonSetup:
     """
     _instance = None
 
-    DKeyed.redirects("mastodon")
-    DKeyed.paths("mastodon_secrets")
-
+    @DKeyed.redirects("mastodon")
+    @DKeyed.paths("mastodon_secrets")
     def __call__(self, spec, state, _data_key, _secrets) -> dict|bool|None:
 
         if MastodonSetup._instance is None:
@@ -79,11 +78,9 @@ class MastodonSetup:
 class MastodonPost:
     """ Default Mastodon Poster  """
 
-    DKeyed.types("mastodon", check=Mastodon.Mastodon)
-    DKeyed.formats("from", "toot_desc")
-    DKeyed.paths("toot_image")
-    DKeyed.format("toot_desc")
-
+    @DKeyed.types("mastodon", check=Mastodon.Mastodon)
+    @DKeyed.formats("from", "toot_desc")
+    @DKeyed.paths("toot_image")
     def __call__(self, spec, state, _instance, _text, _image_desc, _image_path):
 
         try:

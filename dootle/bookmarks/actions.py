@@ -50,6 +50,7 @@ from dootle.bookmarks.pony_fns import extract as pony_extract
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
+
 class BookmarksPonyExtraction(Action_p):
     """
       extract bookmarks from a sqlite firefox db using pony

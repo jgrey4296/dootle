@@ -37,7 +37,7 @@ import more_itertools as mitz
 import sh
 from doot._abstract import Action_p
 from doot.enums import ActionResponse_e as ActRE
-from doot.structs import DKey
+from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
 
@@ -60,7 +60,6 @@ PATH       : Final[DKey] = DKey("path",       implicit=True)
 TARGET     : Final[DKey] = DKey("target",     implicit=True)
 
 ##-- end expansion keys
-
 
 @doot.check_protocol
 class GodotProjectCheck(Action_p):
@@ -105,7 +104,6 @@ class GodotRunSceneAction(Action_p):
 @doot.check_protocol
 class GodotRunScriptAction(Action_p):
 
-
     def __call__(self, spec, task_state):
         try:
             godot_b     = godot.bake("--path", doot.locs.root, _return_cmd=True)
@@ -125,7 +123,6 @@ class GodotRunScriptAction(Action_p):
 
 @doot.check_protocol
 class GodotBuildAction(Action_p):
-
 
     def __call__(self, spec, task_state):
         try:
@@ -179,7 +176,6 @@ class GodotNewScriptAction(Action_p):
 
 @doot.check_protocol
 class GodotCheckScriptsAction(Action_p):
-
 
     def __call__(self, spec, task_state):
         try:

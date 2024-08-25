@@ -30,14 +30,14 @@ from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
-# ##-- 3rd party imports
+##-- 3rd party imports
 import bibtexparser as b
 import bibtexparser.model as model
 import doot
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares.middleware import BlockMiddleware
 from doot._abstract.task import Action_p
-from doot.structs import DKey
+from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
 
@@ -47,13 +47,14 @@ printer = doot.subprinter()
 ##-- end logging
 
 class BibtexFailedBlocksWriteAction(Action_p):
+    """ A reporter of blocks that failed to parse """
 
-    def __call__(self, spec, state):
-        if "failed_blocks" not in state:
+    @DKeyed.formats("failed_blocks")
+    @DKeyed.paths("target")
+    def __call__(self, spec, state, failed_blocks, target):
+        if not bool(failed_blocks):
             return
 
-        target = DKey("target", mark=DKey.mark.PATH).expand(spec, state)
-        blocks = state['failed_blocks']
         with open(target, 'w') as f:
-            for block in blocks:
+            for block in failed_blocks:
                 f.write(block.raw)
