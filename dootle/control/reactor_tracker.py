@@ -59,11 +59,12 @@ logging = logmod.getLogger(__name__)
 
 from collections import defaultdict
 from queue import PriorityQueue
+from jgdv.structs.code_ref import CodeReference
 import doot
 import doot.errors
 from doot.enums import TaskStatus_e
 from doot._abstract import Job_i, Task_i, FailPolicy_p
-from doot.structs import TaskArtifact, TaskSpec, CodeReference, TaskName
+from doot.structs import TaskArtifact, TaskSpec, TaskName
 from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i
 from doot.task.base_task import DootTask
 from doot.control.base_tracker import BaseTracker, ROOT, STATE, PRIORITY, EDGE_E
