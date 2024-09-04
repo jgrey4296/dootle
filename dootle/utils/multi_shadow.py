@@ -50,7 +50,7 @@ printer = doot.subprinter()
 def _shadow_paths(rpath:pl.Path, shadow_roots:list[pl.Path]) -> list[pl.Path]:
     """ take a relative path, apply it onto a multiple roots to the shadow directories """
     assert(isinstance(rpath, pl.Path))
-    assert(not rpath.is_absolute())
+    assert(not rpath.is_absolute()), rpath
     shadow_dirs = []
     for root in shadow_roots:
         result      = root / rpath
@@ -70,7 +70,7 @@ class InjectMultiShadow:
     """
 
     @DKeyed.types("onto", check=TaskSpec|list)
-    @DKeyed.types("shadow_roots")
+    @DKeyed.types("shadow_roots", check=list)
     @DKeyed.redirects("key_")
     def __call__(self, spec, state, _onto, _shadow_roots, _key):
         match _onto:
@@ -91,7 +91,7 @@ class CalculateShadowDirs:
     """
 
     @DKeyed.types("shadow_roots")
-    @DKeyed.types("rpath")
+    @DKeyed.paths("rpath", relative=True)
     def __call__(self, spec, state, _sroots, rpath):
         _sroots = [DKey(x, mark=DKey.mark.PATH).expand(spec, state) for x in _sroots]
         result : list[pl.Path] = _shadow_paths(rpath,  _sroots)
@@ -118,11 +118,13 @@ class MultiBackupAction(PathManip_m):
 
         printer.info("Backing up : %s", source_loc)
         for shadow_path in shadow_paths:
-            state['shadow_path'] = shadow_path
-            dest_loc             = pattern_key.expand(spec, state)
-
-            if self._is_write_protected(dest_loc):
-                raise doot.errors.DootLocationError("Tried to write a protected location", dest_loc)
+            match pattern_key.expand({"shadow_path":shadow_path}, spec, state):
+                case pl.Path() as x if self._is_write_protected(x):
+                    raise doot.errors.DootLocationError("Tried to write a protected location", dest_loc)
+                case pl.Path() as x:
+                    dest_loc = x
+                case x:
+                    raise TypeError("Shadow Path Expansion returned bad value", x)
 
             dest_loc.parent.mkdir(parents=True, exist_ok=True)
 
@@ -138,12 +140,10 @@ class MultiBackupAction(PathManip_m):
             difference      = int(max(source_ns, dest_ns) - min(source_ns, dest_ns))
             below_tolerance = difference <= tolerance
 
-            printer.info("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
+            printer.debug("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
             if (not source_newer) or below_tolerance:
                 continue
 
             printer.info("Destination: %s", dest_loc)
             _DootPostBox.put(_name, dest_loc)
             shutil.copy2(source_loc,dest_loc)
-        else:
-            del state['shadow_path']
