@@ -59,7 +59,7 @@ changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md" # TODO
 
 [project.entry-points."doot.plugins.action"]
 rng         = "dootle.actions.nprandom:new_random"
-say         = "dootle.actions.say:say"
+say         = "dootle.actions.say:SayAction"
 "mamba.env" = "dootle.python.mamba:MambaEnv"
 
 ##-- end entry-points
