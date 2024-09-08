@@ -44,7 +44,7 @@ from tomlguard import TomlGuard
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
-
+actex_l = doot.subprinter("action_exec")
 ##-- end logging
 
 def _shadow_paths(rpath:pl.Path, shadow_roots:list[pl.Path]) -> list[pl.Path]:
@@ -116,7 +116,7 @@ class MultiBackupAction(PathManip_m):
         source_loc = _from
         pattern_key = DKey(pattern, mark=DKey.mark.PATH)
 
-        printer.info("Backing up : %s", source_loc)
+        actex_l.info("Backing up : %s", source_loc)
         for shadow_path in shadow_paths:
             match pattern_key.expand({"shadow_path":shadow_path}, spec, state):
                 case pl.Path() as x if self._is_write_protected(x):
@@ -140,10 +140,10 @@ class MultiBackupAction(PathManip_m):
             difference      = int(max(source_ns, dest_ns) - min(source_ns, dest_ns))
             below_tolerance = difference <= tolerance
 
-            printer.debug("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
+            actex_l.debug("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
             if (not source_newer) or below_tolerance:
                 continue
 
-            printer.info("Destination: %s", dest_loc)
+            actex_l.info("Destination: %s", dest_loc)
             _DootPostBox.put(_name, dest_loc)
             shutil.copy2(source_loc,dest_loc)
