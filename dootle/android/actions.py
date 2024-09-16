@@ -4,9 +4,10 @@
 See EOF for license/metadata/notes as applicable
 """
 
-##-- builtin imports
+# Imports:
 from __future__ import annotations
 
+# ##-- stdlib imports
 # import abc
 import datetime
 import enum
@@ -20,29 +21,28 @@ import types
 import weakref
 # from copy import deepcopy
 # from dataclasses import InitVar, dataclass, field
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable, Generator)
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
+                    Generic, Iterable, Iterator, Mapping, Match,
+                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
+                    TypeGuard, TypeVar, cast, final, overload,
+                    runtime_checkable)
 from uuid import UUID, uuid1
 
-##-- end builtin imports
+# ##-- end stdlib imports
 
-##-- lib imports
-import more_itertools as mitz
-##-- end lib imports
+# ##-- 3rd party imports
+import doot
+import doot.errors
+import sh
+from doot._abstract import Action_p
+from doot.structs import DKey, DKeyed
+
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
+printer = doot.subprinter()
 ##-- end logging
-
-printer = logmod.getLogger("doot._printer")
-
-import sh
-import doot
-import doot.errors
-from doot.structs import DKey, DKeyed
-from doot._abstract import Action_p
 
 try:
     adb = sh.Command("adb")
@@ -146,7 +146,7 @@ class AndroidRemoteCmd(Action_p):
         try:
             data_key  = _update
             adb_cmd   = adb.bake("-t", transport, "shell", "", _return_cmd=True)
-            args      = [DKey(x, explicit=True).expand(spec, state) for x in spec.args]
+            args      = [DKey(x, fallback=x, mark=DKey.mark.MULTI).expand(spec, state) for x in spec.args]
             printer.info("ADB Cmd: %s : %s", cmd, args)
             result = adb_cmd(cmd, *args)
             return { data_key : result.stdout.decode() }

@@ -2,9 +2,11 @@
 """
 A Runner that uses twisted's Reactor api
 """
-##-- imports
+# Imports:
 from __future__ import annotations
 
+# ##-- stdlib imports
+import datetime
 # import abc
 # import datetime
 import enum
@@ -15,66 +17,39 @@ import pathlib as pl
 import re
 import time
 import types
+from collections import defaultdict
 # from copy import deepcopy
 # from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     Iterable, Iterator, Mapping, Match, MutableMapping,
                     Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
                     cast, final, overload, runtime_checkable, Self)
-# from uuid import UUID, uuid1
-# from weakref import ref
 
-# from bs4 import BeautifulSoup
-# import boltons
-# import construct as C
-# import dirty-equals as deq
-# import graphviz
-# import matplotlib.pyplot as plt
-# import more_itertools as itzplus
+# ##-- end stdlib imports
+
+# ##-- 3rd party imports
+import doot
+import doot.errors
 import networkx as nx
-# import numpy as np
-# import pandas
-# import pomegranate as pom
-# import pony import orm
-# import pronouncing
-# import pyparsing as pp
-# import rich
-# import seaborn as sns
-# import sklearn
-# import stackprinter # stackprinter.set_excepthook(style='darkbg2')
-# import sty
-# import sympy
-# import tomllib
-# import toolz
-# import tqdm
-# import validators
-# import z3
-# import spacy # nlp = spacy.load("en_core_web_sm")
+import scrapy
+from doot._abstract import (Action_p, FailPolicy_p, Job_i, ReportLine_i,
+                            Task_i, TaskBase_i, TaskRunner_i, TaskTracker_i)
+from doot.control.base_runner import BaseRunner, logctx
+from doot.enums import ActionResponse_e as ActRE
+from doot.enums import Report_f
+from doot.structs import ActionSpec, TaskSpec
+from doot.utils.signal_handler import SignalHandler
+from scrapy.crawler import CrawlerRunner
+from twisted.internet import defer, protocol, reactor, threads
+from twisted.internet.interfaces import IStreamServerEndpoint
+from zope.interface import implementer
 
-##-- end imports
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
+printer = doot.subprinter()
 ##-- end logging
-
-printer = logmod.getLogger("doot._printer")
-
-from collections import defaultdict
-import doot
-import doot.errors
-from doot.enums import Report_f, ActionResponse_e as ActRE
-from doot._abstract import Job_i, Task_i, FailPolicy_p
-from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i, ReportLine_i, Action_p
-from doot.utils.signal_handler import SignalHandler
-from doot.structs import TaskSpec, ActionSpec
-from doot.control.base_runner import BaseRunner, logctx
-
-from zope.interface import implementer
-from twisted.internet import reactor, protocol, defer, threads
-from twisted.internet.interfaces import IStreamServerEndpoint
-
-from scrapy.crawler import CrawlerRunner
-import scrapy
 
 dry_run                    = doot.args.on_fail(False).cmd.args.dry_run()
 head_level    : Final[str] = doot.constants.printer.DEFAULT_HEAD_LEVEL
@@ -167,7 +142,6 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
             sleep_len = task.spec.extra.on_fail(self.default_SLEEP_LENGTH, int|float).sleep()
             printer.info("[Sleeping (%s)...]", sleep_len, extra={"colour":"white"})
             return self.reactor.callLater(sleep_len, self._run_next_task)
-
 
     def _expand_job(self, job:Job_i) -> Job_i:
         """ turn a job into all of its tasks, including teardowns """

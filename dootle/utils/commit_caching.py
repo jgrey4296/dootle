@@ -27,32 +27,36 @@ from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
-import sh
-
+# ##-- 3rd party imports
 import doot
 import doot.errors
-from doot.structs import DKey, TaskName, CodeReference, DKeyed
+import sh
+from jgdv.structs.code_ref import CodeReference
 from doot.enums import LoopControl_e
 from doot.mixins.path_manip import PathManip_m
+from doot.structs import DKey, DKeyed, TaskName
+
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = logmod.getLogger("doot._printer")
+printer = doot.subprinter()
 ##-- end logging
 
 # or use --no-pager for git
-git_diff = sh.git.bake("--no-pager", "diff", "--name-only")
-git_head = sh.git.bake("rev-parse", "HEAD")
+git_diff                   = sh.git.bake("--no-pager", "diff", "--name-only")
+git_head                   = sh.git.bake("rev-parse", "HEAD")
 
 CACHE_PATTERN : Final[str] = "{}.commit_cache"
+temp_key                   = DKey("temp!p", implicit=True)
 
 def _build_cache_path(cache:None|pl.Path, taskname:TaskName) -> pl.Path:
-    if cache is not None:
+    if cache is not None and cache.exists() and cache.is_file():
         return cache
 
     root_taskname   = taskname.root()
-    cache : pl.Path = DKey("{temp}/" + CACHE_PATTERN.format(root_taskname), explicit=True, mark=DKey.mark.PATH).expand()
-    return cache
+    temp_dir        = temp_key.expand()
+    return temp_dir / CACHE_PATTERN.format(root_taskname)
 
 class GetChangedFilesByCommit:
     """
@@ -64,27 +68,29 @@ class GetChangedFilesByCommit:
     and passes `fn`, a one arg test function.
 
     (`recursive` is not used.)
+
+    If cache is not specified, tried to read {temp}/{taskname}.commmit_cache
+    If cache does not exist, diffs the past {head_count} commits
     """
     control_e = LoopControl_e
 
     @DKeyed.types("roots", "exts")
     @DKeyed.references("fn")
-    @DKeyed.paths("cache", fallback=None)
+    @DKeyed.paths("cache")
     @DKeyed.types("head_count", fallback=1, check=int)
     @DKeyed.taskname
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, roots, exts, fn, cache, head_count, _taskname, _update):
-        cache = _build_cache_path(cache, _taskname)
         potentials : list[pl.Path] = []
-        match cache.exists() and cache.is_file():
-            case True:
-                printer.info("Reading Cache: %s", cache)
-                cached_commit  = cache.read_text().strip()
+        match _build_cache_path(cache, _taskname):
+            case pl.Path() as x if x.exists() and x.is_file():
+                printer.info("Reading Cache: %s", x)
+                cached_commit  = x.read_text().strip()
                 printer.info("Diffing From %s to HEAD", cached_commit)
                 text_result    = git_diff(cached_commit, "HEAD")
                 potentials     = [pl.Path(x) for x in text_result.split("\n")]
-            case False:
-                printer.warning("Commit Cache not found for task, expected: %s", cache)
+            case x:
+                printer.warning("Commit Cache not found for task, expected: %s, Found: %s", cache, x)
                 printer.warning("Using files from HEAD~%s -> HEAD", head_count)
                 text_result    = git_diff(f"HEAD~{head_count}", "HEAD")
                 potentials     = [pl.Path(x) for x in text_result.strip().split("\n")]
@@ -102,6 +108,7 @@ class GetChangedFilesByCommit:
             case CodeReference():
                 accept_fn = fn.try_import()
             case None:
+
                 def accept_fn(x):
                     return True
 
@@ -120,12 +127,11 @@ class GetChangedFilesByCommit:
         else:
             return result
 
-
-
-
 class CacheGitCommit(PathManip_m):
     """
     Record the head commit hash id in a cache file
+
+    if {cache} is not specified, defaults to {temp}/{taskname}.commit_cache
     """
 
     @DKeyed.paths("cache", fallback=None)

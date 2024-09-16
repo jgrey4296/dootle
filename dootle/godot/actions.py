@@ -4,9 +4,10 @@
 See EOF for license/metadata/notes as applicable
 """
 
-##-- builtin imports
+# Imports:
 from __future__ import annotations
 
+# ##-- stdlib imports
 # import abc
 import datetime
 import enum
@@ -20,29 +21,30 @@ import types
 import weakref
 # from copy import deepcopy
 # from dataclasses import InitVar, dataclass, field
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable, Generator)
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
+                    Generic, Iterable, Iterator, Mapping, Match,
+                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
+                    TypeGuard, TypeVar, cast, final, overload,
+                    runtime_checkable)
 from uuid import UUID, uuid1
 
-##-- end builtin imports
+# ##-- end stdlib imports
 
-##-- lib imports
+# ##-- 3rd party imports
+import doot
+import doot.errors
 import more_itertools as mitz
-##-- end lib imports
+import sh
+from doot._abstract import Action_p
+from doot.enums import ActionResponse_e as ActRE
+from doot.structs import DKey, DKeyed
+
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
+printer = doot.subprinter()
 ##-- end logging
-printer = logmod.getLogger("doot._printer")
-
-import sh
-import doot
-import doot.errors
-from doot._abstract import Action_p
-from doot.enums import ActionResponse_e as ActRE
-from doot.structs import DKey
 
 try:
     godot = sh.Command("godot4")
@@ -50,15 +52,14 @@ except sh.CommandNotFound as err:
     raise doot.errors.TaskLoadError("godot not found") from err
 
 ##-- expansion keys
-SCENE      : Final[DKey] = DKey("scene")
-UPDATE     : Final[DKey] = DKey("update")
-SCRIPT     : Final[DKey] = DKey("script")
-QUIT_AFTER : Final[DKey] = DKey("quit_after")
-PATH       : Final[DKey] = DKey("path")
-TARGET     : Final[DKey] = DKey("target")
+SCENE      : Final[DKey] = DKey("scene",      implicit=True)
+UPDATE     : Final[DKey] = DKey("update",     implicit=True)
+SCRIPT     : Final[DKey] = DKey("script",     implicit=True)
+QUIT_AFTER : Final[DKey] = DKey("quit_after", implicit=True)
+PATH       : Final[DKey] = DKey("path",       implicit=True)
+TARGET     : Final[DKey] = DKey("target",     implicit=True)
 
 ##-- end expansion keys
-
 
 @doot.check_protocol
 class GodotProjectCheck(Action_p):
@@ -84,8 +85,6 @@ class GodotTestAction(Action_p):
 @doot.check_protocol
 class GodotRunSceneAction(Action_p):
 
-    _toml_kwargs = [QUIT_AFTER, SCENE]
-
     def __call__(self, spec, task_state):
         try:
             godot_b    = godot.bake("--path", doot.locs.root, _return_cmd=True)
@@ -104,8 +103,6 @@ class GodotRunSceneAction(Action_p):
 
 @doot.check_protocol
 class GodotRunScriptAction(Action_p):
-
-    _toml_kwargs = [UPDATE, QUIT_AFTER, SCRIPT]
 
     def __call__(self, spec, task_state):
         try:
@@ -126,8 +123,6 @@ class GodotRunScriptAction(Action_p):
 
 @doot.check_protocol
 class GodotBuildAction(Action_p):
-
-    _toml_kwargs = [PATH, UPDATE, "preset"]
 
     def __call__(self, spec, task_state):
         try:
@@ -155,7 +150,6 @@ class GodotNewSceneAction(Action_p):
       Generate a template new template scene
       to write with write!
     """
-    _toml_kwargs = ["name", "template"]
     outState = ["sceneText"]
 
     def __call__(self, spec, task_state):
@@ -171,7 +165,6 @@ class GodotNewScriptAction(Action_p):
       Generate a template new gdscript
       to write with write!
     """
-    _toml_kwargs = ["name", "template"]
     outState = ["scriptText"]
 
     def __call__(self, spec, task_state):
@@ -183,8 +176,6 @@ class GodotNewScriptAction(Action_p):
 
 @doot.check_protocol
 class GodotCheckScriptsAction(Action_p):
-
-    _toml_kwargs = [UPDATE, TARGET]
 
     def __call__(self, spec, task_state):
         try:

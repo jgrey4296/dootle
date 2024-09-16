@@ -4,9 +4,11 @@
 See EOF for license/metadata/notes as applicable
 """
 
-##-- builtin imports
+# Imports:
 from __future__ import annotations
 
+# ##-- stdlib imports
+import base64
 # import abc
 import datetime
 import enum
@@ -20,36 +22,35 @@ import types
 import weakref
 # from copy import deepcopy
 # from dataclasses import InitVar, dataclass, field
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable, Generator)
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
+                    Generic, Iterable, Iterator, Mapping, Match,
+                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
+                    TypeGuard, TypeVar, cast, final, overload,
+                    runtime_checkable)
 from uuid import UUID, uuid1
 
-##-- end builtin imports
+# ##-- end stdlib imports
 
-##-- lib imports
+# ##-- 3rd party imports
+import doot
+import doot.errors
 import more_itertools as mitz
-##-- end lib imports
+from doot.enums import ActionResponse_e
+from doot.structs import DKey, DKeyed
+from jgdv.files.bookmarks.collection import BookmarkCollection
+from selenium.webdriver import Firefox, FirefoxOptions, FirefoxService
+from selenium.webdriver.common.print_page_options import PrintOptions
+
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = logmod.getLogger("doot._printer")
+printer = doot.subprinter()
+
 ##-- end logging
 
-import base64
-import doot
-import doot.errors
-from doot.structs import DKey, DKeyed
-from doot.enums import ActionResponse_e
-
-from jgdv.files.bookmarks.collection import BookmarkCollection
-
-from selenium.webdriver import FirefoxOptions, FirefoxService, Firefox
-from selenium.webdriver.common.print_page_options import PrintOptions
-
-FF_DRIVER     = "__$ff_driver"
-READER_PREFIX = "about:reader?url="
+FF_DRIVER     : Final[str] = "__$ff_driver"
+READER_PREFIX : Final[str] = "about:reader?url="
 
 def setup_firefox(spec, state):
     """ Setups a selenium driven, headless firefox to print to pdf """

@@ -38,7 +38,7 @@ from doot.structs import DKey, DKeyed
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = logmod.getLogger("doot._printer")
+printer = doot.subprinter()
 ##-- end logging
 
 class TemplateExpansion:
@@ -59,7 +59,7 @@ class TemplateExpansion:
         # Expand kwargs first
         mapping = {}
         for key_s in template.get_identifiers():
-            mapping[key_s] = DKey(key_s).expand(spec, state)
+            mapping[key_s] = DKey(key_s, implicit=True, mark=DKey.mark.STR).expand(spec, state)
 
         match safe:
             case False:

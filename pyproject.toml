@@ -15,8 +15,8 @@ classifiers     = [
 ]
 
 dependencies   = [
-    "doot",
-    "jgdv",
+    "doot>=0.12",
+    "jgdv>=0.3",
     "itemadapter",
     "w3lib",
     "pony",
@@ -41,10 +41,10 @@ pdf      = ["pdfrw", "pypandoc"]
 
 ##-- urls
 [project.urls]
-homepage      = "https://github.com/jgrey4296/dootle"                     # TODO
-documentation = "https://readthedocs.org/dootle"                          # TODO
-repository    = "https://github.com/jgrey4296/dootle"                     # TODO
-changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md" # TODO
+homepage      = "https://github.com/jgrey4296/dootle"
+documentation = "https://dootle.readthedocs.io/en/latest"
+repository    = "https://github.com/jgrey4296/dootle"
+changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md"
 
 ##-- end urls
 
@@ -59,7 +59,7 @@ changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md" # TODO
 
 [project.entry-points."doot.plugins.action"]
 rng         = "dootle.actions.nprandom:new_random"
-say         = "dootle.actions.say:say"
+say         = "dootle.actions.say:SayAction"
 "mamba.env" = "dootle.python.mamba:MambaEnv"
 
 ##-- end entry-points
@@ -99,15 +99,15 @@ log_cli_level = "DEBUG"
 
 ##-- end pytest
 
-##-- bumpber
+##-- bumpver
 [tool.bumpver]
 current_version    = "0.1.2"
 version_pattern    = "MAJOR.MINOR.PATCH"
 commit_message     = "[bump]: version {old_version} -> {new_version}"
 tag_message        = "{new_version}"
 tag_scope          = "default"
-# commit             = true
-# tag                = true
+commit             = true
+tag                = false
 # pre_commit_hook  = ""
 # post_commit_hook = ""
 # push             = true
@@ -119,7 +119,7 @@ tag_scope          = "default"
 ]
 "dootle/__init__.py" = ['^__version__\s+=\s+"{version}"']
 
-##-- end bumpber
+##-- end bumpver
 
 ##-- isort
 # https://pycqa.github.io/isort/docs/configuration/options.html
