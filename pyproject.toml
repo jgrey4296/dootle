@@ -41,10 +41,10 @@ pdf      = ["pdfrw", "pypandoc"]
 
 ##-- urls
 [project.urls]
-homepage      = "https://github.com/jgrey4296/dootle"                     # TODO
-documentation = "https://readthedocs.org/dootle"                          # TODO
-repository    = "https://github.com/jgrey4296/dootle"                     # TODO
-changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md" # TODO
+homepage      = "https://github.com/jgrey4296/dootle"
+documentation = "https://dootle.readthedocs.io/en/latest"
+repository    = "https://github.com/jgrey4296/dootle"
+changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md"
 
 ##-- end urls
 
