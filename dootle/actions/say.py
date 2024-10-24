@@ -89,7 +89,7 @@ class SayAction(Action_p):
         cmd    = sh.espeak
         keys                    = [DKey(x, mark=DKey.mark.MULTI, fallback=x) for x in args[0:]]
         expanded                = [str(x.expand(spec, state)) for x in keys]
-        result = cmd(*args, _return_cmd=True, _bg=background)
+        result = cmd(*expanded, _return_cmd=True, _bg=background)
         if result.exit_code not in EXITCODES:
             fail_l.warning("Shell Command Failed: %s", result.exit_code)
             fail_l.warning(result.stderr.decode())
