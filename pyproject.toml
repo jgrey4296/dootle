@@ -58,9 +58,12 @@ changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md"
 # example = "dootle.cmds.example_cmd:ExampleCmd"
 
 [project.entry-points."doot.plugins.action"]
-rng         = "dootle.actions.nprandom:new_random"
 say         = "dootle.actions.say:SayAction"
 "mamba.env" = "dootle.python.mamba:MambaEnv"
+rng_fresh        = "dootle.actions.random:rng_fresh"
+rng_spawn        = "dootle.actions.random:rng_spawn"
+rng_ints         = "dootle.actions.random:rng_ints"
+rng_draw         = "dootle.actions.random:rng_draw"
 
 ##-- end entry-points
 
