@@ -31,10 +31,10 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 import sh
-from jgdv.structs.code_ref import CodeReference
 from doot.enums import LoopControl_e
 from doot.mixins.path_manip import PathManip_m
 from doot.structs import DKey, DKeyed, TaskName
+from jgdv.structs.code_ref import CodeReference
 
 # ##-- end 3rd party imports
 
