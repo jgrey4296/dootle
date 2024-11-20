@@ -34,6 +34,7 @@ from uuid import UUID, uuid1
 import bibtexparser as b
 import bibtexparser.model as model
 import doot
+from bib_middleware import BibMiddlewareLibrary
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares.middleware import BlockMiddleware
 from doot._abstract.task import Action_p
@@ -70,9 +71,13 @@ class BibtexLoadAction(Action_p):
         for loc in file_list:
             printer.info("Loading bibtex: %s", loc)
             try:
-                lib  = b.parse_file(loc, parse_stack=parse_stack)
-                db.add(lib.entries)
-                db.source_files.add(loc)
+                lib = b.parse_file(loc, parse_stack=parse_stack)
+                if hasattr(db, "add_sublibrary"):
+                    db.add_sublibrary(lib, source=loc)
+                else:
+                    db.add(lib.entries)
+                    db.source_files.add(loc)
+
                 printer.info("Loaded: %s entries",  len(lib.entries))
 
                 if bool(lib.failed_blocks):
