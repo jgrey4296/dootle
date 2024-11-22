@@ -66,7 +66,7 @@ class BibtexInitAction(Action_p):
 
     @DKeyed.references("db_base", fallback=None)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, dbclass, _update):
+    def __call__(self, spec, state, db_base, _update):
         match _update.expand(spec, state, fallback=None):
             case None:
                 pass
@@ -75,11 +75,11 @@ class BibtexInitAction(Action_p):
             case x:
                 raise TypeError("A non-bibtex library is in the field", _update, type(x))
 
-        match dbclass:
+        match db_base:
             case None:
                 db = b.Library()
             case CodeReference:
-                db = (dbclass.safe_import() or b.Library)()
+                db = (db_base.safe_import() or b.Library)()
 
         printer.info("Bibtex Database Initialised")
         return { _update : db }

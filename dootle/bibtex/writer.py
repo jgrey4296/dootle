@@ -59,7 +59,7 @@ class BibtexToStrAction(Action_p):
     @DKeyed.types("writer", check=Writer)
     @DKeyed.paths("to", fallback=None)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _from, writer, bib_format, _target, _update):
+    def __call__(self, spec, state, _from, writer, _target, _update):
         match _from or DKey(DB_KEY).expand(spec, state):
             case None:
                 raise ValueError("No bib database found")
