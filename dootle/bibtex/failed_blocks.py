@@ -49,12 +49,19 @@ printer = doot.subprinter()
 class BibtexFailedBlocksWriteAction(Action_p):
     """ A reporter of blocks that failed to parse """
 
-    @DKeyed.formats("failed_blocks")
+    @DKeyed.types("from", check=b.library.Library|None)
     @DKeyed.paths("target")
-    def __call__(self, spec, state, failed_blocks, target):
-        if not bool(failed_blocks):
-            return
+    def __call__(self, spec, state, _from, target):
+        match _from or DKey(DB_KEY).expand(spec, state):
+            case None:
+                raise ValueError("No bib database found")
+            case b.Library() as db:
+                pass
 
-        with open(target, 'w') as f:
-            for block in failed_blocks:
-                f.write(block.raw)
+        match db.failed_blocks:
+            case []:
+                return
+            case [*xs]:
+                with open(target, 'w') as f:
+                    for block in xs:
+                        f.write(block.raw)

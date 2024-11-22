@@ -64,17 +64,22 @@ class BibtexInitAction(Action_p):
       pass a callable as the spec.args value to use instead of _entry_transform
     """
 
-    @DKeyed.references("dbclass", fallback=None)
+    @DKeyed.references("db_base", fallback=None)
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, dbclass, _update):
-        if _update in state:
-            return True
+        match _update.expand(spec, state, fallback=None):
+            case None:
+                pass
+            case b.Library():
+                return True
+            case x:
+                raise TypeError("A non-bibtex library is in the field", _update, type(x))
 
         match dbclass:
             case None:
-                db = BibMiddlewareLibrary()
+                db = b.Library()
             case CodeReference:
-                db = (dbclass.safe_import() or BibMiddlewareLibrary)()
+                db = (dbclass.safe_import() or b.Library)()
 
         printer.info("Bibtex Database Initialised")
         return { _update : db }

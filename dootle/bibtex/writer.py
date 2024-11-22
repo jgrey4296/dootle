@@ -38,6 +38,8 @@ from bibtexparser import middlewares as ms
 from bibtexparser.middlewares.middleware import BlockMiddleware
 from doot._abstract.task import Action_p
 from doot.structs import DKey, DKeyed
+from bib_middleware.io import Writer
+from jgdv.structs.code_ref import CodeReference
 
 # ##-- end 3rd party imports
 
@@ -54,17 +56,35 @@ class BibtexToStrAction(Action_p):
     """
 
     @DKeyed.types("from", check=b.library.Library|None)
-    @DKeyed.types("write_stack", check=list)
-    @DKeyed.types("bib_format", check=b.BibtexFormat|None)
+    @DKeyed.types("writer", check=Writer)
+    @DKeyed.paths("to", fallback=None)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _from, write_stack, bib_format, _update):
-        db          = _from or DKey(DB_KEY).expand(spec, state)
-        if bib_format is None:
-            bib_format                              = b.BibtexFormat()
-            bib_format.value_column                 = 15
-            bib_format.indent                       = " "
-            bib_format.block_separator              = "\n"
-            bib_format.trailing_comma               = True
+    def __call__(self, spec, state, _from, writer, bib_format, _target, _update):
+        match _from or DKey(DB_KEY).expand(spec, state):
+            case None:
+                raise ValueError("No bib database found")
+            case b.Library() as db:
+                result      = writer.write(db, file=_target)
+                return { _update : result }
 
-        result = b.write_string(db, unparse_stack=write_stack, bibtex_format=bib_format)
-        return { _update : result }
+class BibtexBuildWriter(Action_p):
+
+    @DKeyed.types("stack", check=list|CodeReference)
+    @DKeyed.types("class", check=None|CodeReference|type)
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, stack, _class, _update):
+        match stack:
+            case list():
+                pass
+            case CodeReference():
+                fn = stack.try_import()
+                stack = fn(spec, state)
+
+        match _class:
+            case type():
+                writer = _class(stack)
+            case None:
+                writer = Writer(stack)
+
+
+        return { _update : writer }
