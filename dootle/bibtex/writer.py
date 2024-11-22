@@ -8,7 +8,6 @@ See EOF for license/metadata/notes as applicable
 from __future__ import annotations
 
 # ##-- stdlib imports
-# import abc
 import datetime
 import enum
 import functools as ftz
@@ -19,8 +18,6 @@ import re
 import time
 import types
 import weakref
-# from copy import deepcopy
-# from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
                     Generic, Iterable, Iterator, Mapping, Match,
                     MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
@@ -34,11 +31,11 @@ from uuid import UUID, uuid1
 import bibtexparser as b
 import bibtexparser.model as model
 import doot
+from bibble.io import Writer
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares.middleware import BlockMiddleware
 from doot._abstract.task import Action_p
 from doot.structs import DKey, DKeyed
-from bib_middleware.io import Writer
 from jgdv.structs.code_ref import CodeReference
 
 # ##-- end 3rd party imports
@@ -69,20 +66,17 @@ class BibtexToStrAction(Action_p):
 
 class BibtexBuildWriter(Action_p):
 
-    @DKeyed.types("stack", check=list|CodeReference)
-    @DKeyed.types("class", check=None|CodeReference|type)
+    @DKeyed.references("stack")
+    @DKeyed.references("class")
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, stack, _class, _update):
-        match stack:
-            case list():
-                pass
-            case CodeReference():
-                fn = stack.try_import()
-                stack = fn(spec, state)
+        fn    = stack.try_import()
+        stack = fn(spec, state)
 
         match _class:
-            case type():
-                writer = _class(stack)
+            case CodeReference():
+                writer_type = _class.try_import()
+                writer = _writer_type(stack)
             case None:
                 writer = Writer(stack)
 

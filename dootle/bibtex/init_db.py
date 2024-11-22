@@ -50,7 +50,6 @@ import bibtexparser as b
 import bibtexparser.model as model
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares import BlockMiddleware
-from bib_middleware import BibMiddlewareLibrary
 from jgdv.structs.code_ref import CodeReference
 
 import doot

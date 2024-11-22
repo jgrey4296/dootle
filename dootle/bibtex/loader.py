@@ -29,13 +29,13 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 import bibtexparser as b
-from bibtexparser import model
 import doot
+from bibble.io import Reader
 from bibtexparser import middlewares as ms
+from bibtexparser import model
 from bibtexparser.middlewares.middleware import BlockMiddleware, Middleware
 from doot._abstract.task import Action_p
 from doot.structs import DKey, DKeyed
-from bib_middleware.io import Reader
 from jgdv.structs.code_ref import CodeReference
 
 # ##-- end 3rd party imports
@@ -91,21 +91,21 @@ class BibtexLoadAction(Action_p):
 
 class BibtexBuildReader(Action_p):
 
-    @DKeyed.types("stack", check=list|CodeReference)
-    @DKeyed.types("db_base", check=None|CodeReference|type, fallback=None)
-    @DKeyed.types("class", check=None|CodeReference|type)
+    @DKeyed.references("stack", "db_base", "class")
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, stack, db_base, _class, _update):
-        match stack:
-            case list():
-                pass
+        fn = stack.try_import()
+        stack = fn(spec, state)
+        match db_base:
             case CodeReference():
-                fn = stack.try_import()
-                stack = fn(spec, state)
+                db_base = db_base.try_import()
+            case _:
+                pass
 
         match _class:
-            case type():
-                reader = _class(stack, lib_base=db_base)
+            case CodeReference():
+                reader_type = _class.try_import()
+                reader = reader_type(stack, lib_base=db_base)
             case None:
                 reader = Reader(stack, lib_base=db_base)
 

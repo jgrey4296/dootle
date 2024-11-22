@@ -27,6 +27,7 @@ dependencies   = [
     "networkx",
     "polars",
     "jsonlines",
+    "bibble @ git+https://github.com/jgrey4296/bibble.git",
 ]
 
 [project.optional-dependencies]
@@ -34,7 +35,7 @@ dev      = ["pipreqs", "sphinx" ]
 test     = ["pytest > 7.0" ]
 image    = ["Pillow"]
 net      = ["Requests", "beautifulsoup4"]
-bibtex   = ["bibtexparser", "pylatexenc"]
+bibtex   = ["bibtexparser"]
 data     = ["PyYAML", "pandas", "scikit-learn", "xsdata"]
 visual   = ["matplotlib", "seaborn", "wordcloud"]
 pdf      = ["pdfrw", "pypandoc"]
