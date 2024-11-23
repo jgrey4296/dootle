@@ -68,6 +68,7 @@ from doot.structs import TaskArtifact, TaskSpec, TaskName
 from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i
 from doot.task.base_task import DootTask
 from doot.control.base_tracker import BaseTracker, ROOT, STATE, PRIORITY, EDGE_E
+from jgdv.structs.code_ref import CodeReference
 
 @doot.check_protocol
 class DootleReactorTracker(BaseTracker, TaskTracker_i):

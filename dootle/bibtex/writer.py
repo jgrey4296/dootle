@@ -8,7 +8,6 @@ See EOF for license/metadata/notes as applicable
 from __future__ import annotations
 
 # ##-- stdlib imports
-# import abc
 import datetime
 import enum
 import functools as ftz
@@ -19,8 +18,6 @@ import re
 import time
 import types
 import weakref
-# from copy import deepcopy
-# from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
                     Generic, Iterable, Iterator, Mapping, Match,
                     MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
@@ -34,19 +31,21 @@ from uuid import UUID, uuid1
 import bibtexparser as b
 import bibtexparser.model as model
 import doot
+from bibble.io import Writer
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares.middleware import BlockMiddleware
 from doot._abstract.task import Action_p
 from doot.structs import DKey, DKeyed
+from jgdv.structs.code_ref import CodeReference
 
 # ##-- end 3rd party imports
+
+from dootle.bibtex import DB_KEY
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
-
-DB_KEY      : Final[DKey] = DKey("bib_db", implicit=True)
 
 class BibtexToStrAction(Action_p):
     """
@@ -54,17 +53,32 @@ class BibtexToStrAction(Action_p):
     """
 
     @DKeyed.types("from", check=b.library.Library|None)
-    @DKeyed.types("write_stack", check=list)
-    @DKeyed.types("bib_format", check=b.BibtexFormat|None)
+    @DKeyed.types("writer", check=Writer)
+    @DKeyed.paths("to", fallback=None)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _from, write_stack, bib_format, _update):
-        db          = _from or DKey(DB_KEY).expand(spec, state)
-        if bib_format is None:
-            bib_format                              = b.BibtexFormat()
-            bib_format.value_column                 = 15
-            bib_format.indent                       = " "
-            bib_format.block_separator              = "\n"
-            bib_format.trailing_comma               = True
+    def __call__(self, spec, state, _from, writer, _target, _update):
+        match _from or DKey(DB_KEY).expand(spec, state):
+            case None:
+                raise ValueError("No bib database found")
+            case b.Library() as db:
+                result      = writer.write(db, file=_target)
+                return { _update : result }
 
-        result = b.write_string(db, unparse_stack=write_stack, bibtex_format=bib_format)
-        return { _update : result }
+class BibtexBuildWriter(Action_p):
+
+    @DKeyed.references("stack")
+    @DKeyed.references("class", fallback=None)
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, stack, _class, _update):
+        fn    = stack.try_import()
+        stack = fn(spec, state)
+
+        match _class:
+            case CodeReference():
+                writer_type = _class.try_import()
+                writer = _writer_type(stack)
+            case None:
+                writer = Writer(stack)
+
+
+        return { _update : writer }

@@ -1,8 +1,15 @@
 """
 
 """
-from .init_db import BibtexInitAction
-from .loader import BibtexLoadAction
-from .writer import BibtexToStrAction
+from typing import Final
+from doot.structs import DKey
 
-from .failed_blocks import BibtexFailedBlocksWriteAction
+DB_KEY      : Final[DKey] = DKey("bib_db", implicit=True)
+
+from .init_db import BibtexInitAction as InitDb
+from .loader import BibtexLoadAction as DoLoad
+from .loader import BibtexBuildReader as BuildReader
+from .writer import BibtexToStrAction as ToStr
+from .writer import BibtexBuildWriter as BuildWriter
+
+from .failed_blocks import BibtexFailedBlocksWriteAction as WriteFailedBlocks

@@ -22,7 +22,7 @@ import weakref
 # from copy import deepcopy
 # from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
-                    Generic, Iterable, Iterator, Mapping, Match,
+                    Generic, Iterable, Iterator, Mapping, Match, Self,
                     MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
                     TypeGuard, TypeVar, cast, final, overload,
                     runtime_checkable)
@@ -41,20 +41,34 @@ from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
 
+from dootle.bibtex import DB_KEY
+
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
+
 class BibtexFailedBlocksWriteAction(Action_p):
     """ A reporter of blocks that failed to parse """
 
-    @DKeyed.formats("failed_blocks")
-    @DKeyed.paths("target")
-    def __call__(self, spec, state, failed_blocks, target):
-        if not bool(failed_blocks):
-            return
+    @DKeyed.types("from", check=b.library.Library|None)
+    @DKeyed.paths("to", fallback=None)
+    @DKeyed.redirects("update_", fallback=None)
+    def __call__(self, spec, state, _from, _to, _update):
+        match _from or DKey(DB_KEY).expand(spec, state):
+            case None:
+                raise ValueError("No bib database found")
+            case b.Library() as db:
+                pass
 
-        with open(target, 'w') as f:
-            for block in failed_blocks:
-                f.write(block.raw)
+        match db.failed_blocks:
+            case []:
+                return
+            case [*xs] if isinstance(to, pl.Path):
+                with open(_to, 'w') as f:
+                    for block in xs:
+                        f.write(block.raw)
+
+        if _update is not None:
+            pass

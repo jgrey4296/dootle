@@ -46,6 +46,16 @@ logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
+import bibtexparser as b
+import bibtexparser.model as model
+from bibtexparser import middlewares as ms
+from bibtexparser.middlewares import BlockMiddleware
+from jgdv.structs.code_ref import CodeReference
+
+import doot
+from doot._abstract.task import Action_p
+from doot.structs import DKey, DKeyed
+
 class BibtexInitAction(Action_p):
     """
       Initialise a bibtex database. Override '_entry_transform' for customisation of loading.
@@ -53,12 +63,22 @@ class BibtexInitAction(Action_p):
       pass a callable as the spec.args value to use instead of _entry_transform
     """
 
+    @DKeyed.references("db_base", fallback=None)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _update):
-        if _update in state:
-            return True
+    def __call__(self, spec, state, db_base, _update):
+        match _update.expand(spec, state, fallback=None):
+            case None:
+                pass
+            case b.Library():
+                return True
+            case x:
+                raise TypeError("A non-bibtex library is in the field", _update, type(x))
 
-        db                   = b.Library()
-        db.source_files      = set()
-        printer.debug("Bibtex Database Initialised")
+        match db_base:
+            case None:
+                db = b.Library()
+            case CodeReference:
+                db = (db_base.safe_import() or b.Library)()
+
+        printer.info("Bibtex Database Initialised")
         return { _update : db }

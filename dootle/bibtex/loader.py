@@ -8,7 +8,6 @@ See EOF for license/metadata/notes as applicable
 from __future__ import annotations
 
 # ##-- stdlib imports
-# import abc
 import datetime
 import enum
 import functools as ftz
@@ -19,8 +18,6 @@ import re
 import time
 import types
 import weakref
-# from copy import deepcopy
-# from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
                     Generic, Iterable, Iterator, Mapping, Match,
                     MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
@@ -32,21 +29,23 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 import bibtexparser as b
-import bibtexparser.model as model
 import doot
+from bibble.io import Reader
 from bibtexparser import middlewares as ms
-from bibtexparser.middlewares.middleware import BlockMiddleware
+from bibtexparser import model
+from bibtexparser.middlewares.middleware import BlockMiddleware, Middleware
 from doot._abstract.task import Action_p
 from doot.structs import DKey, DKeyed
+from jgdv.structs.code_ref import CodeReference
 
 # ##-- end 3rd party imports
+
+from dootle.bibtex import DB_KEY
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
-
-DB_KEY      : Final[DKey] = DKey("bib_db", implicit=True)
 
 class BibtexLoadAction(Action_p):
     """ Parse all the bibtext files into a state database, in place.
@@ -58,39 +57,55 @@ class BibtexLoadAction(Action_p):
 
     @DKeyed.redirects("year_")
     @DKeyed.redirects("from", multi=True, re_mark=DKey.mark.PATH)
-    @DKeyed.types("parse_stack", check=list)
+    @DKeyed.types("reader", check=Reader)
     @DKeyed.types("update", check=b.Library|None)
-    def __call__(self, spec, state, _year, from_ex, parse_stack, _update):
+    def __call__(self, spec, state, _year, _from, reader, _update):
         year_key    = _year
-        db          = _update or DB_KEY.expand(spec, state)
-        file_list   = [x.expand(spec, state) for x in from_ex]
+        file_list   = [x.expand(spec, state) for x in _from]
         results     = {}
+        match _update or DB_KEY.expand(spec, state):
+            case None:
+                db = b.Library()
+                results[DB_KEY] = db
+            case b.Library() as x:
+                db = x
 
         printer.debug("Starting to load %s files", len(file_list))
         for loc in file_list:
             printer.info("Loading bibtex: %s", loc)
             try:
-                lib  = b.parse_file(loc, parse_stack=parse_stack)
-                db.add(lib.entries)
-                db.source_files.add(loc)
-                printer.info("Loaded: %s entries",  len(lib.entries))
-
-                if bool(lib.failed_blocks):
-                    failed = lib.failed_blocks.copy()
-                    results.update({"failed_blocks": failed})
-                    printer.warning("Parse Failures have been added to task state['failed_blocks']")
-
-            except UnicodeDecodeError as err:
-                printer.error("Unicode Error in File: %s, Start: %s", loc, err.start)
-                return False
+                filelib = reader.read(loc, into=db)
+                printer.info("Loaded: %s entries",  len(filelib.entries))
             except Exception as err:
                 printer.error("Bibtex File Loading Errored: %s : %s", loc, err)
                 return False
 
         printer.info("Total DB Entry Count: %s", len(db.entries))
         if len(file_list) == 1:
-            loc = doot.locs[file_list[0]]
+            loc = file_list[0]
             printer.info("Current year: %s", loc.stem)
             results.update({ year_key: loc.stem })
 
         return results
+
+class BibtexBuildReader(Action_p):
+
+    @DKeyed.references("stack", "db_base", "class")
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, stack, db_base, _class, _update):
+        fn = stack.try_import()
+        stack = fn(spec, state)
+        match db_base:
+            case CodeReference():
+                db_base = db_base.try_import()
+            case _:
+                pass
+
+        match _class:
+            case CodeReference():
+                reader_type = _class.try_import()
+                reader = reader_type(stack, lib_base=db_base)
+            case None:
+                reader = Reader(stack, lib_base=db_base)
+
+        return { _update : reader }
