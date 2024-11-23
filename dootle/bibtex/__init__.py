@@ -1,6 +1,11 @@
 """
 
 """
+from typing import Final
+from doot.structs import DKey
+
+DB_KEY      : Final[DKey] = DKey("bib_db", implicit=True)
+
 from .init_db import BibtexInitAction as InitDb
 from .loader import BibtexLoadAction as DoLoad
 from .loader import BibtexBuildReader as BuildReader

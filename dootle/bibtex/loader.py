@@ -40,12 +40,12 @@ from jgdv.structs.code_ref import CodeReference
 
 # ##-- end 3rd party imports
 
+from dootle.bibtex import DB_KEY
+
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
-
-DB_KEY      : Final[DKey] = DKey("bib_db", implicit=True)
 
 class BibtexLoadAction(Action_p):
     """ Parse all the bibtext files into a state database, in place.
@@ -88,7 +88,6 @@ class BibtexLoadAction(Action_p):
 
         return results
 
-
 class BibtexBuildReader(Action_p):
 
     @DKeyed.references("stack", "db_base", "class")
@@ -108,6 +107,5 @@ class BibtexBuildReader(Action_p):
                 reader = reader_type(stack, lib_base=db_base)
             case None:
                 reader = Reader(stack, lib_base=db_base)
-
 
         return { _update : reader }

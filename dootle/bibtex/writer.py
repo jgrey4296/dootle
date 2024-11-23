@@ -40,12 +40,12 @@ from jgdv.structs.code_ref import CodeReference
 
 # ##-- end 3rd party imports
 
+from dootle.bibtex import DB_KEY
+
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
-
-DB_KEY      : Final[DKey] = DKey("bib_db", implicit=True)
 
 class BibtexToStrAction(Action_p):
     """
@@ -67,7 +67,7 @@ class BibtexToStrAction(Action_p):
 class BibtexBuildWriter(Action_p):
 
     @DKeyed.references("stack")
-    @DKeyed.references("class")
+    @DKeyed.references("class", fallback=None)
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, stack, _class, _update):
         fn    = stack.try_import()
