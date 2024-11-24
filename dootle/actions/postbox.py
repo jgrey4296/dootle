@@ -119,12 +119,13 @@ class _DootPostBox:
 class PutPostAction(Action_p):
     """
     push data to the inter-task postbox of this task tree
-    'args' are pushed to the postbox of the calling task
-    'kwargs' are pushed to the kwarg specific subbox
+    'args' are pushed to the postbox of the calling task root (ie: stripped of UUIDs)
+    'kwargs' are pushed to the kwarg specific subbox. can be explicit tasks or a subbox of the calling task root
 
     Both key and value are expanded of kwargs.
+    The Subbox is the last ..{name} of the full path
 
-    eg: {do="post.put", args=["{key}", "{key}"], "group::task.sub..subbox"="{key}"}
+    eg: {do="post.put", args=["{key}", "{key}"], "group::task.sub..subbox"="{key}", "subbox"="{key2}"}
     """
 
     @DKeyed.args
@@ -132,17 +133,27 @@ class PutPostAction(Action_p):
     @DKeyed.taskname
     def __call__(self, spec, state, args, kwargs, _basename) -> dict|bool|None:
         logging.debug("PostBox Put: %s : args(%s) : kwargs(%s)", _basename, args, list(kwargs.keys()))
+        self._add_to_task_box(spec, state, args, _basename)
+        self._add_to_target_box(spec, state, kwargs, _basename)
+
+    def _add_to_task_box(self, spec, state, args, _basename):
         target = _basename.root().subtask(_DootPostBox.default_subkey)
+        logging.debug("Adding to task box: %s : %s", target, args)
         for statekey in args:
             data = DKey(statekey, implicit=True).expand(spec, state)
             _DootPostBox.put(target, data)
 
+    def _add_to_target_box(self, spec, state, kwargs, _basename):
+        logging.debug("Adding to target boxes: %s", kwargs)
         for box_str, statekey in kwargs.items():
-            box_key = DKey(box_str).expand(spec, state)
+            box_key = DKey(box_str)
+            box_key_ex = box_key.expand(spec, state)
             try:
-                box = TaskName.build(box_str)
+                # Explicit target
+                box = TaskName.build(box_key_ex)
             except ValueError:
-                box = _basename.root(top=True).subtask(box_str)
+                # Implicit
+                box = _basename.root(top=True).subtask(box_key_ex)
 
             match statekey:
                 case str():
@@ -153,20 +164,30 @@ class PutPostAction(Action_p):
             for x in statekey:
                 data = DKey(x).expand(spec, state)
                 _DootPostBox.put(box, data)
-        else:
-            pass
 
 class GetPostAction(Action_p):
     """
-      Read data from the inter-task postbox of a task tree
-      The arguments of the action are held in self.spec
+      Read data from the inter-task postbox of a task tree.
+      'args' pop a value from the calling tasks root (ie: no UUIDs) box into that key name
+      'kwargs' are read literally
 
       stateKey="group::task.sub..{subbox}"
-      eg: data="bib::format..-"
+      eg: {do='post.get', args=["first", "second", "third"], data="bib::format..-"}
     """
 
+    @DKeyed.args
     @DKeyed.kwargs
-    def __call__(self, spec, state, kwargs) -> dict|bool|None:
+    def __call__(self, spec, state, args, kwargs) -> dict|bool|None:
+        result = {}
+        result.update(self._get_from_target_boxes(spec, state, kwargs))
+
+        return result
+
+    def _get_from_task_box(self, spec, state, args) -> dict:
+        raise NotImplementedError()
+
+
+    def _get_from_target_boxes(self, spec, state, kwargs) -> dict:
         updates = {}
         for key,box_str in kwargs.items():
             state_key          = DKey(key).expand(spec, state)
