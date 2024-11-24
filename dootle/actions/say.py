@@ -120,7 +120,7 @@ class SayAction(Action_p):
         return True
 
 
-class SpeakTimeAction(Action_p):
+class SayTimeAction(Action_p):
     """
     A Simple Action that announces the time
     Subclass this and override __call__ for your own actions.
@@ -149,8 +149,8 @@ class SpeakTimeAction(Action_p):
         except sh.CommandNotFound as err:
             fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
             return False
-        except sh.ErrorReturnCode as err:
-            fail_l.error("Shell Command '%s' exited with bad code for args: %s", err.args[0], args)
+        except sh.ErrorReturnCode:
+            fail_l.error("Shell Command '%s' exited with code: %s for args: %s", args[0], result.exit_code, args)
             return False
 
 
