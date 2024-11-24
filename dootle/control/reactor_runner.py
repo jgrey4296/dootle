@@ -7,8 +7,6 @@ from __future__ import annotations
 
 # ##-- stdlib imports
 import datetime
-# import abc
-# import datetime
 import enum
 import functools as ftz
 import itertools as itz
@@ -18,8 +16,6 @@ import re
 import time
 import types
 from collections import defaultdict
-# from copy import deepcopy
-# from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
                     Iterable, Iterator, Mapping, Match, MutableMapping,
                     Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,

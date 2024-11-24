@@ -2,11 +2,11 @@
 """
 
 """
-##-- imports
+# Imports:
 from __future__ import annotations
 
-# import abc
-# import datetime
+# ##-- stdlib imports
+import datetime
 import enum
 import functools as ftz
 import itertools as itz
@@ -15,32 +15,39 @@ import pathlib as pl
 import re
 import time
 import types
-# from copy import deepcopy
-# from dataclasses import InitVar, dataclass, field
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable, Generator, Literal)
-# from uuid import UUID, uuid1
-# from weakref import ref
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
+                    Generic, Iterable, Iterator, Literal, Mapping, Match,
+                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
+                    TypeGuard, TypeVar, cast, final, overload,
+                    runtime_checkable)
+from uuid import UUID, uuid1
 
-# from bs4 import BeautifulSoup
-import boltons.queueutils
+# ##-- end stdlib imports
+
+# ##-- 3rd party imports
 import networkx as nx
-##-- end imports
+
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
+# ##-- stdlib imports
 from collections import defaultdict
+
+# ##-- end stdlib imports
+
+# ##-- 3rd party imports
 import doot
 import doot.errors
-from doot._abstract import Job_i, Task_i, FailPolicy_p
-from doot.structs import TaskArtifact, TaskSpec, TaskName
-from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i
+from doot._abstract import (FailPolicy_p, Job_i, Task_i, TaskBase_i,
+                            TaskRunner_i, TaskTracker_i)
+from doot.control.tracker import DootTracker, _TrackerEdgeType
+from doot.structs import TaskArtifact, TaskName, TaskSpec
 from doot.task.base_task import DootTask
-from doot.control.tracker import _TrackerEdgeType, DootTracker
+
+# ##-- end 3rd party imports
 
 STORAGE_FILE : Final[pl.Path] = doot.config.on_fail(DootKey.build(".tasks.bk")).settings.general.tracker_file(wrapper=DootKey.build).to_path()
 
@@ -51,6 +58,7 @@ class DootDateTracker(DootTracker):
       reads and writes modification times to wherever config.settings.general.tracker_file locates
 
     """
+
     def __init__(self, shadowing:bool=False, *, policy=None):
         super().__init__(shadowing=shadowing, policy=policy)
         self._modification_db = None

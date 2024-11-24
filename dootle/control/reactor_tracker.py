@@ -2,11 +2,11 @@
 """
 
 """
-##-- imports
+# Imports:
 from __future__ import annotations
 
-# import abc
-# import datetime
+# ##-- stdlib imports
+import datetime
 import enum
 import functools as ftz
 import itertools as itz
@@ -15,60 +15,35 @@ import pathlib as pl
 import re
 import time
 import types
-# from copy import deepcopy
-# from dataclasses import InitVar, dataclass, field
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable, Generator, Literal)
-# from uuid import UUID, uuid1
-# from weakref import ref
+from collections import defaultdict
+from queue import PriorityQueue
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
+                    Generic, Iterable, Iterator, Literal, Mapping, Match,
+                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
+                    TypeGuard, TypeVar, cast, final, overload,
+                    runtime_checkable)
+from uuid import UUID, uuid1
 
-# from bs4 import BeautifulSoup
-import boltons.queueutils
-# import construct as C
-# import dirty-equals as deq
-# import graphviz
-# import matplotlib.pyplot as plt
-# import more_itertools as itzplus
+# ##-- end stdlib imports
+
+# ##-- 3rd party imports
+import doot
+import doot.errors
 import networkx as nx
-# import numpy as np
-# import pandas
-# import pomegranate as pom
-# import pony import orm
-# import pronouncing
-# import pyparsing as pp
-# import rich
-# import seaborn as sns
-# import sklearn
-# import stackprinter # stackprinter.set_excepthook(style='darkbg2')
-# import sty
-# import sympy
-# import tomllib
-# import toolz
-# import tqdm
-# import validators
-# import z3
-# import spacy # nlp = spacy.load("en_core_web_sm")
+from doot._abstract import (FailPolicy_p, Job_i, Task_i, TaskBase_i,
+                            TaskRunner_i, TaskTracker_i)
+from doot.control.base_tracker import (EDGE_E, PRIORITY, ROOT, STATE,
+                                       BaseTracker)
+from doot.enums import TaskStatus_e
+from doot.structs import TaskArtifact, TaskName, TaskSpec
+from doot.task.base_task import DootTask
+from jgdv.structs.code_ref import CodeReference
 
-##-- end imports
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
-
-from collections import defaultdict
-from queue import PriorityQueue
-from jgdv.structs.code_ref import CodeReference
-import doot
-import doot.errors
-from doot.enums import TaskStatus_e
-from doot._abstract import Job_i, Task_i, FailPolicy_p
-from doot.structs import TaskArtifact, TaskSpec, TaskName
-from doot._abstract import TaskTracker_i, TaskRunner_i, TaskBase_i
-from doot.task.base_task import DootTask
-from doot.control.base_tracker import BaseTracker, ROOT, STATE, PRIORITY, EDGE_E
-from jgdv.structs.code_ref import CodeReference
 
 @doot.check_protocol
 class DootleReactorTracker(BaseTracker, TaskTracker_i):

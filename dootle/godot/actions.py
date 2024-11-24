@@ -8,7 +8,6 @@ See EOF for license/metadata/notes as applicable
 from __future__ import annotations
 
 # ##-- stdlib imports
-# import abc
 import datetime
 import enum
 import functools as ftz
@@ -19,8 +18,6 @@ import re
 import time
 import types
 import weakref
-# from copy import deepcopy
-# from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
                     Generic, Iterable, Iterator, Mapping, Match,
                     MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
@@ -33,7 +30,6 @@ from uuid import UUID, uuid1
 # ##-- 3rd party imports
 import doot
 import doot.errors
-import more_itertools as mitz
 import sh
 from doot._abstract import Action_p
 from doot.enums import ActionResponse_e as ActRE

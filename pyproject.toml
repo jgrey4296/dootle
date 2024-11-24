@@ -15,30 +15,25 @@ classifiers     = [
 ]
 
 dependencies   = [
-    "doot>=0.12",
-    "jgdv>=0.3",
-    "itemadapter",
-    "w3lib",
+    "doot>=0.14",
+    "jgdv>=0.3.3",
     "pony",
-    "scrapy",
     "mastodon.py>=1.8",
     "bibtexparser>=2.0.0b4",
     "numpy",
     "networkx",
-    "polars",
-    "jsonlines",
-    "bibble @ git+https://github.com/jgrey4296/bibble.git",
 ]
 
 [project.optional-dependencies]
-dev      = ["pipreqs", "sphinx" ]
+dev      = ["sphinx" ]
 test     = ["pytest > 7.0" ]
 image    = ["Pillow"]
 net      = ["Requests", "beautifulsoup4"]
-bibtex   = ["bibtexparser"]
+bibtex   = ["bibtexparser", "bibble @ git+https://github.com/jgrey4296/bibble.git"]
 data     = ["PyYAML", "pandas", "scikit-learn", "xsdata"]
 visual   = ["matplotlib", "seaborn", "wordcloud"]
 pdf      = ["pdfrw", "pypandoc"]
+reactor  = ["twisted", "scrapy", "zope"]
 
 ##-- urls
 [project.urls]

@@ -9,7 +9,6 @@ from __future__ import annotations
 
 # ##-- stdlib imports
 import base64
-# import abc
 import datetime
 import enum
 import functools as ftz
@@ -20,8 +19,6 @@ import re
 import time
 import types
 import weakref
-# from copy import deepcopy
-# from dataclasses import InitVar, dataclass, field
 from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
                     Generic, Iterable, Iterator, Mapping, Match,
                     MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
@@ -34,7 +31,6 @@ from uuid import UUID, uuid1
 # ##-- 3rd party imports
 import doot
 import doot.errors
-import more_itertools as mitz
 from doot.enums import ActionResponse_e
 from doot.structs import DKey, DKeyed
 from jgdv.files.bookmarks.collection import BookmarkCollection
