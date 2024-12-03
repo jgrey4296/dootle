@@ -11,7 +11,8 @@
 import os
 import sys
 import pathlib as pl
-sys.path.insert(0, pl.Path('../').resolve())
+local_mod = str(pl.Path('../').resolve())
+sys.path.insert(0, local_mod)
 
 # (Relative to this file):
 templates_path   = ['_templates']
