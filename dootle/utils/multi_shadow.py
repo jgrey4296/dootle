@@ -37,7 +37,6 @@ from doot._abstract import Action_p
 from doot.actions.postbox import _DootPostBox
 from doot.mixins.path_manip import PathManip_m
 from doot.structs import DKey, TaskName, TaskSpec, DKeyed
-from tomlguard import TomlGuard
 
 # ##-- end 3rd party imports
 

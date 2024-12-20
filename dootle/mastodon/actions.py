@@ -34,7 +34,7 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 import mastodon
-import tomlguard
+from jgdv.structs.chainguard import ChainGuard
 from doot._abstract import Task_i
 from doot.structs import DKey, DootActionSpec
 
@@ -53,7 +53,7 @@ TOOT_IMAGE_TYPES     : Final[list[str]]             = [".jpg", ".png", ".gif"]
 
 class MastodonSetup:
     """ Default Mastodon Setup, using secrets from doot.locs.mastodon_secrets
-      loads the secrets as a tomlguard, and accesses mastodon.access_token and mastodon.url
+      loads the secrets as a chainguard, and accesses mastodon.access_token and mastodon.url
       ensures thers an "image_temp" location
     """
     _instance = None
@@ -64,7 +64,7 @@ class MastodonSetup:
 
         if MastodonSetup._instance is None:
             printer.info("---------- Initialising Mastodon", extra={"colour": "green"})
-            secrets = tomlguard.load(_secrets)
+            secrets = ChainGuard.load(_secrets)
             MastodonSetup._instance = mastodon.Mastodon(
                 access_token = secrets.mastodon.access_token,
                 api_base_url = secrets.mastodon.url

@@ -3,7 +3,7 @@ name            = "dootle"
 version         = "0.1.2"
 description     = "A Library of extensions for Doot task running"
 readme          = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license         = {file = "LICENSE"}
 keywords        = []
 authors         = [
