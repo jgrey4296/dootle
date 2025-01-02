@@ -28,15 +28,18 @@ from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
+# ##-- 3rd party imports
+import doot
+import numpy as np
+from jgdv.structs.dkey import DKey
+from jgdv.structs.dkey.core import SingleDKey, identity
+
+# ##-- end 3rd party imports
+
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-import doot
-from doot.structs import DKey
-from jgdv.structs.dkey.core import SingleDKey, identity
-
-import numpy as np
 
 class NPShapeDKey(SingleDKey, mark=np.ndarray, tparam="n", multi=False):
     """ Utility DKey to get a numpy array and validate its shape,

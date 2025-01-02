@@ -32,7 +32,7 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 from doot.enums import ActionResponse_e
-from doot.structs import DKey, DKeyed
+from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.files.bookmarks.collection import BookmarkCollection
 from selenium.webdriver import Firefox, FirefoxOptions, FirefoxService
 from selenium.webdriver.common.print_page_options import PrintOptions

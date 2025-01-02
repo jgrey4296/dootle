@@ -36,7 +36,8 @@ import doot.errors
 import mastodon
 from jgdv.structs.chainguard import ChainGuard
 from doot._abstract import Task_i
-from doot.structs import DKey, DootActionSpec
+from jgdv.structs.dkey import DKey
+from doot.structs import ActionSpec
 
 # ##-- end 3rd party imports
 

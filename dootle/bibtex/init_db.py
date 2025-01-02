@@ -35,9 +35,11 @@ import bibtexparser as b
 import bibtexparser.model as model
 import doot
 from bibtexparser import middlewares as ms
+from bibtexparser.middlewares import BlockMiddleware
 from bibtexparser.middlewares.middleware import BlockMiddleware
 from doot._abstract.task import Action_p
-from doot.structs import DKey, DKeyed
+from jgdv.structs.strang import CodeReference
+from jgdv.structs.dkey import DKey, DKeyed
 
 # ##-- end 3rd party imports
 
@@ -46,15 +48,7 @@ logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
-import bibtexparser as b
-import bibtexparser.model as model
-from bibtexparser import middlewares as ms
-from bibtexparser.middlewares import BlockMiddleware
-from jgdv.structs.code_ref import CodeReference
 
-import doot
-from doot._abstract.task import Action_p
-from doot.structs import DKey, DKeyed
 
 class BibtexInitAction(Action_p):
     """

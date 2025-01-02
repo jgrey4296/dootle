@@ -30,13 +30,14 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
-from jgdv.structs.code_ref import CodeReference
 import doot
 import doot.errors
 from doot._abstract import Action_p
 from doot.actions.postbox import _DootPostBox
 from doot.mixins.path_manip import PathManip_m
-from doot.structs import DKey, TaskName, TaskSpec, DKeyed
+from doot.structs import TaskName, TaskSpec
+from jgdv.structs.code_ref import CodeReference
+from jgdv.structs.dkey import DKey, DKeyed
 
 # ##-- end 3rd party imports
 

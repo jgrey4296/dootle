@@ -35,12 +35,15 @@ from bibtexparser import middlewares as ms
 from bibtexparser import model
 from bibtexparser.middlewares.middleware import BlockMiddleware, Middleware
 from doot._abstract.task import Action_p
-from doot.structs import DKey, DKeyed
-from jgdv.structs.code_ref import CodeReference
+from jgdv.structs.dkey import DKey, DKeyed
+from jgdv.structs.strang import CodeReference
 
 # ##-- end 3rd party imports
 
+# ##-- 1st party imports
 from dootle.bibtex import DB_KEY
+
+# ##-- end 1st party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
