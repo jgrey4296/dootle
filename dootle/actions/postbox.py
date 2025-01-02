@@ -37,7 +37,7 @@ import sh
 # ##-- 1st party imports
 import doot
 from doot._abstract import Action_p
-from doot.errors import DootTaskError, DootTaskFailed
+from doot.errors import TaskError, TaskFailed
 from doot.structs import DKey, TaskName, DKeyed
 
 # ##-- end 1st party imports
@@ -76,9 +76,9 @@ class _DootPostBox:
 
     @staticmethod
     def put(key:TaskName, val:None|list|set|Any):
-        if not key.has_root():
+        if key.bmark_e.mark not in key:
             raise ValueError("Tried to use a postbox key with no subkey", key)
-        subbox = str(key.last())
+        subbox = str(key[-1])
         box    = str(key.root())
         match val:
             case None | [] | {} | dict() if not bool(val):
@@ -90,10 +90,10 @@ class _DootPostBox:
 
     @staticmethod
     def get(key:TaskName) -> list|dict:
-        if not key.has_root():
+        if key.bmark_e.mark not in key:
             raise ValueError("tried to get from postbox with no subkey", key)
         box    = str(key.root())
-        subbox = str(key.last())
+        subbox = str(key[-1])
         match subbox:
             case "*" | None:
                 return _DootPostBox.boxes[box].copy()
@@ -101,16 +101,16 @@ class _DootPostBox:
                 return _DootPostBox.boxes[box][subbox][:]
 
     @staticmethod
-    def clear_box(key):
-        if not key.has_root():
+    def clear_box(key:TaskName):
+        if key.bmark_e.mark not in key:
             raise ValueError("tried to clear a box without a subkey", key)
         box    = str(key.root())
-        subbox = str(key.last())
+        subbox = str(key[-1])
         match subbox:
             case x if x == _DootPostBox.whole_box_key:
                 _DootPostBox.boxes[box] = defaultdict(list)
             case _:
-                _DootPostBox.boxes[box][subkey] = []
+                _DootPostBox.boxes[box][subbox] = []
 
     @staticmethod
     def clear():
@@ -137,7 +137,7 @@ class PutPostAction(Action_p):
         self._add_to_target_box(spec, state, kwargs, _basename)
 
     def _add_to_task_box(self, spec, state, args, _basename):
-        target = _basename.root().subtask(_DootPostBox.default_subkey)
+        target = _basename.root().push(_DootPostBox.default_subkey)
         logging.debug("Adding to task box: %s : %s", target, args)
         for statekey in args:
             data = DKey(statekey, implicit=True).expand(spec, state)
@@ -153,7 +153,7 @@ class PutPostAction(Action_p):
                 box = TaskName.build(box_key_ex)
             except ValueError:
                 # Implicit
-                box = _basename.root(top=True).subtask(box_key_ex)
+                box = _basename.root().push(box_key_ex)
 
             match statekey:
                 case str():
@@ -186,7 +186,6 @@ class GetPostAction(Action_p):
     def _get_from_task_box(self, spec, state, args) -> dict:
         raise NotImplementedError()
 
-
     def _get_from_target_boxes(self, spec, state, kwargs) -> dict:
         updates = {}
         for key,box_str in kwargs.items():
@@ -205,9 +204,8 @@ class ClearPostAction(Action_p):
     @DKeyed.formats("key", fallback=Any)
     @DKeyed.taskname
     def __call__(self, spec, state, key, _basename):
-        from_task = _basename.root(top=True).subtask(key)
+        from_task = _basename.root.push(key)
         _DootPostBox.clear_box(from_task)
-        return
 
 class SummarizePostAction(Action_p):
     """
@@ -218,7 +216,7 @@ class SummarizePostAction(Action_p):
     @DKeyed.types("from", check=str|None)
     @DKeyed.types("full", check=bool, fallback=False)
     def __call__(self, spec, state, _from, full) -> dict|bool|None:
-        from_task = _from or TASK_NAME.expand(spec, state).root(top=True)
+        from_task = _from or TASK_NAME.expand(spec, state).root
         data   = _DootPostBox.get(from_task)
         if full:
             for x in data:
