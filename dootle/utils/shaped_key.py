@@ -34,8 +34,7 @@ logging = logmod.getLogger(__name__)
 
 import doot
 from doot.structs import DKey
-from doot._structs.dkey import SingleDKey, identity
-from doot.enums import DKeyMark_e
+from jgdv.structs.dkey.core import SingleDKey, identity
 
 import numpy as np
 
