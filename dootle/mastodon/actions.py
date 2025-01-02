@@ -148,7 +148,7 @@ class MastodonPost:
             res = RESOLUTION_RE.match(result.stdout.decode())
             return res[1]
 
-        raise doot.errors.DootActionError("Couldn't get image resolution", filepath, result.stdout.decode(), result.stderr.decode())
+        raise doot.errors.ActionError("Couldn't get image resolution", filepath, result.stdout.decode(), result.stderr.decode())
 
     def _maybe_compress_file(self, task):
         image = task.values['image']

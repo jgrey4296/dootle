@@ -30,17 +30,14 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
-import sh
-
-# ##-- end 3rd party imports
-
-# ##-- 1st party imports
 import doot
+import sh
 from doot._abstract import Action_p
 from doot.errors import TaskError, TaskFailed
-from doot.structs import DKey, TaskName, DKeyed
+from doot.structs import TaskName
+from jgdv.structs.dkey import DKey, DKeyed
 
-# ##-- end 1st party imports
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)

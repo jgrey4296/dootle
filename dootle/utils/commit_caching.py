@@ -140,7 +140,7 @@ class CacheGitCommit(PathManip_m):
         cache = _build_cache_path(cache, _taskname)
 
         if self._is_write_protected(cache):
-            raise doot.errors.DootLocationError("Tried to cache commit to a write protected location", cache)
+            raise doot.errors.LocationError("Tried to cache commit to a write protected location", cache)
 
         commit = git_head()
         cache.write_text(commit)

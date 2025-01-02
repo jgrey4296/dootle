@@ -63,7 +63,7 @@ class BookmarksPonyExtraction(Action_p):
             printer.info("Extraction Complete: %s results", len(result))
             return { _update : result }
         except Exception as err:
-            raise doot.errors.DootActionError("Pony Errored: %s", str(err)) from err
+            raise doot.errors.ActionError("Pony Errored: %s", str(err)) from err
 
 class BookmarksAlchemyExtraction(Action_p):
     """
@@ -81,7 +81,7 @@ class BookmarksAlchemyExtraction(Action_p):
             printer.info("Extraction Complete: %s results", len(result))
             return { _update : result }
         except Exception as err:
-            raise doot.errors.DootActionError("Pony Errored: %s", str(err)) from err
+            raise doot.errors.ActionError("Pony Errored: %s", str(err)) from err
 
 class BookmarksLoad(Action_p):
 
@@ -112,7 +112,7 @@ class BookmarksMerge(Action_p):
                     growth    = len(merged) - pre_count
                     printer.info("Added %s bookmarks, Total Growth: %s", len(x), growth)
                 case _:
-                    raise doot.errors.DootActionError("Unknown type tried to merge into bookmarks", x)
+                    raise doot.errors.ActionError("Unknown type tried to merge into bookmarks", x)
 
         return { _update : merged }
 

@@ -128,7 +128,7 @@ class GodotBuildAction(Action_p):
                 case "debug":
                     godot_b = godot.bake("--path", doot.locs.root, "--export-debug", _return_cmd=True)
                 case _:
-                    raise doot.errors.DootActionError("Bad export type specified, should be `release` or `debug`")
+                    raise doot.errors.ActionError("Bad export type specified, should be `release` or `debug`")
 
             path_loc = PATH.expand(spec, task_state)
             data_key = UPDATE.expand(spec, task_state)

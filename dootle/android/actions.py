@@ -73,12 +73,12 @@ class AndroidRunning(Action_p):
             printer.info("ADB: %s", result.stdout.decode())
             transport = self._get_transport_id()
             if not transport:
-                raise doot.errors.DootTaskFailed("No Transport Ids Identified")
+                raise doot.errors.TaskFailed("No Transport Ids Identified")
 
             return { data_key : transport }
         except sh.ErrorReturnCode as err:
             printer.error("ADB Failure: %s", err.stdout.decode())
-            raise doot.errors.DootTaskFailed("Failed to connect") from err
+            raise doot.errors.TaskFailed("Failed to connect") from err
 
     def _get_transport_id(self) -> None|str:
         result = adb("devices", "-l", _return_cmd=True)
@@ -104,7 +104,7 @@ class AndroidPush(Action_p):
             result = push(str(local), str(remote))
         except sh.ErrorReturnCode as err:
             printer.error("ADB Failure: %s", err.stdout.decode())
-            raise doot.errors.DootTaskFailed("Push Failed") from err
+            raise doot.errors.TaskFailed("Push Failed") from err
 
 class AndroidPull(Action_p):
 
@@ -120,7 +120,7 @@ class AndroidPull(Action_p):
             result = pull(str(remote), str(local))
         except sh.ErrorReturnCode as err:
             printer.error("ADB Failure: %s", err.stdout.decode())
-            raise doot.errors.DootTaskFailed("Pull Failed") from err
+            raise doot.errors.TaskFailed("Pull Failed") from err
 
 class AndroidInstall(Action_p):
 
@@ -135,7 +135,7 @@ class AndroidInstall(Action_p):
             result = install(str(target))
         except sh.ErrorReturnCode as err:
             printer.error("ADB Failure: %s", err.stdout.decode())
-            raise doot.errors.DootTaskFailed("Install Failed") from err
+            raise doot.errors.TaskFailed("Install Failed") from err
 
 class AndroidRemoteCmd(Action_p):
 
@@ -152,4 +152,4 @@ class AndroidRemoteCmd(Action_p):
             return { data_key : result.stdout.decode() }
         except sh.ErrorReturnCode as err:
             printer.error("ADB Failure: %s : %s", err.stdout.decode(), err.stderr.decode())
-            raise doot.errors.DootTaskFailed("Cmd Failed") from err
+            raise doot.errors.TaskFailed("Cmd Failed") from err

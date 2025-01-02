@@ -104,7 +104,7 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
             case TaskArtifact(), self.state_e() if str(task) in self.task_graph:
                 self.task_graph.nodes[str(task)]['state'] = state
             case _, _:
-                raise doot.errors.DootTaskTrackingError("Bad task update state args", task, state)
+                raise doot.errors.TaskTrackingError("Bad task update state args", task, state)
 
     def next_for(self, target:None|str=None) -> None|Job_i|Task_i:
         """ ask for the next task that can be performed """
@@ -146,7 +146,7 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
                     # then loop and try the next task to try
 
                 case self.state_e.READY if focus in self.execution_path: # error on running the same task twice
-                    raise doot.errors.DootTaskTrackingError("Task Attempted to run twice: %s", focus)
+                    raise doot.errors.TaskTrackingError("Task Attempted to run twice: %s", focus)
                 case self.state_e.READY:   # return the task if its ready
                     # NOTE: see how task is updated to RUNNING
                     self.execution_path.append(focus)
@@ -184,6 +184,6 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
                     self.deque_task()
                     self.update_state(focus, self.state_e.SUCCESS)
                 case _: # Error otherwise
-                    raise doot.errors.DootTaskTrackingError("Unknown task state: ", x)
+                    raise doot.errors.TaskTrackingError("Unknown task state: ", x)
 
         return None

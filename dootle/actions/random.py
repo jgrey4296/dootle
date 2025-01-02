@@ -52,7 +52,7 @@ def rng_fresh(spec, state, seed, seed_path):
     With no seed, uses secrets.randbits(128)
     """
     if seed and seed_path and seed_path.exists():
-        raise doot.errors.DootActionError("Tried to use a seed and seed stored in a path")
+        raise doot.errors.ActionError("Tried to use a seed and seed stored in a path")
 
     if seed_path:
         raise NotImplementedError("loading a seed from a file isn't implemented yet")
@@ -90,7 +90,7 @@ def rng_draw(spec, state, _rng, dist, shape, args, _update):
     """ Use the rng to get a count of integers from min to max """
     result = None
     if not hasattr(_rng, dist):
-        raise doot.errors.DootActionError(f"RNG Distribution not found: {dist}")
+        raise doot.errors.ActionError(f"RNG Distribution not found: {dist}")
 
     gen = getattr(_rng, dist)
     result = gen(*args, size=shape)

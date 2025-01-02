@@ -101,20 +101,20 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
                 self.step += 1
                 return defer.maybeDeferred(self._execute_task, task)
             case _:
-                raise doot.errors.DootTaskError("Unknown Task Base: %s", task, task=task)
+                raise doot.errors.TaskError("Unknown Task Base: %s", task, task=task)
 
     def _handle_failure(self, failure) -> defer.Failure:
         match failure:
-            case doot.errors.DootTaskInterrupt():
+            case doot.errors.Interrupt():
                 breakpoint()
                 return failure
-            case doot.errors.DootTaskTrackingError() as err:
+            case doot.errors.TaskTrackingError() as err:
                 return err.task
-            case doot.errors.DootTaskFailed() as err:
+            case doot.errors.TaskFailed() as err:
                 printer.warning("Task Failed: %s : %s", err.task.name, err)
                 self.tracker.update_state(err.task, self.tracker.state_e.FAILED)
                 return err.task
-            case doot.errors.DootTaskError() as err:
+            case doot.errors.TaskError() as err:
                 printer.warning("Task Error : %s : %s", err.task.name, err)
                 self.tracker.update_state(err.task, self.tracker.state_e.FAILED)
                 return err.task
@@ -162,7 +162,7 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
                         self.tracker.add_task(task, no_root_connection=True)
                         self.tracker.queue_task(task.name)
                     case _:
-                        raise doot.errors.DootTaskError("Job %s Built a Bad Value: %s", str(job.name), task, task=str(job.name))
+                        raise doot.errors.TaskError("Job %s Built a Bad Value: %s", str(job.name), task, task=str(job.name))
 
                 count += 1
 
@@ -182,7 +182,7 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
             for action in task.actions:
                 match action:
                     case ActionSpec() if action.fun is None:
-                        raise doot.errors.DootTaskError("Task %s Failed: Produced an action with no callable: %s", task.name, action, task=task.spec)
+                        raise doot.errors.TaskError("Task %s Failed: Produced an action with no callable: %s", task.name, action, task=task.spec)
                     case ActionSpec():
                         match self._execute_action(action_count, action, task):
                             case ActRE.SKIP:
@@ -192,7 +192,7 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
                             case _:
                                 pass
                     case _:
-                        raise doot.errors.DootTaskError("Task %s Failed: Produced a bad action: %s", task.name, action, task=task.spec)
+                        raise doot.errors.TaskError("Task %s Failed: Produced a bad action: %s", task.name, action, task=task.spec)
 
                 action_count += 1
                 if action_result is ActRE.SKIP:
@@ -240,9 +240,9 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
                 task.state.update(result)
                 result = ActRE.SUCCESS
             case False | ActRE.FAIL:
-                raise doot.errors.DootTaskFailed("Task %s Action Failed: %s", task.name, action, task=task.spec)
+                raise doot.errors.TaskFailed("Task %s Action Failed: %s", task.name, action, task=task.spec)
             case _:
-                raise doot.errors.DootTaskError("Task %s Action %s Failed: Returned an unplanned for value: %s", task.name, action, result, task=task.spec)
+                raise doot.errors.TaskError("Task %s Action %s Failed: Returned an unplanned for value: %s", task.name, action, result, task=task.spec)
 
         action.verify_out(task.state)
 

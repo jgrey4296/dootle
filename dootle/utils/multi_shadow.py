@@ -54,7 +54,7 @@ def _shadow_paths(rpath:pl.Path, shadow_roots:list[pl.Path]) -> list[pl.Path]:
     for root in shadow_roots:
         result      = root / rpath
         if result == doot.locs[rpath]:
-            raise doot.errors.DootLocationError("Shadowed Path is same as original", fpath)
+            raise doot.errors.LocationError("Shadowed Path is same as original", fpath)
         shadow_dirs.append(result.parent)
 
     return shadow_dirs
@@ -119,7 +119,7 @@ class MultiBackupAction(PathManip_m):
         for shadow_path in shadow_paths:
             match pattern_key.expand({"shadow_path":shadow_path}, spec, state):
                 case pl.Path() as x if self._is_write_protected(x):
-                    raise doot.errors.DootLocationError("Tried to write a protected location", dest_loc)
+                    raise doot.errors.LocationError("Tried to write a protected location", dest_loc)
                 case pl.Path() as x:
                     dest_loc = x
                 case x:
