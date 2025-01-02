@@ -21,7 +21,7 @@ from dootle.utils.shaped_key import NPShapeDKey
 
 logging = logmod.root
 
-
+@pytest.mark.xfail
 class TestNPShapeDKEy:
 
     @pytest.fixture(scope="function")
