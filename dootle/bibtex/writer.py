@@ -73,12 +73,12 @@ class BibtexBuildWriter(Action_p):
     @DKeyed.references("class", fallback=None)
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, stack, _class, _update):
-        fn    = stack.try_import()
+        fn    = stack()
         stack = fn(spec, state)
 
         match _class:
             case CodeReference():
-                writer_type = _class.try_import()
+                writer_type = _class()
                 writer = _writer_type(stack)
             case None:
                 writer = Writer(stack)

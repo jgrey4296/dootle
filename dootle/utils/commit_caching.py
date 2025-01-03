@@ -107,7 +107,7 @@ class GetChangedFilesByCommit:
         roots   = [DKey(x, mark=DKey.mark.PATH).expand(spec, state) for x in (roots or [])]
         match fn:
             case CodeReference():
-                accept_fn = fn.try_import()
+                accept_fn = fn()
             case None:
 
                 def accept_fn(x):

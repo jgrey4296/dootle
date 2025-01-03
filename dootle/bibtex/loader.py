@@ -96,17 +96,17 @@ class BibtexBuildReader(Action_p):
     @DKeyed.references("stack", "db_base", "class")
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, stack, db_base, _class, _update):
-        fn = stack.try_import()
+        fn = stack()
         stack = fn(spec, state)
         match db_base:
             case CodeReference():
-                db_base = db_base.try_import()
+                db_base = db_base()
             case _:
                 pass
 
         match _class:
             case CodeReference():
-                reader_type = _class.try_import()
+                reader_type = _class()
                 reader = reader_type(stack, lib_base=db_base)
             case None:
                 reader = Reader(stack, lib_base=db_base)
