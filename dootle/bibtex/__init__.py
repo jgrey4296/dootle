@@ -2,7 +2,7 @@
 
 """
 from typing import Final
-from jgdv.structs.dkey import DKey
+from doot.structs import DKey
 
 DB_KEY      : Final[DKey] = DKey("bib_db", implicit=True)
 

@@ -35,7 +35,7 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 import sh
-from jgdv.structs.dkey import DKey, DKeyed
+from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
 

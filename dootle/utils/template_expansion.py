@@ -32,7 +32,7 @@ from string import Template
 # ##-- 3rd party imports
 import doot
 import doot.errors
-from jgdv.structs.dkey import DKey, DKeyed
+from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
 

@@ -31,7 +31,7 @@ from uuid import UUID, uuid1
 # ##-- 3rd party imports
 import doot
 import numpy as np
-from jgdv.structs.dkey import DKey
+from doot.structs import DKey
 from jgdv.structs.dkey.core import SingleDKey, identity
 
 # ##-- end 3rd party imports

@@ -30,7 +30,7 @@ from secrets import randbits
 import doot
 import doot.errors
 import numpy as np
-from jgdv.structs.dkey import DKeyed
+from doot.structs import DKeyed
 
 # ##-- end 3rd party imports
 

@@ -37,7 +37,7 @@ from doot.actions.postbox import _DootPostBox
 from doot.mixins.path_manip import PathManip_m
 from doot.structs import TaskName, TaskSpec
 from jgdv.structs.code_ref import CodeReference
-from jgdv.structs.dkey import DKey, DKeyed
+from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
 

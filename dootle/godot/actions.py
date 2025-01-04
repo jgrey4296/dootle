@@ -33,7 +33,7 @@ import doot.errors
 import sh
 from doot._abstract import Action_p
 from doot.enums import ActionResponse_e as ActRE
-from jgdv.structs.dkey import DKey, DKeyed
+from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
 

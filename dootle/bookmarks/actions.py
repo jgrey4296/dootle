@@ -31,7 +31,7 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 from doot._abstract import Action_p
-from jgdv.structs.dkey import DKey, DKeyed
+from doot.structs import DKey, DKeyed
 from jgdv.files.bookmarks.collection import BookmarkCollection
 
 # ##-- end 3rd party imports

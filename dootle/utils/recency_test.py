@@ -31,7 +31,7 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 from doot.enums import ActionResponse_e as ActE
-from jgdv.structs.dkey import DKeyed
+from doot.structs import DKeyed
 
 # ##-- end 3rd party imports
 

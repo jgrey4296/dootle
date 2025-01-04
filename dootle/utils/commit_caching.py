@@ -33,7 +33,7 @@ import doot.errors
 import sh
 from jgdv.enums import LoopControl_e
 from jgdv.structs.strang import CodeReference
-from jgdv.structs.dkey import DKey, DKeyed
+from doot.structs import DKey, DKeyed
 from doot.mixins.path_manip import PathManip_m
 from doot.structs import TaskName
 

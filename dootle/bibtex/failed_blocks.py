@@ -37,7 +37,7 @@ import doot
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares.middleware import BlockMiddleware
 from doot._abstract.task import Action_p
-from jgdv.structs.dkey import DKey, DKeyed
+from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
 
