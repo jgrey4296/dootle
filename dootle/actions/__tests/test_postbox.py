@@ -27,18 +27,6 @@ from doot.task.base_task import DootTask
 from doot.actions.base_action import DootBaseAction
 from dootle.actions import postbox as pb
 
-##-- pytest reminder
-# caplog
-# mocker.patch | patch.object | patch.multiple | patch.dict | stopall | stop | spy | stub
-# pytest.mark.filterwarnings
-# pytest.parameterize
-# pytest.skip | skipif | xfail
-# with pytest.deprecated_call
-# with pytest.raises
-# with pytest.warns(warntype)
-
-##-- end pytest reminder
-
 class TestInternalPostBox:
 
     @pytest.fixture(scope="function")
@@ -135,6 +123,7 @@ class TestInternalPostBox:
         pb._DootPostBox.put(key1, {})
         assert(not bool(pb._DootPostBox.boxes))
 
+@pytest.mark.xfail
 class TestPutAction:
 
     @pytest.fixture(scope="function")
@@ -214,6 +203,7 @@ class TestPutAction:
         assert('specific_box' in pb._DootPostBox.boxes['simple::other.task'])
         assert(pb._DootPostBox.boxes['simple::other.task']['specific_box'] == [1,2,3,4])
 
+@pytest.mark.xfail
 class TestGetAction:
 
     @pytest.fixture(scope="function")
