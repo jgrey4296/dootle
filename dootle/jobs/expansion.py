@@ -77,6 +77,8 @@ class JobExpandAction(JobInjector):
     def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update):
         actions, sources = self._prep_template(template)
         build_queue      = self._prep_data(_from)
+        root            = _basename.pop()
+        base_head       = root.with_head()
 
         match prefix:
             case "prefix":
@@ -84,15 +86,14 @@ class JobExpandAction(JobInjector):
             case _:
                 pass
 
-        result          = []
-        root            = _basename.pop()
-        base_head       = root.with_head()
         match sources:
             case [] | [None]:
                 base_subtask = root
             case [*xs, x]:
                 base_subtask = x
 
+        result : list[TaskSpec] = []
+        logging.info("Generating %s SubTasks of: %s from %s", len(build_queue), base_subtask, root)
         for arg in build_queue:
             _count += 1
             # TODO change job subtask naming scheme
@@ -116,13 +117,13 @@ class JobExpandAction(JobInjector):
         result = []
         match data:
             case int():
-                result += range(_from)
+                result += range(data)
             case str() | pl.Path() | Location():
-                result.append(_from)
+                result.append(data)
             case []:
                 pass
             case list():
-                result += _from
+                result += data
             case None:
                 pass
             case x:
