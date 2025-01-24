@@ -3,7 +3,6 @@
   Injection adds to a task spec.
   allowing initial state, extra actions, etc.
 
-
 """
 
 # Imports:
@@ -31,20 +30,24 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
-from jgdv import Maybe
-from jgdv.structs.strang import CodeReference
-from jgdv.structs.chainguard import ChainGuard
-# ##-- end 3rd party imports
-
-# ##-- 1st party imports
 import doot
 import doot.errors
 from doot._abstract import Action_p
+from doot.mixins.injector import Injector_m
 from doot.mixins.path_manip import PathManip_m
-from doot.structs import DKey, TaskName, TaskSpec, DKeyed
-from doot.mixins.injection import Injector_m
+from doot.structs import DKey, DKeyed, TaskName, TaskSpec, ActionSpec
+from jgdv.structs.chainguard import ChainGuard
+from jgdv.structs.strang import CodeReference
 
-# ##-- end 1st party imports
+# ##-- end 3rd party imports
+
+# ##-- types
+# isort: off
+if TYPE_CHECKING:
+   from jgdv import Maybe
+
+# isort: on
+# ##-- end types
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -99,7 +102,7 @@ class JobAppendActions(Action_p):
 
     @DKeyed.types("_onto", "add_actions")
     def __call__(self, spec, state, _onto, _actions):
-        actions_specs = [ActionSpec.build(x) for x in _actions]
+        action_specs = [ActionSpec.build(x) for x in _actions]
         for x in _onto:
             x.actions += action_specs
 
@@ -123,29 +126,8 @@ class JobInjectPathParts(PathManip_m):
                     x.model_extra.update(data)
             case TaskSpec():
                 data = dict(x.extra)
-                data.update(self._calc_path_parts(onto.extra[_key], root_paths))
+                data.update(self._calc_path_parts(_onto.extra[_key], root_paths))
                 _onto.model_extra.update(data)
-
-class JobInjectShadowAction(PathManip_m):
-    """
-      Inject a shadow path into each task entry, using the target key which points to the relative path to shadow
-      returns the *directory* of the shadow target
-
-    registered as: job.inject.shadow
-    """
-
-    @DKeyed.types("onto")
-    @DKeyed.paths("shadow_root")
-    @DKeyed.redirects("key_")
-    def __call__(self, spec, state, _onto, _shadow, _key):
-        match _onto:
-            case list():
-                for x in _onto:
-                    rel_path = self._shadow_path(x.extra[_key], _shadow)
-                    x.model_extra.update(dict(**x.extra, **{"shadow_path": rel_path}))
-            case TaskSpec():
-                rel_path = self._shadow_path(onto.extra[_key], _shadow)
-                onto.model_extra.update(dict(**onto.extra, **{"shadow_path": rel_path}))
 
 class JobSubNamer(Action_p):
     """
@@ -164,7 +146,7 @@ class JobSubNamer(Action_p):
                     val = x.extra[_key]
                     x.name = _basename.push(i, self._gen_subname(val))
             case TaskSpec():
-                onto.name = _basename.push(self._gen_subname(val))
+                _onto.name = _basename.push(self._gen_subname(val))
 
     def _gen_subname(self, val):
         match val:

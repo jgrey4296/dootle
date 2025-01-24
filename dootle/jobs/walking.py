@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 
-
 """
 
 # Imports:
@@ -29,18 +28,14 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
-from jgdv.structs.strang import CodeReference
-
-# ##-- end 3rd party imports
-
-# ##-- 1st party imports
 import doot
 import doot.errors
 from doot.actions.base_action import DootBaseAction
 from doot.mixins.path_manip import Walker_m
-from doot.structs import DKey, TaskName, TaskSpec, DKeyed
+from doot.structs import DKey, DKeyed, TaskName, TaskSpec
+from jgdv.structs.strang import CodeReference
 
-# ##-- end 1st party imports
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -54,7 +49,6 @@ class JobWalkAction(Walker_m, DootBaseAction):
       starts at each element in `roots`,
       files must match with a suffix in `exts`, if bool(exts)
       potential files are used that pass `fn`,
-
 
     registered as job.walk
 
@@ -76,35 +70,9 @@ class JobWalkAction(Walker_m, DootBaseAction):
                     case x:
                         accept_fn = x
             case None:
+
                 def accept_fn(x):
                     return True
 
         results = [x for x in self.walk_all(roots, exts, rec=rec, fn=accept_fn)]
         return { _update : results }
-
-class JobLimitAction(DootBaseAction):
-    """
-      Limits a list to an amount, overwriting the 'from' key,
-      'method' defaults to a random sample,
-      or a coderef of type callable[[spec, state, list[taskspec]], list[taskspec]]
-
-
-    registered as: job.limit
-    """
-
-    @DKeyed.types("count")
-    @DKeyed.references("method")
-    @DKeyed.redirects("from_")
-    def __call__(self, spec, state, count, method, _update):
-        if count == -1:
-            return
-
-        _from = _update.expand(spec, state)
-        match method:
-            case None:
-                limited = random.sample(_from, count)
-            case CodeReference():
-                fn      = method()
-                limited = fn(spec, state, _from)
-
-        return { _update : limited }

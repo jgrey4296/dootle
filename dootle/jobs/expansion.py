@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
 
-
 """
-
+# ruff: noqa: ANN001
 # Imports:
 from __future__ import annotations
 
@@ -29,53 +28,56 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
-from jgdv.structs.chainguard import ChainGuard
-from jgdv.structs.strang import CodeReference
-# ##-- end 3rd party imports
-
-# ##-- 1st party imports
 import doot
 import doot.errors
 from doot.actions.base_action import DootBaseAction
-from doot.actions.job_injection import JobInjector
-from doot.structs import DKey, Location, TaskName, TaskSpec, DKeyed
+from doot.enums import ActionResponse_e as ActRE
+from doot.structs import DKeyed, Location, TaskName, TaskSpec
+from jgdv.structs.chainguard import ChainGuard
+from jgdv.structs.strang import CodeReference
+
+# ##-- end 3rd party imports
+
+# ##-- 1st party imports
+from dootle.jobs.injection import JobInjector
 
 # ##-- end 1st party imports
+
+# ##-- types
+# isort: off
+if TYPE_CHECKING:
+   from jgdv import Maybe
+   from doot.structs import ActionSpec
+
+# isort: on
+# ##-- end types
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
-class JobGenerate(DootBaseAction):
-    """ Run a custom function to generate task specs
-      Function is in the form: fn(spec, state) -> list[TaskSpec]
-
-    registered as: job.gen
-    """
-
-    @DKeyed.references("fn")
-    @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _fn_ref, _update):
-        fn = _fn_ref()
-        return { _update : list(fn(spec, state)) }
-
 class JobExpandAction(JobInjector):
     """
-      Takes a template taskname/list[actionspec] and builds one new subtask for each entry in a list
+    Expand data into a number of subtask specs.
 
-      'inject' provides an injection dict, with $arg$ being the entry from the source list
+    takes data `from` somewhere,
+    and `inject`s data onto a `template`.
 
     registered as: job.expand
     """
 
-    @DKeyed.types("from")
-    @DKeyed.types("inject", "template")
-    @DKeyed.formats("prefix")
-    @DKeyed.redirects("update_")
-    @DKeyed.types("__expansion_count", fallback=0)
     @DKeyed.taskname
-    def __call__(self, spec, state, _from, inject, template, prefix, _update, _count, _basename):
+    @DKeyed.formats("prefix", check=str)
+    @DKeyed.types("template", check=str|list)
+    @DKeyed.types("from", check=int|list|str|pl.Path)
+    @DKeyed.types("inject", check=dict)
+    @DKeyed.types("__expansion_count", fallback=0)
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update):
+        actions, sources = self._prep_template(template)
+        build_queue      = self._prep_data(_from)
+
         match prefix:
             case "prefix":
                 prefix = "{JobGenerated}"
@@ -83,34 +85,18 @@ class JobExpandAction(JobInjector):
                 pass
 
         result          = []
-        build_queue     = []
         root            = _basename.pop()
         base_head       = root.with_head()
-        actions, sources = self._prep_base(template)
         match sources:
             case [] | [None]:
                 base_subtask = root
             case [*xs, x]:
                 base_subtask = x
-        match _from:
-            case int():
-                build_queue += range(_from)
-            case str() | pl.Path() | Location():
-                build_queue.append(_from)
-            case []:
-                pass
-            case list():
-                build_queue += _from
-            case None:
-                pass
-            case _:
-                printer.warning("Tried to expand a non-list of args")
-                return ActRE.FAIL
 
         for arg in build_queue:
             _count += 1
             # TODO change job subtask naming scheme
-            base_dict = dict(name=base_subtask.push(prefix, _count),
+            base_dict = dict(name=base_subtask.push(prefix, _count), # noqa: C408
                              sources=sources,
                              actions = actions or [],
                              required_for=[base_head],
@@ -123,33 +109,51 @@ class JobExpandAction(JobInjector):
 
             new_spec  = TaskSpec.build(base_dict)
             result.append(new_spec)
+        else:
+            return { _update : result , "__expansion_count":  _count }
 
-        return { _update : result , "__expansion_count":  _count }
+    def _prep_data(self, data:list) -> list:
+        result = []
+        match data:
+            case int():
+                result += range(_from)
+            case str() | pl.Path() | Location():
+                result.append(_from)
+            case []:
+                pass
+            case list():
+                result += _from
+            case None:
+                pass
+            case x:
+                raise doot.errors.ActionError("Tried to expand an incompatible argument", x)
 
-    def _prep_base(self, base:TaskName|list[ActionSpec]) -> tuple[list, TaskName|None]:
+        return result
+
+    def _prep_template(self, template:TaskName|list[ActionSpec]) -> tuple[list, TaskName|None]:
         """
-          base can be the literal name of a task (base="group::task") to build off,
+          template can be the literal name of a task (template="group::task") to build off,
           or an indirect key to a list of actions (base_="sub_actions")
 
           This handles those possibilities and returns a list of actions and maybe a task name
 
         """
-        match base:
+        match template:
             case list():
-                assert(all(isinstance(x, (dict, ChainGuard)) for x in base))
-                actions  = base
+                assert(all(isinstance(x, dict|ChainGuard) for x in template))
+                actions  = template
                 sources  = [None]
             case TaskName():
                 actions = []
-                sources = [base]
+                sources = [template]
             case str():
                 actions = []
-                sources = [TaskName(base)]
+                sources = [TaskName(template)]
             case None:
                 actions = []
                 sources = [None]
             case _:
-                raise doot.errors.ActionError("Unrecognized base type", base)
+                raise doot.errors.ActionError("Unrecognized template type", template)
 
         return actions, sources
 
@@ -174,7 +178,7 @@ class JobMatchAction(DootBaseAction):
                 fn = prepfn()
             case None:
 
-                def fn(x):
+                def fn(x) -> str:
                     return x.extra.fpath.suffix
 
         _onto_val = _onto.expands(spec, state)
