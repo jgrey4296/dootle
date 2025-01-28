@@ -36,7 +36,7 @@ from doot.structs import ActionSpec, DKey, TaskName
 # ##-- end 3rd party imports
 
 # ##-- 1st party imports
-import dootle.jobs.injection as ji
+import dootle.jobs.injection as JI
 
 # ##-- end 1st party imports
 
@@ -58,7 +58,7 @@ class TestJobInjection:
     def test_copy(self, spec, state):
         """ the injection copies the value over directly """
         state.update({"a": 2})
-        inj       = ji.JobInjector()
+        inj       = JI.JobInjector()
         injection = inj.build_injection(spec, state, dict(delay=["a"]))
         assert("a" in injection)
         assert(injection['a'] == 2)
@@ -66,7 +66,7 @@ class TestJobInjection:
     def test_copy_multikey(self, spec, state):
         """ the injection doesn't expand a multikey """
         state.update({"a": "{x} : {y}", "x": 5, "y": 10})
-        inj = ji.JobInjector()
+        inj = JI.JobInjector()
         injection = inj.build_injection(spec, state, dict(delay=["a"]))
         assert("a" in injection)
         assert("x" not in injection)
@@ -77,7 +77,7 @@ class TestJobInjection:
         """ the injection expands the key to its value, adding it under the original key """
         spec.kwargs._table().update({"a_": "b"})
         state.update({"b": 5})
-        inj = ji.JobInjector()
+        inj = JI.JobInjector()
         injection = inj.build_injection(spec, state, dict(now=["a"]))
         assert("a" in injection)
         assert(injection['a'] == 5)
@@ -87,7 +87,7 @@ class TestJobInjection:
           a_ -> {a:5}
           """
         state.update({"a_": "b", "b": 5})
-        inj = ji.JobInjector()
+        inj = JI.JobInjector()
         injection = inj.build_injection(spec, state, dict(delay=["a"]))
         assert("a" in injection)
         assert("a_" not in injection)
@@ -96,7 +96,7 @@ class TestJobInjection:
     def test_copy_remap(self, spec, state):
         """ copied values can be remapped to new key names """
         state.update({"a": 2})
-        inj = ji.JobInjector()
+        inj = JI.JobInjector()
         injection = inj.build_injection(spec, state, dict(delay={"test":"a"}))
         assert("test" in injection)
         assert("a" not in injection)
@@ -105,7 +105,7 @@ class TestJobInjection:
     def test_expand_remap(self, spec, state):
         """ expanded injections can be remapped to new key names """
         state.update({"a": 2})
-        inj = ji.JobInjector()
+        inj = JI.JobInjector()
         injection = inj.build_injection(spec, state, dict(now={"test":"a"}))
         assert("test" in injection)
         assert("a" not in injection)
@@ -114,7 +114,7 @@ class TestJobInjection:
     def test_replacement(self, spec, state):
         """ keys can be inserted with the defined replacement value """
         state.update({"a": 2})
-        inj = ji.JobInjector()
+        inj = JI.JobInjector()
         injection = inj.build_injection(spec, state, dict(insert=["a"]), replacement=10)
         assert("a" in injection)
         assert(injection['a'] == 10)
@@ -131,7 +131,7 @@ class TestPathInjection:
 
     @pytest.mark.xfail
     def test_initial(self, spec ,state):
-        obj = ji.JobInjectPathParts()
+        obj = JI.JobInjectPathParts()
         # build task specs
         # set roots
         # Call:
@@ -144,7 +144,7 @@ class TestPathInjection:
     @pytest.mark.xfail
     def test_inject_shadow(self, spec, state):
         state['shadow_root'] = "blah"
-        obj = ji.JobInjectShadowAction()
+        obj = JI.JobInjectShadowAction()
         # build task specs
         # set roots
         # Call:
@@ -158,7 +158,7 @@ class TestNameInjection:
 
     @pytest.mark.xfail
     def test_initial(self, spec ,state):
-        obj = ji.JobInjectPathParts()
+        obj = JI.JobInjectPathParts()
         # build task specs
         # set roots
         # Call:
@@ -172,7 +172,7 @@ class TestActionInjection:
 
     @pytest.mark.xfail
     def test_initial(self, spec ,state):
-        obj = ji.JobInjectPathParts()
+        obj = JI.JobInjectPathParts()
         # build task specs
         # set roots
         # Call:

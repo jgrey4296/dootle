@@ -44,9 +44,10 @@ printer = doot.subprinter()
 
 class JobLimitAction(DootBaseAction):
     """
-      Limits a list to an amount, overwriting the 'from' key,
-      'method' defaults to a random sample,
-      or a coderef of type callable[[spec, state, list[taskspec]], list[taskspec]]
+      Limits a list to an amount, *overwriting* the 'from' key,
+
+    count: int. (-1 = no-op)
+    method: random.sample or Coderef([spec, state, list[taskspec]] -> list[taskspec])
 
     registered as: job.limit
     """

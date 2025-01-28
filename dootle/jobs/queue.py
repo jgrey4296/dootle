@@ -125,7 +125,7 @@ class JobQueueAction(Action_p):
                     continue
                 case TaskSpec() as spec:
                     result.append(spec)
-                case DKey():
+                case DKey() as key:
                     match key.expand(spec, state):
                         case list() as l:
                             subtasks += l

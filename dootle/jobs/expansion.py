@@ -57,6 +57,8 @@ logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
+FALLBACK_KEY : Final[str] = "_"
+
 class JobExpandAction(JobInjector):
     """
     Expand data into a number of subtask specs.
@@ -71,7 +73,7 @@ class JobExpandAction(JobInjector):
     @DKeyed.formats("prefix", check=str)
     @DKeyed.types("template", check=str|list)
     @DKeyed.types("from", check=int|list|str|pl.Path)
-    @DKeyed.types("inject", check=dict)
+    @DKeyed.types("inject", check=dict|ChainGuard)
     @DKeyed.types("__expansion_count", fallback=0)
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update):
@@ -160,6 +162,7 @@ class JobExpandAction(JobInjector):
 
 class JobMatchAction(DootBaseAction):
     """
+
       Take a mapping of {pattern -> task} and a list,
       and build a list of new subtasks
 
@@ -178,14 +181,21 @@ class JobMatchAction(DootBaseAction):
             case CodeReference():
                 fn = prepfn()
             case None:
+                def fn(x) -> Maybe[str]:
+                    match x.extra.on_fail(None).fpath():
+                        case None:
+                            return None
+                        case str() as x:
+                            return pl.Path(x).suffix
+                        case pl.Path() as x:
+                            return x.suffix
 
-                def fn(x) -> str:
-                    return x.extra.fpath.suffix
-
-        _onto_val = _onto.expands(spec, state)
+        _onto_val = _onto.expand(spec, state)
         for x in _onto_val:
             match fn(x):
+                case None if FALLBACK_KEY in mapping:
+                    x.sources = [mapping["_"]]
                 case str() as key if key in mapping:
-                    x.ctor = TaskName(mapping[key])
+                    x.sources = [TaskName(mapping[key])]
                 case _:
                     pass

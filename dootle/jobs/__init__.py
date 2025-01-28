@@ -16,6 +16,12 @@ To assist this, this module provides a number of actions:
 - Limit  : limits the number of generated subtasks
 
 
+The order of operations you'll use here is:
+1. {some sort of data generation}
+2. Expand / Match
+3. Shadow/Namer (maybe)
+4. Limit (maybe)
+5. Queue.
 
 
 

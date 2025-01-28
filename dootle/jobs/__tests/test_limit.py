@@ -21,7 +21,7 @@ import doot
 
 doot._test_setup()
 
-import dootle.jobs.shadowing as JS
+import dootle.jobs.limit as JL
 
 # Logging:
 logging = logmod.root
