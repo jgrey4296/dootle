@@ -33,13 +33,16 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 from doot._abstract import Action_p
-from doot.actions.postbox import _DootPostBox
 from doot.mixins.path_manip import PathManip_m
-from doot.structs import TaskName, TaskSpec
-from jgdv.structs.code_ref import CodeReference
-from doot.structs import DKey, DKeyed
+from doot.structs import DKey, DKeyed, TaskName, TaskSpec
+from jgdv.structs.strang import CodeReference
 
 # ##-- end 3rd party imports
+
+# ##-- 1st party imports
+from dootle.actions.postbox import _DootPostBox
+
+# ##-- end 1st party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -55,10 +58,32 @@ def _shadow_paths(rpath:pl.Path, shadow_roots:list[pl.Path]) -> list[pl.Path]:
     for root in shadow_roots:
         result      = root / rpath
         if result == doot.locs[rpath]:
-            raise doot.errors.LocationError("Shadowed Path is same as original", fpath)
+            raise doot.errors.LocationError("Shadowed Path is same as original", rpath)
         shadow_dirs.append(result.parent)
 
     return shadow_dirs
+
+
+class InjectShadowAction(PathManip_m):
+    """
+      Inject a shadow path into each task entry, using the target key which points to the relative path to shadow
+      returns the *directory* of the shadow target
+
+    registered as: job.inject.shadow
+    """
+
+    @DKeyed.types("onto")
+    @DKeyed.paths("shadow_root")
+    @DKeyed.redirects("key_")
+    def __call__(self, spec, state, _onto, _shadow, _key):
+        match _onto:
+            case list():
+                for x in _onto:
+                    rel_path = self._shadow_path(x.extra[_key], _shadow)
+                    x.model_extra.update(dict(**x.extra, **{"shadow_path": rel_path}))
+            case TaskSpec():
+                rel_path = self._shadow_path(_onto.extra[_key], _shadow)
+                _onto.model_extra.update(dict(**_onto.extra, **{"shadow_path": rel_path}))
 
 class InjectMultiShadow:
     """
@@ -120,7 +145,7 @@ class MultiBackupAction(PathManip_m):
         for shadow_path in shadow_paths:
             match pattern_key.expand({"shadow_path":shadow_path}, spec, state):
                 case pl.Path() as x if self._is_write_protected(x):
-                    raise doot.errors.LocationError("Tried to write a protected location", dest_loc)
+                    raise doot.errors.LocationError("Tried to write a protected location", x)
                 case pl.Path() as x:
                     dest_loc = x
                 case x:

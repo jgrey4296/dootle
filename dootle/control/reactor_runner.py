@@ -220,7 +220,6 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
             task.state['_action_step'] = count
             p.info("------ Action %s.%s: %s", self.step, count, action.do, extra={"colour":"cyan"})
             p.debug("------ Action %s.%s: args=%s kwargs=%s. state keys = %s", self.step, count, action.args, dict(action.kwargs), list(task.state.keys()))
-            action.verify(task.state)
             task.state['_reactor'] = self.reactor
             task.state['_crawler'] = self.crawler
 
@@ -244,7 +243,6 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
             case _:
                 raise doot.errors.TaskError("Task %s Action %s Failed: Returned an unplanned for value: %s", task.name, action, result, task=task.spec)
 
-        action.verify_out(task.state)
 
         logmod.debug("------ Action Execution Complete: %s for %s", action, task.name)
         return result
