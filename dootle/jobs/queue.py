@@ -28,9 +28,11 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 import doot
+import doot.errors
 from doot.structs import TaskName, TaskSpec
 from doot._abstract.task import Action_p
-from jgdv.structs.dkey import DKeyed, DKey
+from doot.structs import DKeyed
+from jgdv.structs.dkey import DKey
 
 # ##-- end 3rd party imports
 
@@ -73,25 +75,26 @@ class JobQueueAction(Action_p):
     def __call__(self, spec, state, _args, _from, _after, _basename) -> list:
         subtasks               = []
         queue : list[TaskSpec] = []
-        _after                     = self._expand_afters(_after, _basename)
+        sub_deps               = self._expand_deps(_after, _basename)
 
-        if _args:
-            queue += self._build_args(_basename, _args)
+        queue += self._build_from_keys(_basename, _args, spec, state)
+        queue += self._build_from_keys(_basename, _from, spec, state)
 
-        if _from:
-            queue += self._build_from_list(_basename, _from, spec,state)
-
+        # Now fixup the dependencies
         for sub in queue:
             match sub:
+                case TaskSpec() if bool(sub_deps):
+                    sub.depends_on += sub_deps
+                    subtasks.append(sub)
                 case TaskSpec():
-                    sub.depends_on += _after
                     subtasks.append(sub)
                 case x:
                     raise doot.errors.ActionError("Tried to queue a not TaskSpec", x)
 
         return subtasks
 
-    def _expand_afters(self, afters:list|str|None, base:TaskName) -> list[TaskName]:
+    def _expand_deps(self, afters:list|str|None, base:TaskName) -> list[TaskName]:
+        """ expand keys into dependencies """
         result = []
         match afters:
             case str():
@@ -107,47 +110,37 @@ class JobQueueAction(Action_p):
 
         return result
 
-    def _build_args(self, base, args) -> list:
-        result = []
-        root   = base.pop()
-        head   = base.with_head()
-        for i,x in enumerate(args):
-            sub = TaskSpec.build(dict(
-                name=root.push(i),
-                sources=[TaskName(x)],
-                required_for=[head],
-                depends_on=[],
-                ))
-            result.append(sub)
 
-        return result
-
-    def _build_from_list(self, base:TaskName, froms:list[DKey], spec, state) -> list:
+    def _build_from_keys(self, base:TaskName, froms:list[DKey|str], spec, state) -> list:
+        """ Build specs from a specified list of keys to be expanded"""
         result  = []
         root    = base.pop()
-        head    = base.with_head()
-        assert(all(isinstance(x, DKey) for x in froms))
+        head    = root.with_head()
 
-        for key in froms:
-            if key == "from_":
-                continue
-            match key.expand(spec, state):
-                case None:
-                    pass
-                case list() as l:
-                    result += l
-                case TaskSpec() as s:
-                    result.append(s)
+        subtasks = froms[:]
+        count    = 0
+        while bool(subtasks):
+            match subtasks.pop():
+                case "from_" | None:
+                    continue
+                case TaskSpec() as spec:
+                    result.append(spec)
+                case DKey():
+                    match key.expand(spec, state):
+                        case list() as l:
+                            subtasks += l
+                        case x:
+                            result.append(x)
+                case str() as x:
+                    sub = TaskSpec.build(dict(
+                        name=TaskName(x).push(count),
+                        sources=[TaskName(x)],
+                        required_for=[head],
+                        depends_on=[],
+                    ))
+                    count += 1
+                    subtasks.append(sub)
 
-        return result
-
-    def _build_from(self, base, _from:list) -> list:
-        result = []
-        head = base.with_head()()
-        match _from:
-            case None:
-                pass
-            case list() as l:
-                result += l
-
+                case x:
+                    raise doot.errors.TaskError("Unknown Type tried to be queued", x)
         return result
