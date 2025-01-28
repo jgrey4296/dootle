@@ -162,13 +162,14 @@ class JobExpandAction(JobInjector):
 
 class JobMatchAction(DootBaseAction):
     """
-
-      Take a mapping of {pattern -> task} and a list,
+      Take a 'mapping' of {pattern -> task} and a list,
       and build a list of new subtasks
 
       use `prepfn` to get a value from a taskspec to match on.
+    prepfn :: λ(spec) -> Maybe[str|TaskName]
 
-      defaults to getting spec.extra.fpath.suffix
+    defaults to getting JobMatchAction._default_suffix_matcher,
+    which tries spec.fpath for a suffix
 
     registered as: job.match
     """
@@ -179,23 +180,29 @@ class JobMatchAction(DootBaseAction):
     def __call__(self, spec, state, _onto, prepfn, mapping):
         match prepfn:
             case CodeReference():
-                fn = prepfn()
+                fn = prepfn(raise_error=True)
             case None:
-                def fn(x) -> Maybe[str]:
-                    match x.extra.on_fail(None).fpath():
-                        case None:
-                            return None
-                        case str() as x:
-                            return pl.Path(x).suffix
-                        case pl.Path() as x:
-                            return x.suffix
+                fn = self._default_suffix_matcher
 
-        _onto_val = _onto.expand(spec, state)
+        _onto_val = _onto.expand(spec, state) or []
         for x in _onto_val:
             match fn(x):
+                case TaskName() as target:
+                    x.sources = [target]
                 case None if FALLBACK_KEY in mapping:
                     x.sources = [mapping["_"]]
                 case str() as key if key in mapping:
                     x.sources = [TaskName(mapping[key])]
                 case _:
                     pass
+
+    def _default_suffix_matcher(self, x:TaskSpec) -> Maybe[str]:
+        match x.extra.on_fail(None).fpath():
+            case None:
+                return None
+            case str() as x:
+                return pl.Path(x).suffix
+            case pl.Path() as x:
+                return x.suffix
+            case _:
+                return None

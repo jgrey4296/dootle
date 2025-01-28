@@ -27,6 +27,7 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 import pytest
+from jgdv.structs.strang import CodeReference
 
 # ##-- end 3rd party imports
 
@@ -42,6 +43,9 @@ from dootle.jobs.expansion import JobExpandAction, JobMatchAction
 # ##-- end 1st party imports
 
 logging = logmod.root
+
+def static_mapping(x) -> TaskName:
+    return TaskName("example::other.task")
 
 class TestJobExpansion:
 
@@ -141,11 +145,77 @@ class TestJobMatcher:
 
     @pytest.fixture(scope="function")
     def spec(self):
-        return ActionSpec.build({"do": "action", "args":["test::simple", "test::other"], "update_":"specs"})
+        return ActionSpec.build({"do": "doot.ejobs.expansion:JobMatchAction", "onto_":"subtasks"})
 
     @pytest.fixture(scope="function")
     def state(self):
-        return {"_task_name": TaskName("agroup::basic")}
+        # Existing specs
+        specs = [
+            TaskSpec.build({"name":"example::first", "fpath":"a.bib", "sources":["blah"]}),
+            TaskSpec.build({"name":"example::second", "fpath":"a.txt", "sources":["blah"]}),
+            TaskSpec.build({"name":"example::second", "fpath":"different.py", "sources":["blah"]}),
+        ]
+        # The mapping
+        mapping = {".bib": "example::bib.task", ".txt":"example::txt.task", "other": "example::other.task"}
+        return {"_task_name": TaskName("agroup::basic"), "subtasks": specs, "mapping":mapping}
 
     def test_sanity(self):
-        pass
+        assert(True is not False) # noqa: PLR0133
+
+    def test_ctor(self):
+        obj = JobMatchAction()
+        assert(isinstance(obj, JobMatchAction))
+
+    def test_empty_matching(self, spec, state):
+        state['subtasks'] = []
+        obj = JobMatchAction()
+        assert(obj(spec, state) is None)
+
+    def test_path_match(self, spec, state):
+        """
+        Basic suffix Matching
+        """
+        blah_path = pl.Path("blah")
+        for x in state['subtasks']:
+            match x:
+                case TaskSpec(sources=[pl.Path() as x]):
+                    assert(x == blah_path)
+                case x:
+                    assert(False), x
+        obj = JobMatchAction()
+        assert(obj(spec, state) is None)
+        for x in state['subtasks']:
+            match x:
+                case TaskSpec(sources=[TaskName() as x], fpath=y) if ".bib" in y:
+                    assert(x == "example::bib.task")
+                case TaskSpec(sources=[TaskName() as x], fpath=y) if ".txt" in y:
+                    assert(x == "example::txt.task")
+                case TaskSpec(sources=[pl.Path() as x], fpath=y) if ".py" in y:
+                    assert(x == pl.Path("blah"))
+                case x:
+                    assert(False), x
+
+
+    def test_custom_prepfn(self, spec, state):
+        """
+        a custom prepfn that always maps to "example::other.task"
+        """
+        blah_path = pl.Path("blah")
+        # All tasks have 'blah' as the source
+        for x in state['subtasks']:
+            match x:
+                case TaskSpec(sources=[pl.Path() as x]):
+                    assert(x == blah_path)
+                case x:
+                    assert(False), x
+
+        state['prepfn'] = "fn::dootle.jobs.__tests.test_expansion:static_mapping"
+        obj = JobMatchAction()
+        assert(obj(spec, state) is None)
+        # Now they are all targeted to example::other.task
+        for x in state['subtasks']:
+            match x:
+                case TaskSpec(sources=[TaskName() as x]):
+                    assert(x == "example::other.task")
+                case x:
+                    assert(False), x
