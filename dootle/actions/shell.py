@@ -1,16 +1,36 @@
-##-- imports
-from __future__ import annotations
-import logging as logmod
-##-- end imports
+"""
 
+"""
+# ruff: noqa: ANN001, PLR0913
+# Imports:
+from __future__ import annotations
+
+# ##-- stdlib imports
+import datetime
+import enum
+import functools as ftz
+import itertools as itz
+import logging as logmod
 import pathlib as pl
 import sys
-import sh
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
+                    Generic, Iterable, Iterator, Mapping, Match,
+                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
+                    TypeGuard, TypeVar, cast, final, overload,
+                    runtime_checkable)
+from uuid import UUID, uuid1
+
+# ##-- end stdlib imports
+
+# ##-- 3rd party imports
 import doot
-from doot.errors import DootTaskError
+import sh
 from doot._abstract import Action_p
 from doot.actions.base_action import DootBaseAction
+from doot.errors import TaskError
 from doot.structs import DKey, DKeyed
+
+# ##-- end 3rd party imports
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -39,7 +59,7 @@ class DootShellBake:
         try:
             cmd                     = getattr(env, DKey(args[0]).expand(spec, state))
             keys                    = [DKey(x) for x in args[1:]]
-            expanded                = [x.expand(spec, state, locs=doot.locs) for x in keys]
+            expanded                = [x.expand(spec, state, locs=doot.locs.Current) for x in keys]
 
             match _in.expand(spec, state, fallback=None, check=sh.Command|bool|None):
                 case False | None:
@@ -47,11 +67,10 @@ class DootShellBake:
                 case sh.Command() as x:
                     baked = cmd.bake(*expanded, _in=x(), _return_cmd=True, _tty_out=False)
                 case _:
-                    raise DootTaskError("Bad pre-command for shell baking", _in)
-
-            return { _update : baked }
+                    raise TaskError("Bad pre-command for shell baking", _in)
         except sh.CommandNotFound as err:
             fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
+            return False
         except sh.ErrorReturnCode as err:
             fail_l.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
             if bool(err.stdout):
@@ -60,6 +79,10 @@ class DootShellBake:
             fail_l.info("")
             if bool(err.stderr):
                 fail_l.error("%s", err.stderr.decode())
+
+            return False
+        else:
+            return { _update : baked }
 
         return False
 
@@ -74,9 +97,9 @@ class DootShellBakedRun:
         try:
             cmd    = _in.expand(spec,state, check=sh.Command|None)
             result = cmd()
-            return { _update : result }
         except sh.CommandNotFound as err:
-            fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
+            fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0])
+            return False
         except sh.ErrorReturnCode as err:
             fail_l.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
             if bool(err.stdout):
@@ -86,7 +109,10 @@ class DootShellBakedRun:
             if bool(err.stderr):
                 fail_l.error("%s", err.stderr.decode())
 
-        return False
+            return False
+        else:
+            return { _update : result }
+
 
 class DootShellAction(Action_p):
     """
@@ -112,6 +138,26 @@ class DootShellAction(Action_p):
             keys                    = [DKey(x, mark=DKey.mark.MULTI, fallback=x) for x in args[1:]]
             expanded                = [str(x.expand(spec, state)) for x in keys]
             result                  = cmd(*expanded, _return_cmd=True, _bg=background, _tty_out=not notty, _cwd=cwd, _iter=True)
+
+        except sh.ForkException as err:
+            fail_l.error("Shell Command failed: %s", err)
+            return False
+        except sh.CommandNotFound as err:
+            fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
+            return False
+        except sh.ErrorReturnCode as err:
+            fail_l.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
+
+            fail_l.info("")
+            if bool(err.stderr):
+                fail_l.error("-- Stderr: ")
+                fail_l.error("%s", err.stderr.decode())
+                fail_l.error("")
+                fail_l.error("-- Stderr End")
+                fail_l.error("")
+
+            return False
+        else:
             for line in result:
                 printer.info("(Cmd): %s", line.strip())
 
@@ -126,55 +172,44 @@ class DootShellAction(Action_p):
             printer.debug("Shell Cwd: %s", cwd)
             printer.debug("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, cmd_name, args[1:])
             if not _update:
-                # printer.info("%s", result, extra={"colour":"reset"})
                 return True
 
             return { _update : result.stdout.decode() }
 
-        except sh.ForkException as err:
-            fail_l.error("Shell Command failed: %s", err)
-        except sh.CommandNotFound as err:
-            fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
-        except sh.ErrorReturnCode as err:
-            fail_l.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
-
-            fail_l.info("")
-            if bool(err.stderr):
-                fail_l.error("-- Stderr: ")
-                fail_l.error("%s", err.stderr.decode())
-                fail_l.error("")
-                fail_l.error("-- Stderr End")
-                fail_l.error("")
-
-        return False
 
 class DootInteractiveAction(Action_p):
     """
       An interactive command, which uses the self.interact method as a callback for sh.
+
+    see: https://sh.readthedocs.io/en/latest/sections/asynchronous_execution.html#interactive-callbacks
     """
-    _toml_args = ["background"]
     aggregated = ""
     prompt     = ">>> "
     cont       = "... "
 
     @DKeyed.formats("prompt", "cont")
     @DKeyed.args
-    def __call__(self, spec, state:dict, prompt, cont, args) -> dict|bool|None:
+    @DKeyed.types("env", fallback=None, check=sh.Command|None)
+    def __call__(self, spec, state:dict, prompt, cont, args, env) -> dict|bool|None:
         try:
-            cmd      = getattr(env, DKey(args[0], fallback=args[0]).expand(spec, state))
-            args     = spec.args[1:]
-            keys     = [DKey(x, mark=DKey.mark.MULTI, fallback=x) for x in args[1:]]
-            expanded = [str(x.expand(spec, state)) for x in keys]
-            result   = cmd(*expanded, _return_cmd=True, _bg=False, _out=self.interact, _out_bufsize=0, _tty_in=True, _unify_ttys=True)
+            self.prompt             = prompt or self.prompt
+            self.cont               = cont or self.cont
+            env                     = env or sh
+            cmd                     = getattr(env, DKey(args[0], fallback=args[0]).expand(spec, state))
+            args                    = spec.args[1:]
+            keys                    = [DKey(x, mark=DKey.mark.MULTI, fallback=x) for x in args[1:]]
+            expanded                = [str(x.expand(spec, state)) for x in keys]
+            result                  = cmd(*expanded, _return_cmd=True, _bg=False, _out=self.interact, _out_bufsize=0, _tty_in=True, _unify_ttys=True)
             assert(result.exit_code == 0)
             printer.debug("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, spec.args[0], spec.args[1:])
             printer.info("%s", result, extra={"colour":"reset"})
-            return True
 
         except sh.ForkException as err:
             fail_l.error("Shell Command failed: %s", err)
+            return False
         except sh.CommandNotFound as err:
             fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
+            return False
         except sh.ErrorReturnCode as err:
             fail_l.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
             if bool(err.stdout):
@@ -184,9 +219,12 @@ class DootInteractiveAction(Action_p):
             if bool(err.stderr):
                 fail_l.error("%s", err.stderr.decode())
 
-        return False
+            return False
+        else:
+            return True
 
-    def interact(self, char, stdin):
+
+    def interact(self, char, stdin) -> None:
         # TODO possibly add a custom interupt handler/logger
         self.aggregated += str(char)
         if self.aggregated.endswith("\n"):

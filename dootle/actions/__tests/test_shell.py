@@ -2,42 +2,47 @@
 """
 
 """
+# Imports:
 from __future__ import annotations
 
+# ##-- stdlib imports
+import datetime
+import enum
+import functools as ftz
+import itertools as itz
 import logging as logmod
-import pathlib as pl
-from typing import (Any, Callable, ClassVar, Generic, Iterable, Iterator,
-                    Mapping, Match, MutableMapping, Sequence, Tuple, TypeAlias,
-                    TypeVar, cast)
-from dataclasses import fields
-import warnings
 import os
+import pathlib as pl
+import warnings
+from dataclasses import fields
+from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
+                    Generic, Iterable, Iterator, Mapping, Match,
+                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
+                    TypeGuard, TypeVar, cast, final, overload,
+                    runtime_checkable)
+from uuid import UUID, uuid1
+
+# ##-- end stdlib imports
 
 logging = logmod.root
 
+# ##-- 3rd party imports
+import doot
 import pytest
 
-import doot
+# ##-- end 3rd party imports
+
 doot._test_setup()
 
+# ##-- 3rd party imports
 import doot._abstract
 import doot.structs
-from doot.task.base_task import DootTask
 from doot.actions.base_action import DootBaseAction
+from doot.task.base_task import DootTask
 
-##-- pytest reminder
-# caplog
-# mocker.patch | patch.object | patch.multiple | patch.dict | stopall | stop | spy | stub
-# pytest.mark.filterwarnings
-# pytest.parameterize
-# pytest.skip | skipif | xfail
-# with pytest.deprecated_call
-# with pytest.raises
-# with pytest.warns(warntype)
+# ##-- end 3rd party imports
 
-##-- end pytest reminder
-
-class TestBaseAction:
+class TestShellAction:
 
     def test_initial(self):
         action = DootBaseAction()
