@@ -32,16 +32,11 @@ import doot
 import doot.errors
 from doot.actions.base_action import DootBaseAction
 from doot.enums import ActionResponse_e as ActRE
-from doot.structs import DKeyed, Location, TaskName, TaskSpec
+from doot.structs import DKeyed, Location, TaskName, TaskSpec, InjectSpec
 from jgdv.structs.chainguard import ChainGuard
 from jgdv.structs.strang import CodeReference
 
 # ##-- end 3rd party imports
-
-# ##-- 1st party imports
-from dootle.jobs.injection import JobInjector
-
-# ##-- end 1st party imports
 
 # ##-- types
 # isort: off
@@ -59,7 +54,7 @@ printer = doot.subprinter()
 
 FALLBACK_KEY : Final[str] = "_"
 
-class JobExpandAction(JobInjector):
+class JobExpandAction(DootBaseAction):
     """
     Expand data into a number of subtask specs.
 
@@ -104,11 +99,12 @@ class JobExpandAction(JobInjector):
                              actions = actions or [],
                              required_for=[base_head],
                              )
-            match self.build_injection(spec, state, inject, replacement=arg):
+
+            match InjectSpec.build(inject, sources=[spec, state], insertion=arg):
                 case None:
                     pass
-                case dict() as val:
-                    base_dict.update(val)
+                case x:
+                    base_dict |= x.as_dict()
 
             new_spec  = TaskSpec.build(base_dict)
             result.append(new_spec)

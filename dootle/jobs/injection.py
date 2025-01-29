@@ -33,9 +33,8 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 from doot._abstract import Action_p
-from doot.mixins.injector import Injector_m
 from doot.mixins.path_manip import PathManip_m
-from doot.structs import DKey, DKeyed, TaskName, TaskSpec, ActionSpec
+from doot.structs import DKey, DKeyed, TaskName, TaskSpec, ActionSpec, InjectSpec
 from jgdv.structs.chainguard import ChainGuard
 from jgdv.structs.strang import CodeReference
 
@@ -54,7 +53,7 @@ logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
-class JobInjector(Action_p, Injector_m):
+class JobInjector(Action_p):
     """
       Inject data into task specs.
       inject={copy=[Xs], expand={Yks : Yvs}, replace=[Zs]}
@@ -70,16 +69,18 @@ class JobInjector(Action_p, Injector_m):
 
     @DKeyed.types("onto", "inject")
     def __call__(self, spec, state, onto, inject):
-        injection = self.build_injection(spec, state, inject)
+        match InjectSpec.build(inject, sources=[spec, state]):
+            case None:
+                injection = {}
+            case x:
+                injection = x.as_dict(constraint=target_spec)
+
         match onto:
             case list():
                 for x in onto:
                     x.model_extra.update(dict(**x.extra, **injection))
             case TaskSpec():
                 onto.model_extra.update(dict(**x.extra, **injection))
-
-    def build_injection(self, spec, state, inject, replacement=None, post:dict|None=None) -> Maybe[ChainGuard]:
-        return super().build_injection(inject, spec, state, insertion=replacement)
 
 class JobPrependActions(Action_p):
     """
