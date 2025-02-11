@@ -127,7 +127,7 @@ class DootShellAction(Action_p):
     @DKeyed.types("env", fallback=None, check=sh.Command|None)
     @DKeyed.paths("cwd", fallback=".", check=pl.Path|None)
     @DKeyed.types("exitcodes", fallback=[0])
-    @DKeyed.redirects("update_")
+    @DKeyed.redirects("update_", fallback=None)
     def __call__(self, spec, state, args, background, notty, env, cwd, exitcodes, _update) -> dict|bool|None:
         result     = None
         env        = env or sh

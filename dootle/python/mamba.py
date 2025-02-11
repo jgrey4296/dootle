@@ -48,10 +48,10 @@ printer = doot.subprinter()
 class MambaEnv:
     """ Set up a mamba env to use, returns a baked command to pass to the normal shell action in shenv_ """
 
-    @DKeyed.types("env", check=list|str)
+    @DKeyed.types("name", check=list|str)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, env, _update):
-        match env:
+    def __call__(self, spec, state, _env, _update):
+        match _env:
             case [x]:
                 env = x
             case str() as x:
