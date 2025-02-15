@@ -63,7 +63,9 @@ rng_draw         = "dootle.actions.random:rng_draw"
 "post.put"       = "dootle.actions.postbox:PutPostAction"
 "post.get"       = "dootle.actions.postbox:GetPostAction"
 "post.clear"     = "dootle.actions.postbox:ClearPostAction"
-"shell"          = "dootle.actions.shell:DootShellAction"
+"shell!"         = "dootle.actions.shell:ShellAction"
+"bake!"          = "dootle.actions.shell:ShellBake"
+"run-bake!"      = "dootle.actions.shell:ShelBakedRun"
 
 ##-- end entry-points
 
