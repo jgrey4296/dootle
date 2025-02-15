@@ -23,6 +23,7 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
 import doot
 import sh
 from doot._abstract import Action_p
@@ -37,17 +38,16 @@ logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 fail_l  = doot.subprinter("fail")
 ##-- end logging
-
-BACKGROUND = DKey("background")
-UPDATE     = DKey("update_")
-NOTTY      = DKey("notty")
-ENV        = DKey("shenv_")
-
+@Proto(Action_p)
 class DootShellBake:
     """
       Create a pre-baked shell command for reuse as in a ShellBakedRun,
       for chaining commands without returning to doot
       args are explicit
+
+    eg: {do='bake!', args=[...], update_="baked"},
+    ... {do="bake!', args=[...], in_="baked", update_="baked"},
+    ... {do="run!",  in_="baked", update_="result"}
     """
 
     @DKeyed.args
@@ -55,17 +55,17 @@ class DootShellBake:
     @DKeyed.types("env", fallback=None, check=sh.Command|None)
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, args, _in, env, _update):
-        env = env or sh
+        env      = env or sh
+        keys     = [DKey(x) for x in args]
+        expanded = [x.expand(spec, state) for x in keys]
         try:
-            cmd                     = getattr(env, DKey(args[0]).expand(spec, state))
-            keys                    = [DKey(x) for x in args[1:]]
-            expanded                = [x.expand(spec, state, locs=doot.locs.Current) for x in keys]
+            cmd                     = getattr(env, expanded[0])
 
             match _in.expand(spec, state, fallback=None, check=sh.Command|bool|None):
                 case False | None:
-                    baked = cmd.bake(*expanded, _return_cmd=True, _tty_out=False)
+                    baked = cmd.bake(*expanded[1:], _return_cmd=True, _tty_out=False)
                 case sh.Command() as x:
-                    baked = cmd.bake(*expanded, _in=x(), _return_cmd=True, _tty_out=False)
+                    baked = cmd.bake(*expanded[1:], _in=x(), _return_cmd=True, _tty_out=False)
                 case _:
                     raise TaskError("Bad pre-command for shell baking", _in)
         except sh.CommandNotFound as err:
@@ -86,6 +86,7 @@ class DootShellBake:
 
         return False
 
+@Proto(Action_p)
 class DootShellBakedRun:
     """
       Run a series of baked commands
@@ -94,8 +95,8 @@ class DootShellBakedRun:
     @DKeyed.redirects("in_")
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, _in, _update):
+        cmd    = _in.expand(spec,state, check=sh.Command|None)
         try:
-            cmd    = _in.expand(spec,state, check=sh.Command|None)
             result = cmd()
         except sh.CommandNotFound as err:
             fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0])
@@ -113,8 +114,8 @@ class DootShellBakedRun:
         else:
             return { _update : result }
 
-
-class DootShellAction(Action_p):
+@Proto(Action_p)
+class DootShellAction:
     """
     For actions in subshells/processes.
     all other arguments are passed directly to the program, using `sh`
@@ -127,17 +128,23 @@ class DootShellAction(Action_p):
     @DKeyed.types("env", fallback=None, check=sh.Command|None)
     @DKeyed.paths("cwd", fallback=".", check=pl.Path|None)
     @DKeyed.types("exitcodes", fallback=[0])
+    @DKeyed.toggles("splitlines", fallback=False)
     @DKeyed.redirects("update_", fallback=None)
-    def __call__(self, spec, state, args, background, notty, env, cwd, exitcodes, _update) -> dict|bool|None:
+    def __call__(self, spec, state, args, background, notty, env, cwd, exitcodes, splitlines, _update) -> dict|bool|None:
         result     = None
         env        = env or sh
+        keys                    = [DKey(x, mark=DKey.Mark.MULTI, fallback=x) for x in args]
+        expanded                = [str(x.expand(spec, state)) for x in keys]
         try:
-            # Build the command by getting it from env, :
-            cmd_name                = DKey(args[0], fallback=args[0]).expand(spec, state)
+            # Build the command by getting it from env:
+            cmd_name                = expanded[0]
             cmd                     = getattr(env, cmd_name)
-            keys                    = [DKey(x, mark=DKey.Mark.MULTI, fallback=x) for x in args[1:]]
-            expanded                = [str(x.expand(spec, state)) for x in keys]
-            result                  = cmd(*expanded, _return_cmd=True, _bg=background, _tty_out=not notty, _cwd=cwd, _iter=True)
+            result                  = cmd(*expanded[1:],
+                                          _return_cmd=True,
+                                          _bg=background,
+                                          _tty_out=not notty,
+                                          _cwd=cwd,
+                                          _iter=True)
 
         except sh.ForkException as err:
             fail_l.error("Shell Command failed: %s", err)
@@ -159,25 +166,29 @@ class DootShellAction(Action_p):
             return False
         else:
             for line in result:
-                printer.info("(Cmd): %s", line.strip())
+                printer.user("(Cmd): %s", line.strip())
 
-            for errline in result.stderr.decode().split("\n"):
-                printer.warning("(CmdErr): %s", errline)
-
+            for errline in result.stderr.decode().splitlines():
+                printer.user("(CmdErr): %s", errline)
             if result.exit_code not in exitcodes:
-                printer.warning("Shell Command Failed: %s", result.exit_code)
-                printer.warning(result.stderr.decode())
+                printer.user("Shell Command Failed: %s", result.exit_code)
                 return False
 
             printer.debug("Shell Cwd: %s", cwd)
             printer.debug("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, cmd_name, args[1:])
-            if not _update:
-                return True
 
-            return { _update : result.stdout.decode() }
+            match _update:
+                case None:
+                    return True
+                case str() if splitlines:
+                    return { _update : result.stdout.decode().splitlines()}
+                case str():
+                    return { _update : result.stdout.decode() }
+                case x:
+                    raise TypeError("Unexpected 'update' type", x)
 
-
-class DootInteractiveAction(Action_p):
+@Proto(Action_p)
+class DootInteractiveAction:
     """
       An interactive command, which uses the self.interact method as a callback for sh.
 
@@ -222,7 +233,6 @@ class DootInteractiveAction(Action_p):
             return False
         else:
             return True
-
 
     def interact(self, char, stdin) -> None:
         # TODO possibly add a custom interupt handler/logger

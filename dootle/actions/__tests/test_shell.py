@@ -42,7 +42,12 @@ from doot.task.base_task import DootTask
 
 # ##-- end 3rd party imports
 
+from dootle.actions.shell import DootShellAction
+
 class TestShellAction:
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
 
     def test_initial(self):
         action = DootBaseAction()
@@ -50,10 +55,56 @@ class TestShellAction:
 
     def test_call_action(self, caplog, mocker):
         caplog.set_level(logmod.DEBUG, logger="_printer_")
-        action = DootBaseAction()
+        action = DootShellAction()
+        spec = doot.structs.ActionSpec.build({"do":"shell", 
+                                              "args":["ls"],
+                                              "update_":"blah",
+                                              })
         state  = { "count" : 0  }
-        spec   = mocker.Mock(spec=doot.structs.ActionSpec)
-        spec.args = []
-        result = action(spec, state)
-        assert(result['count'] == 1)
-        assert("Base Action Called: 0" in caplog.messages)
+        match action(spec, state):
+            case {"blah": str()}:
+                assert(True)
+            case x:
+                 assert(False), x
+
+
+    def test_call_action_split_lines(self, caplog, mocker):
+        caplog.set_level(logmod.DEBUG, logger="_printer_")
+        action = DootShellAction()
+        spec = doot.structs.ActionSpec.build({"do":"shell", 
+                                              "args":["ls", "-l"],
+                                              "update_":"blah",
+                                              })
+        state  = { "count" : 0, "splitlines":True}
+        match action(spec, state):
+            case {"blah": list()}:
+                assert(True)
+            case x:
+                 assert(False), x
+
+
+    def test_call_action_fail(self, caplog, mocker):
+        caplog.set_level(logmod.DEBUG, logger="_printer_")
+        action = DootShellAction()
+        spec = doot.structs.ActionSpec.build({"do":"shell", 
+                                              "args":["awgg"],
+                                              "update_":"blah",
+                                              })
+        state  = { "count" : 0, "splitlines":True}
+        match action(spec, state):
+            case False:
+                assert(True)
+            case x:
+                 assert(False), x
+        
+
+
+class TestShellBaking:
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
+class TestShellInteractive:
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
