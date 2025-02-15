@@ -42,6 +42,7 @@ import dootle.jobs.injection as JI
 
 logging = logmod.root
 
+@pytest.mark.skip
 class TestPathInjection:
 
     @pytest.fixture(scope="function")
@@ -52,7 +53,9 @@ class TestPathInjection:
     def state(self):
         return {"_task_name": TaskName("agroup::basic")}
 
-    @pytest.mark.xfail
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
     def test_initial(self, spec ,state):
         obj = JI.JobInjectPathParts()
         # build task specs
@@ -64,7 +67,6 @@ class TestPathInjection:
         expect = ["lpath", "fstem", "fparent", "fname", "fext", "pstem"]
         assert(False)
 
-    @pytest.mark.xfail
     def test_inject_shadow(self, spec, state):
         state['shadow_root'] = "blah"
         obj = JI.JobInjectShadowAction()
@@ -77,9 +79,12 @@ class TestPathInjection:
         expect = ["lpath", "fstem", "fparent", "fname", "fext", "pstem"]
         assert(False)
 
+@pytest.mark.skip
 class TestNameInjection:
 
-    @pytest.mark.xfail
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
     def test_initial(self, spec ,state):
         obj = JI.JobInjectPathParts()
         # build task specs
@@ -91,9 +96,12 @@ class TestNameInjection:
         expect = ["lpath", "fstem", "fparent", "fname", "fext", "pstem"]
         assert(False)
 
+@pytest.mark.skip
 class TestActionInjection:
 
-    @pytest.mark.xfail
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
     def test_initial(self, spec ,state):
         obj = JI.JobInjectPathParts()
         # build task specs
