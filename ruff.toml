@@ -1,4 +1,4 @@
-## ruff.toml -*- mode: Conf[TOML] -*-
+## ruff.toml -*- mode: conf-toml -*-
 # https://docs.astral.sh/ruff/configuration/
 
 # Extend the project settings, if theres a ruff section
@@ -29,8 +29,8 @@ select = [
 ]
 
 ignore = [
-       "F401", "E402", "E501", "F841", "N801", "ANN204", "ANN101", "UP035", "TRY003", "EM101", "PLW0120",
-       "C419",
+       "F401", "E501", "F841", "N801", "ANN204", "UP035", "TRY003",
+       "EM101", "PLW0120", "C419", "C401", "N817", "C408", "ANN401",
 ]
 
 # Allow autofix for all enabled rules (when `--fix`) is provided.
@@ -44,7 +44,10 @@ unfixable = []
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx        = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
-logger-objects            = ["logging", "printer"]
+logger-objects            = ["logging", "printer", "logmod"]
+
+[lint.pep8-naming]
+extend-ignore-names = ["cls", "mcls"]
 
 # [lint.per-file-ignore]
 # "__init__.py" = ["E402"]

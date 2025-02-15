@@ -33,13 +33,5 @@ logging = logmod.root
 # Body:
 class TestShadowing:
 
-    @pytest.fixture(scope="function")
-    def setup(self):
-        pass
-
-    @pytest.fixture(scope="function")
-    def cleanup(self):
-        pass
-
     def test_sanity(self):
-        assert(True is True)
+        assert(True is not False) # noqa: PLR0133

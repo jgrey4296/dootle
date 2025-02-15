@@ -61,7 +61,7 @@ class JobWalkAction(Walker_m, DootBaseAction):
     def __call__(self, spec, state, roots, exts, recursive, fn, _update):
         exts    = {y for x in (exts or []) for y in [x.lower(), x.upper()]}
         rec     = recursive or False
-        roots   = [DKey(x, mark=DKey.mark.PATH).expand(spec, state) for x in roots]
+        roots   = [DKey(x, mark=DKey.Mark.PATH).expand(spec, state) for x in roots]
         match fn:
             case CodeReference():
                 match fn():

@@ -49,9 +49,12 @@ class MambaEnv:
     """ Set up a mamba env to use, returns a baked command to pass to the normal shell action in shenv_ """
 
     @DKeyed.types("env", check=list|str)
-    @DKeyed.redirects("update_")
-    def __call__(self, spec, state, env, _update):
-        match env:
+    @DKeyed.redirects("update_", fallback=None)
+    def __call__(self, spec, state, _env, _update):
+        if _update is None:
+            raise ValueError("Using a mamba env requires an update target")
+        
+        match _env:
             case [x]:
                 env = x
             case str() as x:

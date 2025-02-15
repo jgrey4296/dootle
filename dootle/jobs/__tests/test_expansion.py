@@ -128,7 +128,7 @@ class TestJobExpansion:
 
     def test_expander_with_dict_injection(self, spec, state):
         state.update(dict(_task_name=TaskName("agroup::basic"),
-                          inject={"insert": ["aKey"], "delay":{"other":"blah"}},
+                          inject={"insert": ["aKey"], "delay":{"other":"{blah}"}},
                           base="base::task"))
 
         state['from']          = ["first", "second", "third"]

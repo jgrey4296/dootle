@@ -59,7 +59,7 @@ class BibtexLoadAction(Action_p):
       """
 
     @DKeyed.redirects("year_")
-    @DKeyed.redirects("from", multi=True, re_mark=DKey.mark.PATH)
+    @DKeyed.redirects("from", multi=True, re_mark=DKey.Mark.PATH)
     @DKeyed.types("reader", check=Reader)
     @DKeyed.types("update", check=b.Library|None)
     def __call__(self, spec, state, _year, _from, reader, _update):

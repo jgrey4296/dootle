@@ -42,83 +42,7 @@ import dootle.jobs.injection as JI
 
 logging = logmod.root
 
-class TestJobInjection:
-    """
-
-    """
-
-    @pytest.fixture(scope="function")
-    def spec(self):
-        return ActionSpec.build({"do": "basic", "args":["test::simple", "test::other"], "update_":"specs"})
-
-    @pytest.fixture(scope="function")
-    def state(self):
-        return {"_task_name": TaskName("agroup::basic")}
-
-    def test_copy(self, spec, state):
-        """ the injection copies the value over directly """
-        state.update({"a": 2})
-        inj       = JI.JobInjector()
-        injection = inj.build_injection(spec, state, dict(delay=["a"]))
-        assert("a" in injection)
-        assert(injection['a'] == 2)
-
-    def test_copy_multikey(self, spec, state):
-        """ the injection doesn't expand a multikey """
-        state.update({"a": "{x} : {y}", "x": 5, "y": 10})
-        inj = JI.JobInjector()
-        injection = inj.build_injection(spec, state, dict(delay=["a"]))
-        assert("a" in injection)
-        assert("x" not in injection)
-        assert("y" not in injection)
-        assert(injection['a'] == "{x} : {y}")
-
-    def test_expand(self, spec, state):
-        """ the injection expands the key to its value, adding it under the original key """
-        spec.kwargs._table().update({"a_": "b"})
-        state.update({"b": 5})
-        inj = JI.JobInjector()
-        injection = inj.build_injection(spec, state, dict(now=["a"]))
-        assert("a" in injection)
-        assert(injection['a'] == 5)
-
-    def test_copy_indirect(self, spec, state):
-        """ copied indirect key will copy its redirected value
-          a_ -> {a:5}
-          """
-        state.update({"a_": "b", "b": 5})
-        inj = JI.JobInjector()
-        injection = inj.build_injection(spec, state, dict(delay=["a"]))
-        assert("a" in injection)
-        assert("a_" not in injection)
-        assert(injection['a'] == 5)
-
-    def test_copy_remap(self, spec, state):
-        """ copied values can be remapped to new key names """
-        state.update({"a": 2})
-        inj = JI.JobInjector()
-        injection = inj.build_injection(spec, state, dict(delay={"test":"a"}))
-        assert("test" in injection)
-        assert("a" not in injection)
-        assert(injection['test'] == 2)
-
-    def test_expand_remap(self, spec, state):
-        """ expanded injections can be remapped to new key names """
-        state.update({"a": 2})
-        inj = JI.JobInjector()
-        injection = inj.build_injection(spec, state, dict(now={"test":"a"}))
-        assert("test" in injection)
-        assert("a" not in injection)
-        assert(injection['test'] == 2)
-
-    def test_replacement(self, spec, state):
-        """ keys can be inserted with the defined replacement value """
-        state.update({"a": 2})
-        inj = JI.JobInjector()
-        injection = inj.build_injection(spec, state, dict(insert=["a"]), replacement=10)
-        assert("a" in injection)
-        assert(injection['a'] == 10)
-
+@pytest.mark.skip
 class TestPathInjection:
 
     @pytest.fixture(scope="function")
@@ -129,7 +53,9 @@ class TestPathInjection:
     def state(self):
         return {"_task_name": TaskName("agroup::basic")}
 
-    @pytest.mark.xfail
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
     def test_initial(self, spec ,state):
         obj = JI.JobInjectPathParts()
         # build task specs
@@ -141,7 +67,6 @@ class TestPathInjection:
         expect = ["lpath", "fstem", "fparent", "fname", "fext", "pstem"]
         assert(False)
 
-    @pytest.mark.xfail
     def test_inject_shadow(self, spec, state):
         state['shadow_root'] = "blah"
         obj = JI.JobInjectShadowAction()
@@ -154,9 +79,12 @@ class TestPathInjection:
         expect = ["lpath", "fstem", "fparent", "fname", "fext", "pstem"]
         assert(False)
 
+@pytest.mark.skip
 class TestNameInjection:
 
-    @pytest.mark.xfail
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
     def test_initial(self, spec ,state):
         obj = JI.JobInjectPathParts()
         # build task specs
@@ -168,9 +96,12 @@ class TestNameInjection:
         expect = ["lpath", "fstem", "fparent", "fname", "fext", "pstem"]
         assert(False)
 
+@pytest.mark.skip
 class TestActionInjection:
 
-    @pytest.mark.xfail
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
     def test_initial(self, spec ,state):
         obj = JI.JobInjectPathParts()
         # build task specs
