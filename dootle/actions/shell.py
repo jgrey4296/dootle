@@ -39,10 +39,9 @@ printer = doot.subprinter()
 fail_l  = doot.subprinter("fail")
 ##-- end logging
 @Proto(Action_p)
-class DootShellBake:
+class ShellBake:
     """
-      Create a pre-baked shell command for reuse as in a ShellBakedRun,
-      for chaining commands without returning to doot
+      Create a pre-baked shell chain for reuse as in a ShellBakedRun,
       args are explicit
 
     eg: {do='bake!', args=[...], update_="baked"},
@@ -53,21 +52,22 @@ class DootShellBake:
     @DKeyed.args
     @DKeyed.redirects("in_")
     @DKeyed.types("env", fallback=None, check=sh.Command|None)
-    @DKeyed.redirects("update_")
+    @DKeyed.redirects("update_", fallback=None)
     def __call__(self, spec, state, args, _in, env, _update):
+        if _update is None:
+            raise ValueError("Baking a command needs an update target")
         env      = env or sh
         keys     = [DKey(x) for x in args]
         expanded = [x.expand(spec, state) for x in keys]
         try:
             cmd                     = getattr(env, expanded[0])
-
             match _in.expand(spec, state, fallback=None, check=sh.Command|bool|None):
-                case False | None:
+                case False | None | DKey():
                     baked = cmd.bake(*expanded[1:], _return_cmd=True, _tty_out=False)
                 case sh.Command() as x:
                     baked = cmd.bake(*expanded[1:], _in=x(), _return_cmd=True, _tty_out=False)
-                case _:
-                    raise TaskError("Bad pre-command for shell baking", _in)
+                case x:
+                    raise TaskError("Bad pre-command for shell baking", _in, x)
         except sh.CommandNotFound as err:
             fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
             return False
@@ -87,13 +87,13 @@ class DootShellBake:
         return False
 
 @Proto(Action_p)
-class DootShellBakedRun:
+class ShellBakedRun:
     """
       Run a series of baked commands
     """
 
     @DKeyed.redirects("in_")
-    @DKeyed.redirects("update_")
+    @DKeyed.redirects("update_", fallback=None)
     def __call__(self, spec, state, _in, _update):
         cmd    = _in.expand(spec,state, check=sh.Command|None)
         try:
@@ -112,10 +112,14 @@ class DootShellBakedRun:
 
             return False
         else:
-            return { _update : result }
+            match _update:
+                case None:
+                    return True
+                case str():
+                    return { str(_update) : result }
 
 @Proto(Action_p)
-class DootShellAction:
+class ShellAction:
     """
     For actions in subshells/processes.
     all other arguments are passed directly to the program, using `sh`
