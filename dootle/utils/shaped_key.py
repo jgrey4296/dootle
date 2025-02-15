@@ -31,8 +31,10 @@ from uuid import UUID, uuid1
 # ##-- 3rd party imports
 import doot
 import numpy as np
+from jgdv.structs.dkey import DKey
 from doot.structs import DKey
-from jgdv.structs.dkey.core import SingleDKey, identity
+from jgdv import identity_fn
+from jgdv.structs.dkey import SingleDKey
 
 # ##-- end 3rd party imports
 
@@ -41,19 +43,34 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 
-class NPShapeDKey(SingleDKey, mark=np.ndarray, tparam="n", multi=False):
+class NPShapeDKey(SingleDKey["np"], conv="n", multi=False):
     """ Utility DKey to get a numpy array and validate its shape,
 
       shape : str. A symbolic description of the expected shape of the array.
       eg: (5,2x,x). ensures a 3d array, with 5 planes, and twice as many rows as columns
     """
+    _extra_kwargs = set(["shape"])
 
     def __init__(self, *args, **kwargs):
-        assert("shape" in kwargs)
         super().__init__(*args, **kwargs)
-        self._typecheck = np.ndarray
-        self._shape     : str = kwargs['shape']
+        self._typecheck       = np.ndarray
+        self._expansion_type  = np.ndarray
+        match kwargs.get("shape", None):
+            case tuple() | list()  as xs:
+                self._shape = tuple(xs)
+            case None:
+                self._shape = None
+            case x:
+                raise TypeError("Unrecognized shape format", x)
 
-    def _check_shape(self, arr) -> bool:
+    def exp_check_result(self, val, opts) -> None:
         """ Checks the shape of the arr matches self._shape """
-        return False
+        match val:
+            case DKey.ExpInst(val=np.ndarray()) if self._shape is None:
+                pass
+            case DKey.ExpInst(val=np.ndarray() as x) if x.shape == self._shape:
+                pass
+            case DKey.ExpInst(np.ndarray() as x):
+                raise ValueError("Expected an array of shape", x.shape, self._shape)
+            case x:
+                raise ValueError("Expected an array", x)
