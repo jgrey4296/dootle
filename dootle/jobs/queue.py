@@ -31,8 +31,7 @@ import doot
 import doot.errors
 from doot.structs import TaskName, TaskSpec
 from doot._abstract.task import Action_p
-from doot.structs import DKeyed
-from jgdv.structs.dkey import DKey
+from jgdv.structs.dkey import DKey, DKeyed
 
 # ##-- end 3rd party imports
 
@@ -69,7 +68,7 @@ class JobQueueAction(Action_p):
     """
 
     @DKeyed.args
-    @DKeyed.redirects("from_", multi=True)
+    @DKeyed.redirects("from_", fallback=None)
     @DKeyed.types("after", check=list|TaskName|str|None, fallback=None)
     @DKeyed.taskname
     def __call__(self, spec, state, _args, _from, _after, _basename) -> list:
@@ -111,14 +110,20 @@ class JobQueueAction(Action_p):
         return result
 
 
-    def _build_from_keys(self, base:TaskName, froms:list[DKey|str], spec, state) -> list:
+    def _build_from_keys(self, base:TaskName, froms:Maybe[list[DKey|str]], spec, state) -> list:
         """ Build specs from a specified list of keys to be expanded"""
         result  = []
         root    = base.pop()
         head    = root.with_head()
 
-        subtasks = froms[:]
         count    = 0
+        match froms:
+            case None:
+                subtasks = []
+            case [*xs]:
+                subtasks = xs
+            case x:
+                subtasks = [x]
         while bool(subtasks):
             match subtasks.pop():
                 case "from_" | None:
@@ -143,4 +148,5 @@ class JobQueueAction(Action_p):
 
                 case x:
                     raise doot.errors.TaskError("Unknown Type tried to be queued", x)
-        return result
+        else:
+            return result
