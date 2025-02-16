@@ -125,6 +125,11 @@ class ShellAction:
     all other arguments are passed directly to the program, using `sh`
 
     can use a pre-baked sh passed into what "shenv_" points to
+
+    - `exitcodes` : list[int] for what is acceptable return values
+    - `splitlines` : bool for splitting the stdout result
+    - `errlimit` : int for how much of the tail of the stderr is printed ([x:])
+    
     """
 
     @DKeyed.args
@@ -133,8 +138,9 @@ class ShellAction:
     @DKeyed.paths("cwd", fallback=".", check=pl.Path|None)
     @DKeyed.types("exitcodes", fallback=[0])
     @DKeyed.toggles("splitlines", fallback=False)
+    @DKeyed.types("errlimit", fallback=-10)
     @DKeyed.redirects("update_", fallback=None)
-    def __call__(self, spec, state, args, background, notty, env, cwd, exitcodes, splitlines, _update) -> dict|bool|None:
+    def __call__(self, spec, state, args, background, notty, env, cwd, exitcodes, splitlines, errlimit, _update) -> dict|bool|None:
         result     = None
         env        = env or sh
         keys                    = [DKey(x, mark=DKey.Mark.MULTI, fallback=x) for x in args]
@@ -159,21 +165,14 @@ class ShellAction:
         except sh.ErrorReturnCode as err:
             fail_l.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
 
-            fail_l.info("")
-            if bool(err.stderr):
-                fail_l.error("-- Stderr: ")
-                fail_l.error("%s", err.stderr.decode())
-                fail_l.error("")
-                fail_l.error("-- Stderr End")
-                fail_l.error("")
-
+            self._print_err(err.stderr.decode(), errlimit)
             return False
         else:
             for line in result:
                 printer.user("(Cmd): %s", line.strip())
 
-            for errline in result.stderr.decode().splitlines():
-                printer.user("(CmdErr): %s", errline)
+            self._print_err(result.stderr.decode(), errlimit)
+            
             if result.exit_code not in exitcodes:
                 printer.user("Shell Command Failed: %s", result.exit_code)
                 return False
@@ -191,6 +190,17 @@ class ShellAction:
                 case x:
                     raise TypeError("Unexpected 'update' type", x)
 
+
+    def _print_err(self, err, limit):
+        if not bool(err):
+            return
+        fail_l.user("-- Err: ")
+        for errline in err.splitlines()[limit:]:
+            fail_l.user("(CmdErr): %s", errline)
+        else:
+            fail_l.user("-- Err.")
+
+        
 @Proto(Action_p)
 class DootInteractiveAction:
     """
