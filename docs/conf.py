@@ -26,7 +26,7 @@ html_js_files  = []
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['**/flycheck_*.py', "**/__tests/*"]
+exclude_patterns = ['**/flycheck_*.py', "**/__tests/*", '/obsolete/*', "README.md"]
 
 # -- Project information -----------------------------------------------------
 
@@ -62,7 +62,6 @@ html_sidebars      = {}
 
 html_theme_options.update({
     'logo_only'                   : False,
-    'display_version'             : True,
     'prev_next_buttons_location'  : 'bottom',
     'style_external_links'        : False,
     'vcs_pageview_mode'           : '',
@@ -82,15 +81,15 @@ html_theme_options.update({
 autoapi_generate_api_docs = True
 autoapi_add_toctree_entry = True
 autoapi_type              = "python"
-autoapi_template_dir      = "_templates"
+autoapi_template_dir      = "_templates/autoapi"
 autoapi_root              = "autoapi"
-autoapi_dirs              = ['../doot']
+autoapi_dirs              = ['../dootle']
 autoapi_file_patterns     = ["*.py", "*.pyi"]
-autoapi_ignore            = ['*/__tests', '*/test_*.py', '/obsolete/*']
+autoapi_ignore            = exclude_patterns
 autoapi_options           = [
     'imported-members',
     'members',
-    # 'undoc-members',
+    'undoc-members',
     'private-members',
     'special_members',
     'show-inheritance',
