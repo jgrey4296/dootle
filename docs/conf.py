@@ -11,7 +11,8 @@
 import os
 import sys
 import pathlib as pl
-sys.path.insert(0, pl.Path('../').resolve())
+local_mod = str(pl.Path('../').resolve())
+sys.path.insert(0, local_mod)
 
 # (Relative to this file):
 templates_path   = ['_templates']
@@ -25,7 +26,7 @@ html_js_files  = []
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['**/flycheck_*.py', "**/__tests/*"]
+exclude_patterns = ['**/flycheck_*.py', "**/__tests/*", '/obsolete/*', "README.md"]
 
 # -- Project information -----------------------------------------------------
 
@@ -43,41 +44,24 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.napoleon',
     'sphinx.ext.extlinks',
-    'sphinx_rtd_theme'
+    'sphinx_rtd_theme',
+    'myst_parser',
+    "autoapi.extension",
+    "sphinx.ext.coverage",
+    "sphinx.ext.imgconverter",
+    "sphinx.ext.intersphinx",
+    "sphinx.ext.viewcode",
     ]
 
 # -- Options for HTML output -------------------------------------------------
-html_theme       = "sphinx_rtd_theme"
-
-##-- alabaster options
-# https://alabaster.readthedocs.io/en/latest/index.html
-extlinks         = {}
-html_sidebars    = {
-    "**": [
-        "about.html",
-        "searchfield.html",
-        "navigation.html",
-        "relations.html",
-    ]
-}
-
-html_theme_options = {
-    "description": "Doot, a simple TOML based task runner",
-    "github_user": "jgrey4296",
-    "github_repo": "doot",
-    "fixed_sidebar": True,
-    "github_banner": False,
-    "show_related" : True,
-}
-
-##-- end alabaster
-
-##-- rtd options
 # https://sphinx-rtd-theme.readthedocs.io/en/stable/configuring.html
+html_theme         = "sphinx_rtd_theme"
+html_theme_options = {}
+html_sidebars      = {}
 
-html_theme_options = {
+
+html_theme_options.update({
     'logo_only'                   : False,
-    'display_version'             : True,
     'prev_next_buttons_location'  : 'bottom',
     'style_external_links'        : False,
     'vcs_pageview_mode'           : '',
@@ -89,9 +73,28 @@ html_theme_options = {
     'includehidden'               : True,
     'titles_only'                 : False
 
-}
+})
 
-##-- end rtd options
 
-# Imports --------------------------------------------------
- # import dootle
+# -- Extension Options -------------------------------------------------
+# https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html
+autoapi_generate_api_docs = True
+autoapi_add_toctree_entry = True
+autoapi_type              = "python"
+autoapi_template_dir      = "_templates/autoapi"
+autoapi_root              = "autoapi"
+autoapi_dirs              = ['../dootle']
+autoapi_file_patterns     = ["*.py", "*.pyi"]
+autoapi_ignore            = exclude_patterns
+autoapi_options           = [
+    'imported-members',
+    'members',
+    'undoc-members',
+    'private-members',
+    'special_members',
+    'show-inheritance',
+    # 'show-inheritance-diagram',
+    # 'show-module-summary',
+]
+
+# -- Imports --------------------------------------------------

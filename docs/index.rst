@@ -33,17 +33,6 @@ The repo for doot can be found `here <https://github.com/jgrey4296/dootle>`_.
 If you find a bug, bug me, unsurprisingly, on the `issue tracker <https://github.com/jgrey4296/dootle/issues>`_.
 
 
-
-.. _indices:
-
-Indices and Tables
-------------------
-
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
 .. .. Main Sidebar Toctree
 .. toctree::
    :maxdepth: 3
@@ -55,7 +44,9 @@ Indices and Tables
    examples/overview
    architecture/overview
    FAQ <faq>
-   api
+
+   genindex
+   modindex
 
 
 .. .. Links
