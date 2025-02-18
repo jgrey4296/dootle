@@ -30,6 +30,7 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto, Mixin
 import doot
 import doot.errors
 from doot._abstract import Action_p
@@ -64,7 +65,10 @@ def _shadow_paths(rpath:pl.Path, shadow_roots:list[pl.Path]) -> list[pl.Path]:
     return shadow_dirs
 
 
-class InjectShadowAction(PathManip_m):
+##--|
+@Proto(Action_p)
+@Mixin(PathManip_m)
+class InjectShadowAction:
     """
       Inject a shadow path into each task entry, using the target key which points to the relative path to shadow
       returns the *directory* of the shadow target
@@ -85,6 +89,8 @@ class InjectShadowAction(PathManip_m):
                 rel_path = self._shadow_path(_onto.extra[_key], _shadow)
                 _onto.model_extra.update(dict(**_onto.extra, **{"shadow_path": rel_path}))
 
+##--|
+@Proto(Action_p)
 class InjectMultiShadow:
     """
       Inject multiple shadow paths into each task entry, using the target key which
@@ -93,7 +99,6 @@ class InjectMultiShadow:
 
       For use with multibackupaction,
     """
-
     @DKeyed.types("onto", check=TaskSpec|list)
     @DKeyed.types("shadow_roots", check=list)
     @DKeyed.redirects("key_")
@@ -109,6 +114,8 @@ class InjectMultiShadow:
             updates : list[pl.Path] = _shadow_paths(x.extra[_key], roots)
             x.model_extra.update(dict(**x.extra, **{"shadow_paths": updates}))
 
+##--|
+@Proto(Action_p)
 class CalculateShadowDirs:
     """
       Take a relative path, and apply it to a list of shadow roots,
@@ -122,7 +129,10 @@ class CalculateShadowDirs:
         result : list[pl.Path] = _shadow_paths(rpath,  _sroots)
         return { "shadow_paths" : result}
 
-class MultiBackupAction(PathManip_m):
+##--|
+@Proto(Action_p)
+@Mixin(PathManip_m)
+class MultiBackupAction:
     """
       copy a file somewhere, but only if it doesn't exist at the dest, or is newer than the dest
       The arguments of the action are held in self.spec

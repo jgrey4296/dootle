@@ -27,6 +27,7 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
 import doot
 import doot.errors
 from doot.structs import TaskName, TaskSpec
@@ -51,7 +52,8 @@ logging = logmod.getLogger(__name__)
 
 # Body:
 
-class JobQueueAction(Action_p):
+@Proto(Action_p)
+class JobQueueAction:
     """
       Queues a list of tasks/specs into the tracker.
 

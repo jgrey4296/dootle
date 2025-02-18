@@ -28,8 +28,10 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto, Mixin
 import doot
 import doot.errors
+from doot._abstract import Action_p
 from doot.actions.base_action import DootBaseAction
 from doot.mixins.path_manip import Walker_m
 from doot.structs import DKey, DKeyed, TaskName, TaskSpec
@@ -42,7 +44,9 @@ logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
-class JobWalkAction(Walker_m, DootBaseAction):
+@Proto(Action_p)
+@Mixin(Walker_m)
+class JobWalkAction(DootBaseAction):
     """
       Triggers a directory walk to build tasks from
 

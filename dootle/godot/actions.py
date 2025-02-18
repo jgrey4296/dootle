@@ -18,24 +18,46 @@ import re
 import time
 import types
 import weakref
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
-                    Generic, Iterable, Iterator, Mapping, Match,
-                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
-                    TypeGuard, TypeVar, cast, final, overload,
-                    runtime_checkable)
 from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
+from jgdv.structs.dkey import DKeyed
 import doot
 import doot.errors
 import sh
 from doot._abstract import Action_p
 from doot.enums import ActionResponse_e as ActRE
-from doot.structs import DKey, DKeyed
+from doot.structs import DKey
 
 # ##-- end 3rd party imports
+
+# ##-- types
+# isort: off
+import abc
+import collections.abc
+from typing import TYPE_CHECKING, cast, assert_type, assert_never
+from typing import Generic, NewType
+# Protocols:
+from typing import Protocol, runtime_checkable
+# Typing Decorators:
+from typing import no_type_check, final, override, overload
+# from dataclasses import InitVar, dataclass, field
+# from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
+
+if TYPE_CHECKING:
+    from jgdv import Maybe
+    from typing import Final
+    from typing import ClassVar, Any, LiteralString
+    from typing import Never, Self, Literal
+    from typing import TypeGuard
+    from collections.abc import Iterable, Iterator, Callable, Generator
+    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+
+# isort: on
+# ##-- end types
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -47,28 +69,19 @@ try:
 except sh.CommandNotFound as err:
     raise doot.errors.TaskLoadError("godot not found") from err
 
-##-- expansion keys
-SCENE      : Final[DKey] = DKey("scene",      implicit=True)
-UPDATE     : Final[DKey] = DKey("update",     implicit=True)
-SCRIPT     : Final[DKey] = DKey("script",     implicit=True)
-QUIT_AFTER : Final[DKey] = DKey("quit_after", implicit=True)
-PATH       : Final[DKey] = DKey("path",       implicit=True)
-TARGET     : Final[DKey] = DKey("target",     implicit=True)
 
-##-- end expansion keys
-
-@doot.check_protocol
-class GodotProjectCheck(Action_p):
+@Proto(Action_p)
+class GodotProjectCheck:
     """
       complain if a project.godot file can't be found
     """
 
     def __call__(self, spec, state):
-        if not doot.locs['project.godot'].exists():
+        if not doot.locs['{project.godot}'].exists():
             return ActRE.FAIL
 
-@doot.check_protocol
-class GodotTestAction(Action_p):
+@Proto(Action_p)
+class GodotTestAction:
 
     def __call__(self, spec, task_state):
         try:
@@ -78,18 +91,20 @@ class GodotTestAction(Action_p):
             printer.error("Godot Failure: %s", err.stdout.decode())
             raise doot.errors.DootTaskFailed("Failed to connect") from err
 
-@doot.check_protocol
-class GodotRunSceneAction(Action_p):
+@Proto(Action_p)
+class GodotRunSceneAction:
 
-    def __call__(self, spec, task_state):
+    @DKeyed.paths("scene")
+    @DKeyed.types("quit_after", check=int|str|None, fallback=None)
+    def __call__(self, spec, task_state, scene, _qa):
         try:
             godot_b    = godot.bake("--path", doot.locs.root, _return_cmd=True)
-            scene_file = SCENE.expand(spec, task_state)
-            quit_after = QUIT_AFTER.expand(spec, task_state, check=int|str|None)
-            if quit_after:
-                result = godot_b("--quit-after", quit_after, str(scene_file))
-            else:
-                result = godot_b(str(scene_file))
+            match _qa:
+                case int()|str():
+                    result = godot_b("--quit-after", _qa, str(scene))
+                case _:
+                    result = godot_b(str(scene))
+
             printer.info("Godot Result: %s", result.stdout.decode())
             return { "godot_result" : result.stdout.decode() }
 
@@ -97,91 +112,100 @@ class GodotRunSceneAction(Action_p):
             printer.error("Godot Failure: %s", err.stdout.decode())
             raise doot.errors.DootTaskFailed("Godot Failed") from err
 
-@doot.check_protocol
-class GodotRunScriptAction(Action_p):
+@Proto(Action_p)
+class GodotRunScriptAction:
 
-    def __call__(self, spec, task_state):
+    @DKeyed.paths("script")
+    @DKeyed.types("quit_after", check=int|str|None, fallback=None)
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, task_state, script, _qa, _update):
         try:
             godot_b     = godot.bake("--path", doot.locs.root, _return_cmd=True)
-            date_key    = UPDATE.redirect(spec)
-            script_file = SCRIPT.expand(spec, task_state)
-            quit_after  = QUIT_AFTER.expand(spec, task_state, check=int|str|None)
-            if quit_after:
-                result = godot_b("--quit-after", quit_after, "--headless", "--script", str(script_file))
-            else:
-                result = godot_b(str(script_file))
-            printer.info("Godot Result: %s", result.stdout.decode())
-            return { data_key: result.stdout.decode() }
-
-        except sh.ErrorReturnCode as err:
-            printer.error("Godot Failure: %s", err.stdout.decode())
-            raise doot.errors.DootTaskFailed("Godot Failed") from err
-
-@doot.check_protocol
-class GodotBuildAction(Action_p):
-
-    def __call__(self, spec, task_state):
-        try:
-            match spec.kwargs.type:
-                case "release":
-                    godot_b = godot.bake("--path", doot.locs.root, "--export-release", _return_cmd=True)
-                case "debug":
-                    godot_b = godot.bake("--path", doot.locs.root, "--export-debug", _return_cmd=True)
+            match _qa:
+                case int()|str():
+                    result = godot_b("--quit-after", _qa, "--headless", "--script", str(script))
                 case _:
-                    raise doot.errors.ActionError("Bad export type specified, should be `release` or `debug`")
+                    result = godot_b(str(script))
 
-            path_loc = PATH.expand(spec, task_state)
-            data_key = UPDATE.expand(spec, task_state)
-            result      = godot_b(spec.kwargs.preset, str(path_loc))
             printer.info("Godot Result: %s", result.stdout.decode())
-            return { data_key: result.stdout.decode() }
+            return { _update : result.stdout.decode() }
 
         except sh.ErrorReturnCode as err:
             printer.error("Godot Failure: %s", err.stdout.decode())
             raise doot.errors.DootTaskFailed("Godot Failed") from err
 
-@doot.check_protocol
-class GodotNewSceneAction(Action_p):
+@Proto(Action_p)
+class GodotBuildAction:
+
+    @DKeyed.formats("preset")
+    @DKeyed.kwargs
+    @DKey.paths("path")
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, task_state, preset, kwargs, path, _update):
+        match kwargs:
+            case {"type": "release"}:
+                godot_b = godot.bake("--path", doot.locs.root, "--export-release", _return_cmd=True)
+            case {"type" : "debug"}:
+                godot_b = godot.bake("--path", doot.locs.root, "--export-debug", _return_cmd=True)
+            case _:
+                raise doot.errors.ActionError("Bad export type specified, should be `release` or `debug`")
+
+        try:
+            result      = godot_b(preset, str(path))
+            stdout = result.stdout.decode()
+            printer.info("Godot Result: %s", stdout)
+            return { _update: stdout }
+        except sh.ErrorReturnCode as err:
+            stdout = result.stdout.decode()
+            stderr = err.stdout.decode()
+            printer.error("Godot Failure: %s", stderr)
+            raise doot.errors.DootTaskFailed("Godot Failed", stdout, stderr) from err
+
+@Proto(Action_p)
+class GodotNewSceneAction:
     """
       Generate a template new template scene
       to write with write!
     """
-    outState = ["sceneText"]
 
     def __call__(self, spec, task_state):
         # Load the template
         # expand the template with the name
         text = None
 
-        return { "sceneText" : text }
+        # return { "sceneText" : text }
+        raise NotImplementedError()
 
-@doot.check_protocol
-class GodotNewScriptAction(Action_p):
+@Proto(Action_p)
+class GodotNewScriptAction:
     """
       Generate a template new gdscript
       to write with write!
     """
-    outState = ["scriptText"]
 
     def __call__(self, spec, task_state):
         # Load the template
         # expand the template with the name
         text = None
 
-        return { "scriptText" : text }
+        # return { "scriptText" : text }
+        raise NotImplementedError()
 
-@doot.check_protocol
-class GodotCheckScriptsAction(Action_p):
+@Proto(Action_p)
+class GodotCheckScriptsAction:
 
-    def __call__(self, spec, task_state):
+    @DKeyed.paths("target")
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, target, _update):
+
+        godot_b     = godot.bake("--path", doot.locs.root, "--headless", _return_cmd=True)
         try:
-            godot_b     = godot.bake("--path", doot.locs.root, "--headless", _return_cmd=True)
-            data_key    = UPDATE.expand(spec, task_state)
-            script_file = TARGET.expand(spec, task_state)
-            result      = godot_b("--check-only", "--script", str(script_file))
-            printer.info("Godot Result: %s", result.stdout.decode())
-            return { data_key : result.stdout.decode() }
-
+            result      = godot_b("--check-only", "--script", str(target))
+            stdout = result.stdout.decode()
+            printer.info("Godot Result: %s", stdout)
+            return { _update : stdout }
         except sh.ErrorReturnCode as err:
-            printer.error("Godot Failure: %s", err.stdout.decode())
-            raise doot.errors.DootTaskFailed("Godot Failed") from err
+            stdout = result.stdout.decode()
+            stderr = result.stderr.decode()
+            printer.error("Godot Failure: %s", stderr)
+            raise doot.errors.DootTaskFailed("Godot Failed", stdout, stderr) from err

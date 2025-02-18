@@ -8,7 +8,6 @@ See EOF for license/metadata/notes as applicable
 from __future__ import annotations
 
 # ##-- stdlib imports
-# import abc
 import datetime
 import enum
 import functools as ftz
@@ -19,18 +18,12 @@ import re
 import time
 import types
 import weakref
-# from copy import deepcopy
-# from dataclasses import InitVar, dataclass, field
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
-                    Generic, Iterable, Iterator, Mapping, Match,
-                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
-                    TypeGuard, TypeVar, cast, final, overload,
-                    runtime_checkable)
 from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
 import doot
 import doot.errors
 import sh
@@ -38,6 +31,31 @@ from doot._abstract import Action_p
 from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
+
+# ##-- types
+# isort: off
+import abc
+import collections.abc
+from typing import TYPE_CHECKING, cast, assert_type, assert_never
+from typing import Generic, NewType
+# Protocols:
+from typing import Protocol, runtime_checkable
+# Typing Decorators:
+from typing import no_type_check, final, override, overload
+# from dataclasses import InitVar, dataclass, field
+# from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
+
+if TYPE_CHECKING:
+    from jgdv import Maybe
+    from typing import Final
+    from typing import ClassVar, Any, LiteralString
+    from typing import Never, Self, Literal
+    from typing import TypeGuard
+    from collections.abc import Iterable, Iterator, Callable, Generator
+    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+
+# isort: on
+# ##-- end types
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -50,8 +68,9 @@ except sh.CommandNotFound as err:
     raise doot.errors.TaskLoadError("adb not found") from err
 
 TRANSPORT_RE = re.compile("transport_id:([0-9])")
-
-class AndroidRunning(Action_p):
+##--|
+@Proto(Action_p)
+class AndroidRunning:
     """
       Start the adb server and connect to the device.
       internally identifies the transport id and adds it to the task state
@@ -93,7 +112,8 @@ class AndroidRunning(Action_p):
                 printer.info("%s", xs)
                 return input("Transport Id: ")
 
-class AndroidPush(Action_p):
+@Proto(Action_p)
+class AndroidPush:
 
     @DKeyed.formats("transport")
     @DKeyed.paths("local", "remote")
@@ -106,7 +126,8 @@ class AndroidPush(Action_p):
             printer.error("ADB Failure: %s", err.stdout.decode())
             raise doot.errors.TaskFailed("Push Failed") from err
 
-class AndroidPull(Action_p):
+@Proto(Action_p)
+class AndroidPull:
 
     @DKeyed.formats("transport")
     @DKeyed.paths("local", "remote")
@@ -122,13 +143,13 @@ class AndroidPull(Action_p):
             printer.error("ADB Failure: %s", err.stdout.decode())
             raise doot.errors.TaskFailed("Pull Failed") from err
 
-class AndroidInstall(Action_p):
+@Proto(Action_p)
+class AndroidInstall:
 
     @DKeyed.formats("transport")
     @DKeyed.paths("package")
     def __call__(self, spec, state, transport, package):
         try:
-            transport = transport
             target   = package
             install  = adb.bake("-t", transport, "install", _return_cmd=True)
             printer.info("ADB Installing: %s", target)
@@ -137,7 +158,8 @@ class AndroidInstall(Action_p):
             printer.error("ADB Failure: %s", err.stdout.decode())
             raise doot.errors.TaskFailed("Install Failed") from err
 
-class AndroidRemoteCmd(Action_p):
+@Proto(Action_p)
+class AndroidRemoteCmd:
 
     @DKeyed.args
     @DKeyed.formats("transport", "cmd")

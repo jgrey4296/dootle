@@ -18,18 +18,14 @@ import re
 import time
 import types
 import weakref
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
-                    Generic, Iterable, Iterator, Mapping, Match,
-                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
-                    TypeGuard, TypeVar, cast, final, overload,
-                    runtime_checkable)
 from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
 import bibtexparser as b
-import bibtexparser.model as model
+from bibtexparser import model
 import doot
 from bibble.io import Writer
 from bibtexparser import middlewares as ms
@@ -45,12 +41,38 @@ from dootle.bibtex import DB_KEY
 
 # ##-- end 1st party imports
 
+# ##-- types
+# isort: off
+import abc
+import collections.abc
+from typing import TYPE_CHECKING, cast, assert_type, assert_never
+from typing import Generic, NewType
+# Protocols:
+from typing import Protocol, runtime_checkable
+# Typing Decorators:
+from typing import no_type_check, final, override, overload
+# from dataclasses import InitVar, dataclass, field
+# from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
+
+if TYPE_CHECKING:
+    from jgdv import Maybe
+    from typing import Final
+    from typing import ClassVar, Any, LiteralString
+    from typing import Never, Self, Literal
+    from typing import TypeGuard
+    from collections.abc import Iterable, Iterator, Callable, Generator
+    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+
+# isort: on
+# ##-- end types
+
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
-class BibtexToStrAction(Action_p):
+@Proto(Action_p)
+class BibtexToStrAction:
     """
       Convert a bib database to a string for writing to a file.
     """
@@ -67,7 +89,8 @@ class BibtexToStrAction(Action_p):
                 result      = writer.write(db, file=_target)
                 return { _update : result }
 
-class BibtexBuildWriter(Action_p):
+@Proto(Action_p)
+class BibtexBuildWriter:
 
     @DKeyed.references("stack")
     @DKeyed.references("class", fallback=None)
@@ -79,7 +102,7 @@ class BibtexBuildWriter(Action_p):
         match _class:
             case CodeReference():
                 writer_type = _class()
-                writer = _writer_type(stack)
+                writer      = writer_type(stack)
             case None:
                 writer = Writer(stack)
 

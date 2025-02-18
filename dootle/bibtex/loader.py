@@ -18,16 +18,12 @@ import re
 import time
 import types
 import weakref
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
-                    Generic, Iterable, Iterator, Mapping, Match,
-                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
-                    TypeGuard, TypeVar, cast, final, overload,
-                    runtime_checkable)
 from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
 import bibtexparser as b
 import doot
 from bibble.io import Reader
@@ -45,12 +41,38 @@ from dootle.bibtex import DB_KEY
 
 # ##-- end 1st party imports
 
+# ##-- types
+# isort: off
+import abc
+import collections.abc
+from typing import TYPE_CHECKING, cast, assert_type, assert_never
+from typing import Generic, NewType
+# Protocols:
+from typing import Protocol, runtime_checkable
+# Typing Decorators:
+from typing import no_type_check, final, override, overload
+# from dataclasses import InitVar, dataclass, field
+# from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
+
+if TYPE_CHECKING:
+    from jgdv import Maybe
+    from typing import Final
+    from typing import ClassVar, Any, LiteralString
+    from typing import Never, Self, Literal
+    from typing import TypeGuard
+    from collections.abc import Iterable, Iterator, Callable, Generator
+    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+
+# isort: on
+# ##-- end types
+
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
-class BibtexLoadAction(Action_p):
+@Proto(Action_p)
+class BibtexLoadAction:
     """ Parse all the bibtext files into a state database, in place.
 
       addFn to state[`_entry_transform`] to use a custom entry transformer,
@@ -79,7 +101,7 @@ class BibtexLoadAction(Action_p):
             try:
                 filelib = reader.read(loc, into=db)
                 printer.info("Loaded: %s entries",  len(filelib.entries))
-            except Exception as err:
+            except OSError as err:
                 printer.error("Bibtex File Loading Errored: %s : %s", loc, err)
                 return False
 
@@ -91,7 +113,8 @@ class BibtexLoadAction(Action_p):
 
         return results
 
-class BibtexBuildReader(Action_p):
+@Proto(Action_p)
+class BibtexBuildReader:
 
     @DKeyed.references("stack", "db_base", "class")
     @DKeyed.redirects("update_")

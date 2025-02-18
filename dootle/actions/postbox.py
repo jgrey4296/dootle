@@ -30,6 +30,7 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
 import doot
 import sh
 from doot._abstract import Action_p
@@ -113,7 +114,8 @@ class _DootPostBox:
     def clear():
         _DootPostBox.boxes.clear()
 
-class PutPostAction(Action_p):
+@Proto(Action_p)
+class PutPostAction:
     """
     push data to the inter-task postbox of this task tree
     'args' are pushed to the postbox of the calling task root (ie: stripped of UUIDs)
@@ -162,7 +164,8 @@ class PutPostAction(Action_p):
                 data = DKey(x).expand(spec, state)
                 _DootPostBox.put(box, data)
 
-class GetPostAction(Action_p):
+@Proto(Action_p)
+class GetPostAction:
     """
       Read data from the inter-task postbox of a task tree.
       'args' pop a value from the calling tasks root (ie: no UUIDs) box into that key name
@@ -193,7 +196,8 @@ class GetPostAction(Action_p):
 
         return updates
 
-class ClearPostAction(Action_p):
+@Proto(Action_p)
+class ClearPostAction:
     """
       Clear your postbox
     """
@@ -204,7 +208,8 @@ class ClearPostAction(Action_p):
         from_task = _basename.root.push(key)
         _DootPostBox.clear_box(from_task)
 
-class SummarizePostAction(Action_p):
+@Proto(Action_p)
+class SummarizePostAction:
     """
       print a summary of this task tree's postbox
       The arguments of the action are held in self.spec

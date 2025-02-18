@@ -24,6 +24,7 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
 import doot
 import sh
 from doot._abstract import Action_p
@@ -40,8 +41,8 @@ fail_l  = doot.subprinter("fail")
 ##-- end logging
 
 EXITCODES : Final[list[int]] = [0]
-
-class SayAction(Action_p):
+@Proto(Action_p)
+class SayAction:
     """
     A Simple Action to trigger speech synthesis
     Will say anything expanded from the action specs 'args'
@@ -120,7 +121,8 @@ class SayAction(Action_p):
         return True
 
 
-class SayTimeAction(Action_p):
+@Proto(Action_p)
+class SayTimeAction:
     """
     A Simple Action that announces the time
     Subclass this and override __call__ for your own actions.

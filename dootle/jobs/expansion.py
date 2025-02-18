@@ -28,13 +28,15 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
+from jgdv.structs.chainguard import ChainGuard
+from jgdv.structs.strang import CodeReference
 import doot
 import doot.errors
+from doot._abstract import Action_p
 from doot.actions.base_action import DootBaseAction
 from doot.enums import ActionResponse_e as ActRE
 from doot.structs import DKeyed, Location, TaskName, TaskSpec, InjectSpec
-from jgdv.structs.chainguard import ChainGuard
-from jgdv.structs.strang import CodeReference
 
 # ##-- end 3rd party imports
 
@@ -54,6 +56,7 @@ printer = doot.subprinter()
 
 FALLBACK_KEY : Final[str] = "_"
 
+@Proto(Action_p)
 class JobExpandAction(DootBaseAction):
     """
     Expand data into a number of subtask specs.
@@ -156,6 +159,7 @@ class JobExpandAction(DootBaseAction):
 
         return actions, sources
 
+@Proto(Action_p)
 class JobMatchAction(DootBaseAction):
     """
       Take a 'mapping' of {pattern -> task} and a list,

@@ -30,6 +30,7 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto, Mixin
 import doot
 import doot.errors
 from doot._abstract import Action_p
@@ -53,7 +54,8 @@ logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
-class JobInjector(Action_p):
+@Proto(Action_p)
+class JobInjector:
     """
       Inject data into task specs.
       inject={copy=[Xs], expand={Yks : Yvs}, replace=[Zs]}
@@ -73,7 +75,7 @@ class JobInjector(Action_p):
             case None:
                 injection = {}
             case x:
-                injection = x.as_dict(constraint=target_spec)
+                injection = x.as_dict(constraint=spec)
 
         match onto:
             case list():
@@ -82,7 +84,8 @@ class JobInjector(Action_p):
             case TaskSpec():
                 onto.model_extra.update(dict(**x.extra, **injection))
 
-class JobPrependActions(Action_p):
+@Proto(Action_p)
+class JobPrependActions:
     """
 
     registered as: job.actions.prepend
@@ -95,7 +98,8 @@ class JobPrependActions(Action_p):
             actions = action_specs + x.actions
             x.actions = actions
 
-class JobAppendActions(Action_p):
+@Proto(Action_p)
+class JobAppendActions:
     """
 
     registered as: job.actions.append
@@ -107,7 +111,9 @@ class JobAppendActions(Action_p):
         for x in _onto:
             x.actions += action_specs
 
-class JobInjectPathParts(PathManip_m):
+@Proto(Action_p)
+@Mixin(PathManip_m)
+class JobInjectPathParts:
     """
       Map lpath, fstem, fparent, fname, fext onto each
       taskspec in the `onto` list, using each spec's `key`
@@ -130,7 +136,8 @@ class JobInjectPathParts(PathManip_m):
                 data.update(self._calc_path_parts(_onto.extra[_key], root_paths))
                 _onto.model_extra.update(data)
 
-class JobSubNamer(Action_p):
+@Proto(Action_p)
+class JobSubNamer:
     """
       Apply the name {basename}.{i}.{key} to each taskspec in {onto}
 
@@ -149,7 +156,7 @@ class JobSubNamer(Action_p):
             case TaskSpec():
                 _onto.name = _basename.push(self._gen_subname(val))
 
-    def _gen_subname(self, val):
+    def _gen_subname(self, val) -> str:
         match val:
             case pl.Path():
                 return val.stem
