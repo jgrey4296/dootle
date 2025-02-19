@@ -16,20 +16,15 @@ import re
 import time
 import types
 from collections import defaultdict
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable, Self)
 
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
 import doot
 import doot.errors
 import networkx as nx
 import scrapy
-from doot._abstract import (Action_p, FailPolicy_p, Job_i, ReportLine_i,
-                            Task_i, TaskBase_i, TaskRunner_i, TaskTracker_i)
 from doot.control.base_runner import BaseRunner, logctx
 from doot.enums import ActionResponse_e as ActRE
 from doot.enums import Report_f
@@ -41,6 +36,31 @@ from twisted.internet.interfaces import IStreamServerEndpoint
 from zope.interface import implementer
 
 # ##-- end 3rd party imports
+
+# ##-- types
+# isort: off
+import abc
+import collections.abc
+from typing import TYPE_CHECKING, cast, assert_type, assert_never
+from typing import Generic, NewType
+# Protocols:
+from typing import Protocol, runtime_checkable
+# Typing Decorators:
+from typing import no_type_check, final, override, overload
+
+if TYPE_CHECKING:
+    from jgdv import Maybe
+    from typing import Final
+    from typing import ClassVar, Any, LiteralString
+    from typing import Never, Self, Literal
+    from typing import TypeGuard
+    from collections.abc import Iterable, Iterator, Callable, Generator
+    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+
+##--|
+from doot._abstract import (Job_i, Task_i, TaskRunner_i, TaskTracker_i, Reporter_i)
+# isort: on
+# ##-- end types
 
 ##-- logging
 logging = logmod.getLogger(__name__)
@@ -56,8 +76,8 @@ execute_level : Final[str] = doot.constants.printer.DEFAULT_EXECUTE_LEVEL
 
 reactor_timeout = doot.config.on_fail(2, int).settings.tasks.reactor_timeout()
 
-@doot.check_protocol
-class DootleReactorRunner(BaseRunner, TaskRunner_i):
+@Proto(TaskRunner_i)
+class DootleReactorRunner(BaseRunner):
     """ The simplest reactor task runner
       https://stackoverflow.com/questions/8532131
 
@@ -78,7 +98,7 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
         reactor.callWhenRunning(self._run_next_task)
         reactor.run()
 
-    def _run_next_task(self):
+    def _run_next_task(self) -> None:
         d = threads.deferToThread(self.tracker.next_for)
         d.pause()
         d.addCallback(self._handle_task)
@@ -88,7 +108,7 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
         d.addCallback(self._schedule_next)
         d.unpause()
 
-    def _handle_task(self, task) -> defer.Deferred[None|Task]:
+    def _handle_task(self, task) -> defer.Deferred[None|Task_i]:
         printer.setLevel("INFO")
         match task:
             case None:
@@ -169,7 +189,7 @@ class DootleReactorRunner(BaseRunner, TaskRunner_i):
         logmod.debug("-- Job %s Expansion produced: %s tasks", job.name, count)
         return job
 
-    def _execute_task(self, task:Task_i) -> defer.Deferred[Task]:
+    def _execute_task(self, task:Task_i) -> defer.Deferred[Task_i]:
         """ execute a single task's actions """
         with logctx(task.spec.print_levels.on_fail(head_level).head()) as p:
             p.info("---- Task %s: %s", self.step, task.name, extra={"colour":"magenta"})

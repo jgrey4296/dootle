@@ -2,6 +2,7 @@
 """
 
 """
+# ruff: noqa: DTZ005
 # Imports:
 from __future__ import annotations
 
@@ -11,47 +12,59 @@ import enum
 import functools as ftz
 import itertools as itz
 import logging as logmod
-import pathlib as pl
 import re
 import time
 import types
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
-                    Generic, Iterable, Iterator, Literal, Mapping, Match,
-                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
-                    TypeGuard, TypeVar, cast, final, overload,
-                    runtime_checkable)
+from collections import defaultdict
 from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
+from jgdv.structs.dkey import DKey
+import doot
+import doot.errors
 import networkx as nx
+from doot.control.tracker import DootTracker, _TrackerEdgeType
+from doot.task.base_task import DootTask
 
 # ##-- end 3rd party imports
+
+# ##-- types
+# isort: off
+import abc
+import collections.abc
+from typing import TYPE_CHECKING, cast, assert_type, assert_never
+from typing import Generic, NewType
+# Protocols:
+from typing import Protocol, runtime_checkable
+# Typing Decorators:
+from typing import no_type_check, final, override, overload
+
+if TYPE_CHECKING:
+    from jgdv import Maybe
+    from typing import Final
+    from typing import ClassVar, Any, LiteralString
+    from typing import Never, Self, Literal
+    from typing import TypeGuard
+    from collections.abc import Iterable, Iterator, Callable, Generator
+    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+    import pathlib as pl
+    from doot.structs import TaskArtifact, TaskName, TaskSpec
+
+##--|
+from doot._abstract import (TaskBase_i, TaskRunner_i, TaskTracker_i)
+# isort: on
+# ##-- end types
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-# ##-- stdlib imports
-from collections import defaultdict
-
-# ##-- end stdlib imports
-
-# ##-- 3rd party imports
-import doot
-import doot.errors
-from doot._abstract import (FailPolicy_p, Job_i, Task_i, TaskBase_i,
-                            TaskRunner_i, TaskTracker_i)
-from doot.control.tracker import DootTracker, _TrackerEdgeType
-from doot.structs import TaskArtifact, TaskName, TaskSpec
-from doot.task.base_task import DootTask
-
-# ##-- end 3rd party imports
-
-STORAGE_FILE : Final[pl.Path] = doot.config.on_fail(DootKey.build(".tasks.bk")).settings.general.tracker_file(wrapper=DootKey.build).to_path()
-
-@doot.check_protocol
+STORAGE_FILE : Final[pl.Path] = doot.config.on_fail(DKey(".tasks.bk")).settings.general.tracker_file(wrapper=DKey).to_path()
+##--|
+@Proto(TaskTracker_i)
 class DootDateTracker(DootTracker):
     """
       Track task status, using file product modification times
@@ -73,7 +86,7 @@ class DootDateTracker(DootTracker):
         # self._modification_db = STORAGE_FILE.read_text()
         raise NotImplementedError()
 
-    def update_state(self, task:str|TaskBase_i|TaskArtifact|TaskName, state:self.state_e):
+    def update_state(self, task:str|TaskBase_i|TaskArtifact|TaskName, state:str) -> None:
         now = datetime.datetime.now()
         match state:
             case self.state_e.EXISTS:
@@ -86,6 +99,6 @@ class DootDateTracker(DootTracker):
             case self.state_e.SUCCESS:
                 pass
 
-    def _invalidate_descendents(task):
+    def _invalidate_descendents(self, task) -> None:
         incomplete, descendants = self._task_dependents(task)
         pass

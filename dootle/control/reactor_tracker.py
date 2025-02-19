@@ -17,21 +17,15 @@ import time
 import types
 from collections import defaultdict
 from queue import PriorityQueue
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
-                    Generic, Iterable, Iterator, Literal, Mapping, Match,
-                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
-                    TypeGuard, TypeVar, cast, final, overload,
-                    runtime_checkable)
 from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
 import doot
 import doot.errors
 import networkx as nx
-from doot._abstract import (FailPolicy_p, Job_i, Task_i, TaskBase_i,
-                            TaskRunner_i, TaskTracker_i)
 from doot.control.base_tracker import (EDGE_E, PRIORITY, ROOT, STATE,
                                        BaseTracker)
 from doot.enums import TaskStatus_e
@@ -41,12 +35,38 @@ from jgdv.structs.code_ref import CodeReference
 
 # ##-- end 3rd party imports
 
+# ##-- types
+# isort: off
+import abc
+import collections.abc
+from typing import TYPE_CHECKING, cast, assert_type, assert_never
+from typing import Generic, NewType
+# Protocols:
+from typing import Protocol, runtime_checkable
+# Typing Decorators:
+from typing import no_type_check, final, override, overload
+
+if TYPE_CHECKING:
+    from jgdv import Maybe
+    from typing import Final
+    from typing import ClassVar, Any, LiteralString
+    from typing import Never, Self, Literal
+    from typing import TypeGuard
+    from collections.abc import Iterable, Iterator, Callable, Generator
+    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+
+##--|
+from doot._abstract import (Job_i, Task_i, TaskBase_i, TaskTracker_i)
+# isort: on
+# ##-- end types
+
 ##-- logging
 logging = logmod.getLogger(__name__)
+printer = doot.subprinter()
 ##-- end logging
 
-@doot.check_protocol
-class DootleReactorTracker(BaseTracker, TaskTracker_i):
+@Proto(TaskTracker_i)
+class DootleReactorTracker(BaseTracker):
     """
     track dependencies in a networkx digraph,
     successors of a node are its dependencies.
@@ -93,7 +113,7 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
         self.add_task(head_spec, no_root_connection=True)
 
 
-    def update_state(self, task:str|TaskBase_i|TaskArtifact, state:self.state_e):
+    def update_state(self, task:str|TaskBase_i|TaskArtifact, state:str):
         """ update the state of a task in the dependency graph """
         logging.debug("Updating Task State: %s -> %s", task, state)
         match task, state:
@@ -183,7 +203,8 @@ class DootleReactorTracker(BaseTracker, TaskTracker_i):
                     logging.warning("Tried to Schedule a Declared but Undefined Task: %s", focus)
                     self.deque_task()
                     self.update_state(focus, self.state_e.SUCCESS)
-                case _: # Error otherwise
+                case x: # Error otherwise
                     raise doot.errors.TaskTrackingError("Unknown task state: ", x)
 
-        return None
+        else:
+            return None
