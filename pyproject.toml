@@ -66,11 +66,12 @@ rng_draw            = "dootle.actions.random:rng_draw"
 "shell!"            = "dootle.actions.shell:ShellAction"
 "bake!"             = "dootle.actions.shell:ShellBake"
 "run-bake!"         = "dootle.actions.shell:ShelBakedRun"
-"job.walk"          = "dootle.jobs.walker.JobWalkAction"
+"job.walk"          = "dootle.jobs.walker:JobWalkAction"
 "job.inject.shadow" = "dootle.jobs.shadow:InjectShadowAction"
 "job.limit"         = "dootle.jobs.limit:JobLimitAction"
 "job.expand"        = "dootle.jobs.expansion:JobExpandAction"
 "job.queue"         = "dootle.jobs.queue:JobQueueAction"
+"job.inject.path.elements" = "dootle.jobs.injection:JobInjectPathParts"
 
 ##-- end entry-points
 
