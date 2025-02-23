@@ -78,7 +78,5 @@ class JobWalkAction(DootBaseAction):
                 def accept_fn(x):
                     return True
 
-        breakpoint()
-        pass
         results = [x for x in self.walk_all(roots, exts, rec=rec, fn=accept_fn)]
         return { _update : results }
