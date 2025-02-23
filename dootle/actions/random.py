@@ -27,10 +27,10 @@ from secrets import randbits
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv.structs.dkey import DKeyed
 import doot
 import doot.errors
 import numpy as np
-from doot.structs import DKeyed
 
 # ##-- end 3rd party imports
 

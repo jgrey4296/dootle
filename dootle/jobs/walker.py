@@ -29,12 +29,13 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto, Mixin
+from jgdv.structs.dkey import DKey, DKeyed
 import doot
 import doot.errors
 from doot._abstract import Action_p
 from doot.actions.base_action import DootBaseAction
 from doot.mixins.path_manip import Walker_m
-from doot.structs import DKey, DKeyed, TaskName, TaskSpec
+from doot.structs import TaskName, TaskSpec
 from jgdv.structs.strang import CodeReference
 
 # ##-- end 3rd party imports
@@ -74,9 +75,10 @@ class JobWalkAction(DootBaseAction):
                     case x:
                         accept_fn = x
             case None:
-
                 def accept_fn(x):
                     return True
 
+        breakpoint()
+        pass
         results = [x for x in self.walk_all(roots, exts, rec=rec, fn=accept_fn)]
         return { _update : results }

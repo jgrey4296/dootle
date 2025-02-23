@@ -23,14 +23,14 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+from jgdv import Proto
+from jgdv.structs.dkey import DKey, DKeyed
 import bibtexparser as b
 import doot
 from bibtexparser import middlewares as ms
 from bibtexparser import model
 from bibtexparser.middlewares.middleware import BlockMiddleware
 from doot._abstract.task import Action_p
-from doot.structs import DKey, DKeyed
-from jgdv import Proto
 
 # ##-- end 3rd party imports
 

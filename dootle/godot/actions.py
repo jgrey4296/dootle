@@ -24,13 +24,12 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto
-from jgdv.structs.dkey import DKeyed
+from jgdv.structs.dkey import DKey, DKeyed
 import doot
 import doot.errors
 import sh
 from doot._abstract import Action_p
 from doot.enums import ActionResponse_e as ActRE
-from doot.structs import DKey
 
 # ##-- end 3rd party imports
 

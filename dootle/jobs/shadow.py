@@ -31,12 +31,13 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto, Mixin
+from jgdv.structs.strang import CodeReference
+from jgdv.structs.dkey import DKey, DKeyed
 import doot
 import doot.errors
 from doot._abstract import Action_p
 from doot.mixins.path_manip import PathManip_m
-from doot.structs import DKey, DKeyed, TaskName, TaskSpec
-from jgdv.structs.strang import CodeReference
+from doot.structs import TaskName, TaskSpec
 
 # ##-- end 3rd party imports
 

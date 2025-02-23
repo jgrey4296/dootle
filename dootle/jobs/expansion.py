@@ -29,6 +29,7 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto
+from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.structs.chainguard import ChainGuard
 from jgdv.structs.strang import CodeReference
 import doot
@@ -36,7 +37,7 @@ import doot.errors
 from doot._abstract import Action_p
 from doot.actions.base_action import DootBaseAction
 from doot.enums import ActionResponse_e as ActRE
-from doot.structs import DKeyed, Location, TaskName, TaskSpec, InjectSpec
+from doot.structs import Location, TaskName, TaskSpec, InjectSpec
 
 # ##-- end 3rd party imports
 

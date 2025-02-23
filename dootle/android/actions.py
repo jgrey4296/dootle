@@ -24,11 +24,11 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto
+from jgdv.structs.dkey import DKey, DKeyed
 import doot
 import doot.errors
 import sh
 from doot._abstract import Action_p
-from doot.structs import DKey, DKeyed
 
 # ##-- end 3rd party imports
 

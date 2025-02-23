@@ -31,13 +31,14 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto, Mixin
+from jgdv.structs.dkey import DKey, DKeyed
+from jgdv.structs.chainguard import ChainGuard
+from jgdv.structs.strang import CodeReference
 import doot
 import doot.errors
 from doot._abstract import Action_p
 from doot.mixins.path_manip import PathManip_m
-from doot.structs import DKey, DKeyed, TaskName, TaskSpec, ActionSpec, InjectSpec
-from jgdv.structs.chainguard import ChainGuard
-from jgdv.structs.strang import CodeReference
+from doot.structs import TaskName, TaskSpec, ActionSpec, InjectSpec
 
 # ##-- end 3rd party imports
 
@@ -112,7 +113,7 @@ class JobAppendActions:
             x.actions += action_specs
 
 @Proto(Action_p)
-@Mixin(PathManip_m)
+@Mixin(PathManip_m, allow_inheritance=True)
 class JobInjectPathParts:
     """
       Map lpath, fstem, fparent, fname, fext onto each

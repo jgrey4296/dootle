@@ -24,15 +24,15 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto
+from jgdv.structs.dkey import DKey, DKeyed
+from jgdv.structs.strang import CodeReference
 import bibtexparser as b
-import doot
 from bibble.io import Reader
 from bibtexparser import middlewares as ms
 from bibtexparser import model
 from bibtexparser.middlewares.middleware import BlockMiddleware, Middleware
+import doot
 from doot._abstract.task import Action_p
-from doot.structs import DKey, DKeyed
-from jgdv.structs.strang import CodeReference
 
 # ##-- end 3rd party imports
 
@@ -51,8 +51,6 @@ from typing import Generic, NewType
 from typing import Protocol, runtime_checkable
 # Typing Decorators:
 from typing import no_type_check, final, override, overload
-# from dataclasses import InitVar, dataclass, field
-# from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
 
 if TYPE_CHECKING:
     from jgdv import Maybe
