@@ -26,11 +26,9 @@ from jgdv import Proto
 import doot
 import doot.errors
 import networkx as nx
-from doot.control.base_tracker import (EDGE_E, PRIORITY, ROOT, STATE,
-                                       BaseTracker)
 from doot.enums import TaskStatus_e
 from doot.structs import TaskArtifact, TaskName, TaskSpec
-from doot.task.base_task import DootTask
+from doot.task.core.task import DootTask
 from jgdv.structs.code_ref import CodeReference
 
 # ##-- end 3rd party imports

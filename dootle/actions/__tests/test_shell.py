@@ -33,13 +33,12 @@ import pytest
 
 # ##-- end 3rd party imports
 
-doot._test_setup()
 
 # ##-- 3rd party imports
 import doot._abstract
 import doot.structs
-from doot.actions.base_action import DootBaseAction
-from doot.task.base_task import DootTask
+from doot.actions.core.action import DootBaseAction
+from doot.task.core.task import DootTask
 
 # ##-- end 3rd party imports
 

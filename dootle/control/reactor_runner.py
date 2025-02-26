@@ -21,11 +21,12 @@ from collections import defaultdict
 
 # ##-- 3rd party imports
 from jgdv import Proto
+from jgdv.logging.context impor LogContext as logctx
 import doot
 import doot.errors
 import networkx as nx
 import scrapy
-from doot.control.base_runner import BaseRunner, logctx
+from doot.control.runner import DootRunner
 from doot.enums import ActionResponse_e as ActRE
 from doot.enums import Report_f
 from doot.structs import ActionSpec, TaskSpec
@@ -77,7 +78,7 @@ execute_level : Final[str] = doot.constants.printer.DEFAULT_EXECUTE_LEVEL
 reactor_timeout = doot.config.on_fail(2, int).settings.tasks.reactor_timeout()
 
 @Proto(TaskRunner_i)
-class DootleReactorRunner(BaseRunner):
+class DootleReactorRunner(DootRunner):
     """ The simplest reactor task runner
       https://stackoverflow.com/questions/8532131
 

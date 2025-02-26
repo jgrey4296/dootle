@@ -35,7 +35,7 @@ from jgdv.structs.strang import CodeReference
 import doot
 import doot.errors
 from doot._abstract import Action_p
-from doot.actions.base_action import DootBaseAction
+from doot.actions.core.action import DootBaseAction
 from doot.enums import ActionResponse_e as ActRE
 from doot.structs import Location, TaskName, TaskSpec, InjectSpec
 

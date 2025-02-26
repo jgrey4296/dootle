@@ -27,7 +27,7 @@ import doot
 import doot.errors
 import networkx as nx
 from doot.control.tracker import DootTracker, _TrackerEdgeType
-from doot.task.base_task import DootTask
+from doot.task.core.task import DootTask
 
 # ##-- end 3rd party imports
 

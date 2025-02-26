@@ -19,7 +19,6 @@ import warnings
 import pytest
 import doot
 
-doot._test_setup()
 
 import dootle.jobs.shadow as JS
 

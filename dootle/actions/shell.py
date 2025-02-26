@@ -28,7 +28,7 @@ from jgdv.structs.dkey import DKey, DKeyed
 import doot
 import sh
 from doot._abstract import Action_p
-from doot.actions.base_action import DootBaseAction
+from doot.actions.core.action import DootBaseAction
 from doot.errors import TaskError
 
 # ##-- end 3rd party imports

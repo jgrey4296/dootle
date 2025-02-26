@@ -28,7 +28,6 @@ import pytest
 
 # ##-- end 3rd party imports
 
-doot._test_setup()
 # ##-- 3rd party imports
 import doot.errors
 from doot.structs import ActionSpec, DKey, TaskName

@@ -33,7 +33,7 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 import doot
-from doot.task.base_job import DootJob
+from doot.task.core.job import DootJob
 from doot.task import dir_walker
 from dootle.mixins.task import android
 from doot.mixins.task.batch import Batch_M

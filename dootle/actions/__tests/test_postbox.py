@@ -18,13 +18,12 @@ logging = logmod.root
 import pytest
 
 import doot
-doot._test_setup()
 
 import doot._abstract
 from doot.structs import TaskName, ActionSpec
 from doot._abstract.task import Action_p
-from doot.task.base_task import DootTask
-from doot.actions.base_action import DootBaseAction
+from doot.task.core.task import DootTask
+from doot.actions.core.action import DootBaseAction
 from dootle.actions import postbox as pb
 
 class TestInternalPostBox:

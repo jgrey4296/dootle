@@ -16,7 +16,6 @@ import pytest
 import numpy as np
 from jgdv.structs.dkey import DKey
 import doot
-doot._test_setup()
 from dootle.utils.shaped_key import NPShapeDKey
 
 logging = logmod.root

@@ -80,7 +80,7 @@ def save_pdf(spec, state, url, _to, _driver):
     pdf       = _driver.print_page(print_options=print_ops)
     pdf_bytes = base64.b64decode(pdf)
 
-    with open(_to, "wb") as f:
+    with _to.open("wb") as f:
         f.write(pdf_bytes)
 
 @DKeyed.types(FF_DRIVER)
