@@ -68,7 +68,7 @@ def _shadow_paths(rpath:pl.Path, shadow_roots:list[pl.Path]) -> list[pl.Path]:
 
 ##--|
 @Proto(Action_p)
-@Mixin(PathManip_m)
+@Mixin(PathManip_m, allow_inheritance=True)
 class InjectShadowAction:
     """
       Inject a shadow path into each task entry, using the target key which points to the relative path to shadow
@@ -132,7 +132,7 @@ class CalculateShadowDirs:
 
 ##--|
 @Proto(Action_p)
-@Mixin(PathManip_m)
+@Mixin(PathManip_m, allow_inheritance=True)
 class MultiBackupAction:
     """
       copy a file somewhere, but only if it doesn't exist at the dest, or is newer than the dest

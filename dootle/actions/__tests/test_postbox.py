@@ -44,14 +44,14 @@ class TestInternalPostBox:
         assert(not bool(pb._DootPostBox.boxes))
 
     def test_put(self, setup):
-        key = TaskName.build("simple::test..key")
+        key = TaskName("simple::test..key")
         assert(not bool(pb._DootPostBox.boxes))
         pb._DootPostBox.put(key, 1)
         assert(bool(pb._DootPostBox.boxes))
         assert(pb._DootPostBox.boxes['simple::test']['key'] == [1])
 
     def test_multi_put(self, setup):
-        key = TaskName.build("simple::test..key")
+        key = TaskName("simple::test..key")
         assert(not bool(pb._DootPostBox.boxes))
         pb._DootPostBox.put(key, 1)
         assert(bool(pb._DootPostBox.boxes))
@@ -60,7 +60,7 @@ class TestInternalPostBox:
         assert(pb._DootPostBox.boxes['simple::test']['key'] == [1, 2])
 
     def test_put_list(self, setup):
-        key = TaskName.build("simple::test..key")
+        key = TaskName("simple::test..key")
         assert(not bool(pb._DootPostBox.boxes))
         pb._DootPostBox.put(key, [1,2,3,4])
         pb._DootPostBox.put(key, 5)
@@ -68,21 +68,21 @@ class TestInternalPostBox:
         assert(pb._DootPostBox.boxes['simple::test']['key'] == [1,2,3,4,5])
 
     def test_get(self, setup):
-        key = TaskName.build("simple::test..key")
+        key = TaskName("simple::test..key")
         pb._DootPostBox.put(key, [1,2,3,4])
         result = pb._DootPostBox.get(key)
         assert(result == [1,2,3,4])
 
     def test_box_separation(self, setup):
-        key1 = TaskName.build("simple::test..key")
-        key2 = TaskName.build("simple::other..key")
+        key1 = TaskName("simple::test..key")
+        key2 = TaskName("simple::other..key")
         pb._DootPostBox.put(key1, [1,2,3,4])
         pb._DootPostBox.put(key2, ["a","b","c","d"])
         assert(pb._DootPostBox.get(key1) == [1,2,3,4])
         assert(pb._DootPostBox.get(key2) == ["a","b","c","d"])
 
     def test_box_result_independence(self, setup):
-        key1 = TaskName.build("simple::test..key")
+        key1 = TaskName("simple::test..key")
         pb._DootPostBox.put(key1, [1,2,3,4])
         result1 = pb._DootPostBox.get(key1)
         pb._DootPostBox.put(key1, 5)
@@ -91,29 +91,29 @@ class TestInternalPostBox:
         assert(result2 == [1,2,3,4,5])
 
     def test_get_whole_box(self, setup):
-        key1 = TaskName.build("simple::test..key")
-        key2 = TaskName.build("simple::test..other")
+        key1 = TaskName("simple::test..key")
+        key2 = TaskName("simple::test..other")
         pb._DootPostBox.put(key1, [1,2,3,4])
         pb._DootPostBox.put(key2, "a")
-        result = pb._DootPostBox.get(TaskName.build("simple::test..*"))
+        result = pb._DootPostBox.get(TaskName("simple::test..*"))
         assert(isinstance(result, dict))
         assert("key" in result)
         assert("other" in result)
 
     def test_put_key_no_subkey(self, setup):
-        key1 = TaskName.build("simple::test")
+        key1 = TaskName("simple::test")
 
         with pytest.raises(ValueError):
             pb._DootPostBox.put(key1, [1,2,3,4])
 
     def test_get_key_no_subkey(self, setup):
-        key1 = TaskName.build("simple::test")
+        key1 = TaskName("simple::test")
 
         with pytest.raises(ValueError):
             pb._DootPostBox.get(key1)
 
     def test_put_empty_value_nop(self, setup):
-        key1 = TaskName.build("simple::test..box")
+        key1 = TaskName("simple::test..box")
         assert(not bool(pb._DootPostBox.boxes))
         pb._DootPostBox.put(key1, None)
         assert(not bool(pb._DootPostBox.boxes))
@@ -149,7 +149,7 @@ class TestPutAction:
         adds it to 'simple::task..specific_box
         """
         assert(not bool(pb._DootPostBox.boxes))
-        state['_task_name'] = TaskName.build("simple::task..<UUID>")
+        state['_task_name'] = TaskName("simple::task..<UUID>")
         action = pb.PutPostAction()
         action(spec_implicit, state)
         assert(bool(pb._DootPostBox.boxes))
@@ -163,7 +163,7 @@ class TestPutAction:
         adds it to 'simple::task..specific_box
         """
         assert(not bool(pb._DootPostBox.boxes))
-        state['_task_name'] = TaskName.build("simple::task..<UUID>")
+        state['_task_name'] = TaskName("simple::task..<UUID>")
         spec_implicit.args = ["{aval}"]
         action = pb.PutPostAction()
         action(spec_implicit, state)
@@ -179,7 +179,7 @@ class TestPutAction:
         and nothing will be added to the default subbox
         """
         assert(not bool(pb._DootPostBox.boxes))
-        state['_task_name'] = TaskName.build("simple::task..<UUID>")
+        state['_task_name'] = TaskName("simple::task..<UUID>")
         spec_implicit.args = ["a", "b", "c"]
         action = pb.PutPostAction()
         action(spec_implicit, state)
@@ -194,7 +194,7 @@ class TestPutAction:
         adds it to the explicitly tasked key 'simple::other.task..specific_box
         """
         assert(not bool(pb._DootPostBox.boxes))
-        state['_task_name'] = TaskName.build("simple::task..<UUID>")
+        state['_task_name'] = TaskName("simple::task..<UUID>")
 
         action = pb.PutPostAction()
         action(spec_explicit, state)
@@ -208,7 +208,7 @@ class TestGetAction:
     @pytest.fixture(scope="function")
     def setup(self):
         pb._DootPostBox.clear()
-        pb._DootPostBox.put(TaskName.build("simple::task..key"), ["a","b","c","d"])
+        pb._DootPostBox.put(TaskName("simple::task..key"), ["a","b","c","d"])
 
     @pytest.fixture(scope="function")
     def spec_explicit(self, mocker):
