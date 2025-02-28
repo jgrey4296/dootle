@@ -33,7 +33,6 @@ from doot._abstract import Action_p
 # ##-- end 3rd party imports
 
 # ##-- 1st party imports
-from dootle.bookmarks.alchemy_fns import extract as alc_extract
 from dootle.bookmarks.pony_fns import extract as pony_extract
 
 # ##-- end 1st party imports
@@ -88,25 +87,6 @@ class BookmarksPonyExtraction:
             raise doot.errors.ActionError("Pony Errored: %s", str(err)) from err
 
 @Proto(Action_p)
-class BookmarksAlchemyExtraction:
-    """
-      extract bookmarks from a sqlite firefox db using pony
-    """
-
-    @DKeyed.paths("from")
-    @DKeyed.types("debug", fallback=False)
-    @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _from, debug, _update):
-        db_loc         = _from
-        try:
-            printer.info("Starting Extraction")
-            result       = alc_extract(db_loc, debug=debug)
-            printer.info("Extraction Complete: %s results", len(result))
-            return { _update : result }
-        except Exception as err:
-            raise doot.errors.ActionError("Pony Errored: %s", str(err)) from err
-
-@Proto(Action_p)
 class BookmarksLoad:
 
     @DKeyed.paths("from")
@@ -122,13 +102,12 @@ class BookmarksLoad:
 @Proto(Action_p)
 class BookmarksMerge:
 
-    @DKeyed.redirects("from", multi=True)
+    @DKeyed.types("from")
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, _from, _update):
-        source_keys   : list[DKey]                  = _from
-        source_values : list                        = [y for x in source_keys for y in x.expand(spec, state, check=list)]
-
-        merged                                      = BookmarkCollection()
+        source_keys   : list[DKey] = [DKey(x, implicit=True) for x in _from]
+        source_values : list       = [y for x in source_keys for y in x.expand(spec, state, check=list)]
+        merged                     = BookmarkCollection()
         for x in source_values:
             match x:
                 case BookmarkCollection():
@@ -139,7 +118,8 @@ class BookmarksMerge:
                 case _:
                     raise doot.errors.ActionError("Unknown type tried to merge into bookmarks", x)
 
-        return { _update : merged }
+        else:
+            return { _update : merged }
 
 @Proto(Action_p)
 class BookmarksToStr:
@@ -164,3 +144,28 @@ class BookmarksRemoveDuplicates:
         source_data.merge_duplicates()
         post_count = len(source_data)
         printer.info("Merged %s entries", pre_count - post_count)
+
+        
+try:
+    from dootle.bookmarks.alchemy_fns import extract as alc_extract
+    @Proto(Action_p)
+    class BookmarksAlchemyExtraction:
+        """
+        extract bookmarks from a sqlite firefox db using pony
+        """
+    
+        @DKeyed.paths("from")
+        @DKeyed.types("debug", fallback=False)
+        @DKeyed.redirects("update_")
+        def __call__(self, spec, state, _from, debug, _update):
+            db_loc         = _from
+            try:
+                printer.info("Starting Extraction")
+                result       = alc_extract(db_loc, debug=debug)
+                printer.info("Extraction Complete: %s results", len(result))
+                return { _update : result }
+            except Exception as err:
+                raise doot.errors.ActionError("Pony Errored: %s", str(err)) from err
+
+except ImportError:
+    logging.info("Sql Alchemy unavailable")

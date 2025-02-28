@@ -149,7 +149,7 @@ class PutPostAction:
             box_key_ex = box_key.expand(spec, state)
             try:
                 # Explicit target
-                box = TaskName.build(box_key_ex)
+                box = TaskName(box_key_ex)
             except ValueError:
                 # Implicit
                 box = _basename.root().push(box_key_ex)
@@ -186,12 +186,13 @@ class GetPostAction:
     def _get_from_task_box(self, spec, state, args) -> dict:
         raise NotImplementedError()
 
-    def _get_from_target_boxes(self, spec, state, kwargs) -> dict:
+    def _get_from_target_boxes(self, spec, state, kwargs) -> dict[DKey,list]:
         updates = {}
         for key,box_str in kwargs.items():
+            # Not implicit, as they are the actual lhs to use as the key
             state_key          = DKey(key).expand(spec, state)
             box_key            = DKey(box_str).expand(spec, state)
-            target_box         = TaskName.build(box_key)
+            target_box         = TaskName(box_key)
             updates[state_key] = _DootPostBox.get(target_box)
 
         return updates
