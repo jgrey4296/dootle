@@ -30,7 +30,7 @@ from jgdv.structs.chainguard import ChainGuard
 import doot
 import doot.errors
 import mastodon
-from doot._abstract import Task_i
+from doot._abstract import Task_p
 from doot.structs import ActionSpec
 
 # ##-- end 3rd party imports
@@ -66,11 +66,14 @@ printer = doot.subprinter()
 ##-- end logging
 
 TOOT_SIZE            : Final[int]                   = doot.config.on_fail(250, int).mastodon.toot_size()
-TOOT_IMAGE_SIZE      : Final[str]                   = doot.config.on_fail(8_000_000, int).mastodon.image_size()
-RESOLUTION_BLACKLIST : Final[pl.Path]               = doot.locs.image_blacklist
+TOOT_IMAGE_SIZE      : Final[str]                   = doot.config.on_fail(9_000_000, int).mastodon.image_size()
 RESOLUTION_RE        : Final[re.Pattern]            = re.compile(r".*?([0-9]+x[0-9]+)")
 TOOT_IMAGE_TYPES     : Final[list[str]]             = [".jpg", ".png", ".gif"]
 MAX_MASTODON_SIZE    : Fina[int]                    = 5_000_000
+try:
+    RESOLUTION_BLACKLIST : Final[pl.Path]               = doot.locs.image_blacklist
+except AttributeError:
+    RESOLUTION_BLACKLIST : Final[pl.Path]               = doot.locs["imgblacklist"]
 ##--|
 class MastodonSetup:
     """ Default Mastodon Setup, using secrets from doot.locs.mastodon_secrets

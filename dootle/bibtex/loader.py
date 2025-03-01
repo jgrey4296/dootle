@@ -79,13 +79,21 @@ class BibtexLoadAction:
       """
 
     @DKeyed.redirects("year_")
-    @DKeyed.redirects("from", multi=True, re_mark=DKey.Mark.PATH)
+    @DKeyed.types("from")
     @DKeyed.types("reader", check=Reader)
     @DKeyed.types("update", check=b.Library|None)
     def __call__(self, spec, state, _year, _from, reader, _update):
         year_key    = _year
-        file_list   = [x.expand(spec, state) for x in _from]
         results     = {}
+        match _from:
+            case str()|pl.Path():
+                _from = [DKey(_from, mark=DKey.mark.PATH)]
+            case [*xs]:
+                _from = [DKey(x, mark=DKey.mark.PATH) for x in xs]
+            case x:
+                raise TypeError(type(x))
+                
+        file_list   = [x.expand(spec, state) for x in _from]
         match _update or DB_KEY.expand(spec, state):
             case None:
                 db = b.Library()

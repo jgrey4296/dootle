@@ -82,7 +82,7 @@ class GodotProjectCheck:
 @Proto(Action_p)
 class GodotTestAction:
 
-    def __call__(self, spec, task_state):
+    def __call__(self, spec, state):
         try:
             godot_b = godot.bake("--path", doot.locs.root, "--headless")
 
@@ -95,7 +95,7 @@ class GodotRunSceneAction:
 
     @DKeyed.paths("scene")
     @DKeyed.types("quit_after", check=int|str|None, fallback=None)
-    def __call__(self, spec, task_state, scene, _qa):
+    def __call__(self, spec, state, scene, _qa):
         try:
             godot_b    = godot.bake("--path", doot.locs.root, _return_cmd=True)
             match _qa:
@@ -117,7 +117,7 @@ class GodotRunScriptAction:
     @DKeyed.paths("script")
     @DKeyed.types("quit_after", check=int|str|None, fallback=None)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, task_state, script, _qa, _update):
+    def __call__(self, spec, state, script, _qa, _update):
         try:
             godot_b     = godot.bake("--path", doot.locs.root, _return_cmd=True)
             match _qa:
@@ -138,9 +138,9 @@ class GodotBuildAction:
 
     @DKeyed.formats("preset")
     @DKeyed.kwargs
-    @DKey.paths("path")
+    @DKeyed.paths("path")
     @DKeyed.redirects("update_")
-    def __call__(self, spec, task_state, preset, kwargs, path, _update):
+    def __call__(self, spec, state, preset, kwargs, path, _update):
         match kwargs:
             case {"type": "release"}:
                 godot_b = godot.bake("--path", doot.locs.root, "--export-release", _return_cmd=True)
@@ -167,7 +167,7 @@ class GodotNewSceneAction:
       to write with write!
     """
 
-    def __call__(self, spec, task_state):
+    def __call__(self, spec, state):
         # Load the template
         # expand the template with the name
         text = None
@@ -182,7 +182,7 @@ class GodotNewScriptAction:
       to write with write!
     """
 
-    def __call__(self, spec, task_state):
+    def __call__(self, spec, state):
         # Load the template
         # expand the template with the name
         text = None

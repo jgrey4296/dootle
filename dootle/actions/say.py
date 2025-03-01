@@ -41,6 +41,7 @@ fail_l  = doot.subprinter("fail")
 ##-- end logging
 
 EXITCODES : Final[list[int]] = [0]
+##--|
 @Proto(Action_p)
 class SayAction:
     """

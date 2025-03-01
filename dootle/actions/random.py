@@ -65,6 +65,7 @@ def rng_fresh(spec, state, seed, seed_path):
 
 @DKeyed.types(RNG_STATE_S, check=np.random.Generator)
 @DKeyed.types("num", check=int|None, fallback=5)
+@DKeyed.redirects("update_")
 def rng_spawn(spec, state, _rng, num, _update):
     """ Spawn independent sub rngs (for passing to job children?) """
     children = _rng.spawn(num)
