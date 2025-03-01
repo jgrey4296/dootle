@@ -47,8 +47,6 @@ from typing import Generic, NewType
 from typing import Protocol, runtime_checkable
 # Typing Decorators:
 from typing import no_type_check, final, override, overload
-# from dataclasses import InitVar, dataclass, field
-# from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
 
 if TYPE_CHECKING:
     from jgdv import Maybe
@@ -76,22 +74,23 @@ class BookmarksPonyExtraction:
     @DKeyed.paths("from")
     @DKeyed.types("debug", fallback=False)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _from, debug, _update):
+    def __call__(self, spec, state, _from, debug, _update) -> dict:
         db_loc         = _from
         try:
             printer.info("Starting Extraction")
             result       = pony_extract(db_loc, debug=debug)
             printer.info("Extraction Complete: %s results", len(result))
-            return { _update : result }
         except Exception as err:
             raise doot.errors.ActionError("Pony Errored: %s", str(err)) from err
+        else:
+            return { _update : result }
 
 @Proto(Action_p)
 class BookmarksLoad:
 
     @DKeyed.paths("from")
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _from, _update):
+    def __call__(self, spec, state, _from, _update) -> dict:
         load_path = _from
         data_key  = _update
         printer.info("Loading Bookmarks from: %s", load_path)
@@ -104,7 +103,7 @@ class BookmarksMerge:
 
     @DKeyed.types("from")
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _from, _update):
+    def __call__(self, spec, state, _from, _update) -> dict:
         source_keys   : list[DKey] = [DKey(x, implicit=True) for x in _from]
         source_values : list       = [y for x in source_keys for y in x.expand(spec, state, check=list)]
         merged                     = BookmarkCollection()
@@ -126,7 +125,7 @@ class BookmarksToStr:
 
     @DKeyed.types("from", check=BookmarkCollection)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _from, _update):
+    def __call__(self, spec, state, _from, _update) -> dict:
         source_data : BookmarkCollection           = _from
 
         printer.info("Writing Bookmark Collection of size: %s", len(source_data))
@@ -137,35 +136,10 @@ class BookmarksRemoveDuplicates:
 
     @DKeyed.types("from")
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _from, _update):
+    def __call__(self, spec, state, _from, _update) -> None:
         source_data : BookmarkCollection      = _from
 
         pre_count = len(source_data)
         source_data.merge_duplicates()
         post_count = len(source_data)
         printer.info("Merged %s entries", pre_count - post_count)
-
-        
-try:
-    from dootle.bookmarks.alchemy_fns import extract as alc_extract
-    @Proto(Action_p)
-    class BookmarksAlchemyExtraction:
-        """
-        extract bookmarks from a sqlite firefox db using pony
-        """
-    
-        @DKeyed.paths("from")
-        @DKeyed.types("debug", fallback=False)
-        @DKeyed.redirects("update_")
-        def __call__(self, spec, state, _from, debug, _update):
-            db_loc         = _from
-            try:
-                printer.info("Starting Extraction")
-                result       = alc_extract(db_loc, debug=debug)
-                printer.info("Extraction Complete: %s results", len(result))
-                return { _update : result }
-            except Exception as err:
-                raise doot.errors.ActionError("Pony Errored: %s", str(err)) from err
-
-except ImportError:
-    logging.info("Sql Alchemy unavailable")

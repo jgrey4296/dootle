@@ -5,39 +5,65 @@ uses pony
 Database is found at ~/Library/ApplicationSupport/Firefox/Profiles/?/places.sqlite
 tables of interest: moz_bookmarks and moz_places
 """
-##-- imports
+
+# Imports:
 from __future__ import annotations
 
-import abc
+# ##-- stdlib imports
 import logging as logmod
-import pathlib as pl
 import tempfile
 from collections import defaultdict
 from dataclasses import InitVar, dataclass, field
 from re import Pattern
 from shutil import copy
 from sys import stderr, stdout
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generic,
-                    Iterable, Iterator, Mapping, Match, MutableMapping,
-                    Protocol, Sequence, Tuple, TypeAlias, TypeGuard, TypeVar,
-                    cast, final, overload, runtime_checkable)
 from uuid import UUID, uuid1
 from weakref import ref
 
-##-- end imports
+# ##-- end stdlib imports
+
+# ##-- 3rd party imports
+import pony.orm as pony
+from jgdv.files.bookmarks.bookmark import Bookmark
+from jgdv.files.bookmarks.collection import BookmarkCollection
+
+# ##-- end 3rd party imports
+
+# ##-- types
+# isort: off
+import abc
+import collections.abc
+from typing import TYPE_CHECKING, cast, assert_type, assert_never
+from typing import Generic, NewType
+# Protocols:
+from typing import Protocol, runtime_checkable
+# Typing Decorators:
+from typing import no_type_check, final, override, overload
+
+if TYPE_CHECKING:
+    import pathlib as pl
+    from jgdv import Maybe
+    from typing import Final
+    from typing import ClassVar, Any, LiteralString
+    from typing import Never, Self, Literal
+    from typing import TypeGuard
+    from collections.abc import Iterable, Iterator, Callable, Generator
+    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+
+##--|
+
+# isort: on
+# ##-- end types
 
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-import pony.orm as pony
-from jgdv.files.bookmarks.collection import BookmarkCollection
-from jgdv.files.bookmarks.bookmark import Bookmark
-
-def init_db():
+def init_db() -> tuple[pony.Database, *type]:
     db = pony.Database()
 
     ##-- ORM
+
     class DBBookmark(db.Entity):
         """
         Schema of moz_bookmarks
@@ -60,12 +86,11 @@ def init_db():
         title             : str = pony.Optional(str)
         keyword_id        : int = pony.Optional(int)
         folder_type       : str = pony.Optional(str)
-        dateAdded         : int = pony.Required(int)
-        lastModified      : int = pony.Required(int)
+        dateAdded         : int = pony.Required(int)  # noqa: N815
+        lastModified      : int = pony.Required(int)  # noqa: N815
         guid              : str = pony.Required(str)
-        syncStatus        : int = pony.Required(int)
-        syncChangeCounter : int = pony.Required(int)
-
+        syncStatus        : int = pony.Required(int)  # noqa: N815
+        syncChangeCounter : int = pony.Required(int)  # noqa: N815
 
     class DBURL(db.Entity):
         """
@@ -93,8 +118,8 @@ def init_db():
     ##-- end ORM
     return db, DBBookmark, DBURL
 
-def extract(fpath, debug=False) -> BookmarkCollection:
-    db, DBBookmark, DBURL = init_db()
+def extract(fpath:pl.Path, debug:bool=False) -> BookmarkCollection:  # noqa: FBT001, FBT002
+    db, DBBookmark, DBURL = init_db()  # noqa: N806
 
     pony.set_sql_debug(debug)
 
@@ -109,8 +134,12 @@ def extract(fpath, debug=False) -> BookmarkCollection:
 
     ##-- session use
     logging.info("Extracting bookmarks")
+    parent_type : int = 4
     with pony.db_session:
-        tag_names = {b.id : b.title for b in pony.select(b for b in DBBookmark if b.title is not None and b.fk is None and b.parent == 4)}
+        tag_names = {b.id : b.title
+                     for b in pony.select(b for b in DBBookmark
+                                          if b.title is not None
+                                          and b.fk is None and b.parent == parent_type)}
         for b in pony.select(b for b in DBBookmark if b.title is None and b.fk is not None):
             if b.parent not in tag_names:
                 continue

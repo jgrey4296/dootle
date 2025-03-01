@@ -15,12 +15,9 @@ classifiers     = [
 ]
 
 dependencies   = [
-    "doot>=0.14",
-    "jgdv>=0.3.3",
-    "pony",
-    "mastodon.py>=1.8",
-    "bibtexparser>=2.0.0b4",
-    "numpy",
+    "doot>=1.0.0",
+    "jgdv>=1.0.0",
+    "pony>=0.7",
     "networkx",
 ]
 
@@ -28,8 +25,8 @@ dependencies   = [
 dev      = ["sphinx" ]
 test     = ["pytest > 7.0" ]
 image    = ["Pillow"]
-net      = ["Requests", "beautifulsoup4"]
-bibtex   = ["bibtexparser", "bibble @ git+https://github.com/jgrey4296/bibble.git"]
+net      = ["Requests", "beautifulsoup4", "mastodon.py>=1.8"]
+bibtex   = ["bibtexparser>=2.0.0b4", "bibble @ git+https://github.com/jgrey4296/bibble.git", ]
 data     = ["PyYAML", "pandas", "scikit-learn", "xsdata"]
 visual   = ["matplotlib", "seaborn", "wordcloud"]
 pdf      = ["pdfrw", "pypandoc"]

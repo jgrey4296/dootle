@@ -37,7 +37,7 @@ from doot._abstract.task import Action_p
 # ##-- end 3rd party imports
 
 # ##-- 1st party imports
-from dootle.bibtex import DB_KEY
+from dootle.bibtex._interface import DB_KEY
 
 # ##-- end 1st party imports
 

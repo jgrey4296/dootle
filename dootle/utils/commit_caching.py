@@ -64,10 +64,9 @@ logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
-# or use --no-pager for git
 git_diff                   = sh.git.bake("--no-pager", "diff", "--name-only")
 git_head                   = sh.git.bake("rev-parse", "HEAD")
-
+    
 CACHE_PATTERN : Final[str] = "{}.commit_cache"
 temp_key                   = DKey("temp!p", implicit=True)
 
@@ -78,6 +77,8 @@ def _build_cache_path(cache:None|pl.Path, taskname:TaskName) -> pl.Path:
     root_taskname   = taskname.root()
     temp_dir        = temp_key.expand()
     return temp_dir / CACHE_PATTERN.format(root_taskname)
+
+##--|
 
 class GetChangedFilesByCommit:
     """

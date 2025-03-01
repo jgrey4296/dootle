@@ -70,18 +70,18 @@ TOOT_IMAGE_SIZE      : Final[str]                   = doot.config.on_fail(8_000_
 RESOLUTION_BLACKLIST : Final[pl.Path]               = doot.locs.image_blacklist
 RESOLUTION_RE        : Final[re.Pattern]            = re.compile(r".*?([0-9]+x[0-9]+)")
 TOOT_IMAGE_TYPES     : Final[list[str]]             = [".jpg", ".png", ".gif"]
-
+MAX_MASTODON_SIZE    : Fina[int]                    = 5_000_000
+##--|
 class MastodonSetup:
     """ Default Mastodon Setup, using secrets from doot.locs.mastodon_secrets
       loads the secrets as a chainguard, and accesses mastodon.access_token and mastodon.url
       ensures thers an "image_temp" location
     """
-    _instance = None
+    _instance : ClassVar[Maybe[mastodon.Mastodon]] = None
 
     @DKeyed.redirects("mastodon")
     @DKeyed.paths("mastodon_secrets")
-    def __call__(self, spec, state, _data_key, _secrets) -> dict|bool|None:
-
+    def __call__(self, spec, state, _data_key, _secrets) -> dict:
         if MastodonSetup._instance is None:
             printer.info("---------- Initialising Mastodon", extra={"colour": "green"})
             secrets = ChainGuard.load(_secrets)
@@ -101,7 +101,7 @@ class MastodonPost:
     @DKeyed.types("mastodon", check=mastodon.Mastodon)
     @DKeyed.formats("from", "toot_desc")
     @DKeyed.paths("toot_image")
-    def __call__(self, spec, state, _instance, _text, _image_desc, _image_path):
+    def __call__(self, spec, state, _instance, _text, _image_desc, _image_path) -> bool:
 
         try:
             if _image_path.exists():
@@ -123,7 +123,7 @@ class MastodonPost:
             printer.error("Mastodon Post Failed: %s", repr(err))
             return False
 
-    def _post_text(self, _instance, text):
+    def _post_text(self, _instance, text) -> bool:
         printer.info("Posting Text Toot: %s", text)
         if len(text) >= TOOT_SIZE:
             printer.warning("Resulting Toot too long for mastodon: %s\n%s", len(text), text)
@@ -132,7 +132,7 @@ class MastodonPost:
         result = _instance.status_post(text)
         return True
 
-    def _post_image(self, _instance, text, _image_path, _image_desc):
+    def _post_image(self, _instance, text, _image_path, _image_desc) -> bool:
         printer.info("Posting Image Toot")
 
         assert(_image_path.exists()), f"File Doesn't Exist {_image_path}"
@@ -144,7 +144,7 @@ class MastodonPost:
         logging.debug("Image Toot Posted")
         return True
 
-    def _handle_resolution(self, task):
+    def _handle_resolution(self, task) -> None:
         # post to mastodon
         with RESOLUTION_BLACKLIST.open('r') as f:
             resolution_blacklist = {x.strip() for x in f.readlines()}
@@ -160,7 +160,6 @@ class MastodonPost:
         res_x, res_y = int(res_x), int(res_y)
         if res in resolution_blacklist or (min_x <= res_x and min_y <= res_y):
             logging.warning("Image is too big %s: %s", task.selected_file, res)
-            return
 
     def _get_resolution(self, filepath:pl.Path) -> str:
         # TODO replace with sh
@@ -171,7 +170,7 @@ class MastodonPost:
 
         raise doot.errors.ActionError("Couldn't get image resolution", filepath, result.stdout.decode(), result.stderr.decode())
 
-    def _maybe_compress_file(self, task):
+    def _maybe_compress_file(self, task) -> dict|bool:
         image = task.values['image']
         logging.debug("Attempting compression of: %s", image)
         assert(isinstance(task.filepath, pl.Path) and task.filepath.exists())
@@ -182,7 +181,7 @@ class MastodonPost:
                                     str(conversion_target)])
         convert_cmd.execute()
 
-        if doot.locs.image_temp.stat().st_size < 5000000:
+        if doot.locs.image_temp.stat().st_size < MAX_MASTODON_SIZE:
             return { 'image': doot.locs.image_temp }
 
         return False

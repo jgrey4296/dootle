@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 
-See EOF for license/metadata/notes as applicable
 """
 # Imports:
 from __future__ import annotations
@@ -40,7 +39,7 @@ printer = doot.subprinter("action_exec")
 ##-- end logging
 
 RNG_STATE_S : Final[str] = "__rng"
-
+##--|
 @DKeyed.types("seed", check=int|None, fallback=None)
 @DKeyed.paths("seed_path", check=pl.Path|None, fallback=None)
 @DKeyed.returns(RNG_STATE_S, check=np.random.Generator)

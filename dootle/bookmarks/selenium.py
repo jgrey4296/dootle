@@ -19,11 +19,6 @@ import re
 import time
 import types
 import weakref
-from typing import (TYPE_CHECKING, Any, Callable, ClassVar, Final, Generator,
-                    Generic, Iterable, Iterator, Mapping, Match,
-                    MutableMapping, Protocol, Sequence, Tuple, TypeAlias,
-                    TypeGuard, TypeVar, cast, final, overload,
-                    runtime_checkable)
 from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
@@ -40,6 +35,32 @@ from selenium.webdriver.common.print_page_options import PrintOptions
 
 # ##-- end 3rd party imports
 
+# ##-- types
+# isort: off
+import abc
+import collections.abc
+from typing import TYPE_CHECKING, cast, assert_type, assert_never
+from typing import Generic, NewType
+# Protocols:
+from typing import Protocol, runtime_checkable
+# Typing Decorators:
+from typing import no_type_check, final, override, overload
+
+if TYPE_CHECKING:
+    from jgdv import Maybe
+    from typing import Final
+    from typing import ClassVar, Any, LiteralString
+    from typing import Never, Self, Literal
+    from typing import TypeGuard
+    from collections.abc import Iterable, Iterator, Callable, Generator
+    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+
+    from doot.structs import ActionSpec
+##--|
+
+# isort: on
+# ##-- end types
+
 ##-- logging
 logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
@@ -49,7 +70,7 @@ printer = doot.subprinter()
 FF_DRIVER     : Final[str] = "__$ff_driver"
 READER_PREFIX : Final[str] = "about:reader?url="
 
-def setup_firefox(spec, state):
+def setup_firefox(spec:ActionSpec, state:dict) -> dict:
     """ Setups a selenium driven, headless firefox to print to pdf """
     printer.info("Setting up headless Firefox")
     options = FirefoxOptions()
@@ -63,13 +84,14 @@ def setup_firefox(spec, state):
     options.set_preference("print.printer_Mozilla_Save_to_PDF.use_simplify_page", True)
     options.set_preference("print.printer_Mozilla_Save_to_PDF.print_page_delay", 50)
     service = FirefoxService(executable_path="/snap/bin/geckodriver")
-    driver = Firefox(options=options, service=service)
+    driver  = Firefox(options=options, service=service)
     return { FF_DRIVER : driver }
 
+##--|
 @DKeyed.expands("url")
 @DKeyed.paths("to")
 @DKeyed.types(FF_DRIVER)
-def save_pdf(spec, state, url, _to, _driver):
+def save_pdf(spec:ActionSpec, state:dict, url, _to, _driver) -> None:
     """ prints a url to a pdf file using selenium """
     printer.info("Saving: %s", url)
     print_ops = PrintOptions()
@@ -84,6 +106,6 @@ def save_pdf(spec, state, url, _to, _driver):
         f.write(pdf_bytes)
 
 @DKeyed.types(FF_DRIVER)
-def close_firefox(spec, state, _driver):
+def close_firefox(spec:ActionSpec, state:dict, _driver) -> None:
     printer.info("Closing Firefox")
     _driver.quit()
