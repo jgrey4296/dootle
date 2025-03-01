@@ -1,16 +1,16 @@
 # -*- mode:toml; -*-
 
 [startup]
-doot_version             = "0.13"
-loaders              = { commands="default", task="default", parser="default" }
-location_check       = { make_missing=true }
-sources              = { tasks=[".tasks"], code=[] }
-sleep                = { task=0.2, subtask=1, batch=1 }
-max_steps            = 100_000
-skip_default_plugins = false
-skip_plugin_search   = false
-empty_cmd            = "list"
-implicit_task_cmd    = "run"
+doot_version             = "1.0"
+loaders                  = { commands="default", task="default", parser="default" }
+location_check           = { make_missing=true }
+sources                  = { tasks=[".tasks"], code=[] }
+sleep                    = { task=0.2, subtask=1, batch=1 }
+max_steps                = 100_000
+skip_default_plugins     = false
+skip_plugin_search       = false
+empty_cmd                = "list"
+implicit_task_cmd        = "run"
 
 [startup.plugins]
 # Allows for defining shorthands
