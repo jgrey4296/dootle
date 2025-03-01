@@ -1,11 +1,12 @@
 """
 
 """
-from typing import Final
-from jgdv.structs.dkey import DKey, DKeyed
-
-
-DB_KEY      : Final[DKey] = DKey("bib_db", implicit=True)
+try:
+    import bibtexparser
+    import bibble
+except ImportError as err:
+    err.add_note("dootle.bibtex requires bibtexparser and bibble")
+    raise
 
 from .init_db import BibtexInitAction as InitDb
 from .loader import BibtexLoadAction as DoLoad
