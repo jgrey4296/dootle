@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 (Generated using [git-cliff](https://git-cliff.org/)
 
+## [0.2.1] - 2025-03-02
+
+### Dependencies
+
+- Version 0.2.0 -> 0.2.1
+
 ## [0.2.0] - 2025-03-02
 
 ### Features
