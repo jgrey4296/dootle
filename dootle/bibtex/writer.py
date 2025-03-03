@@ -91,6 +91,9 @@ class BibtexToStrAction:
 
 @Proto(Action_p)
 class BibtexBuildWriter:
+    """
+    Create the writer with its stack
+    """
 
     @DKeyed.references("stack")
     @DKeyed.references("class", fallback=None)
@@ -105,6 +108,5 @@ class BibtexBuildWriter:
                 writer      = writer_type(stack)
             case None:
                 writer = Writer(stack)
-
 
         return { _update : writer }
