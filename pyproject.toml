@@ -101,11 +101,21 @@ include    = ["dootle*"]
 # Tools #######################################################################
 
 ##-- pytest
+# https://docs.pytest.org/en/stable/reference/reference.html#ini-options-ref
 [tool.pytest.ini_options]
-log_cli       = false
-log_level     = "DEBUG"
-log_cli_level = "DEBUG"
+addopts          = [
+  # "--cov=",
+  # "--ignore-glob=related_/*"
+]
+cache_dir       = ".temp/pytest_cache"
+log_file        = ".temp/logs/pytest.log"
 
+log_cli         = false
+log_level       = "DEBUG"
+log_cli_level   = "INFO"
+log_format      = "%(levelname)s %(name)s : %(message)s"
+log_file_level  = "DEBUG"
+log_file_format = "%(asctime)s %(levelname)s %(name)s : %(message)s"
 ##-- end pytest
 
 ##-- bumpver
@@ -160,3 +170,19 @@ import_footer_localfolder = ""
 add_imports            = []
 
 ##-- end isort
+
+##-- mypy
+# https://mypy.readthedocs.io/en/stable/config_file.html
+[tool.mypy]
+python_version      = "3.12"
+warn_return_any     = true
+warn_unused_configs = true
+exclude             = [] # regexs to ignore
+cache_dir           = ".temp/mypy_cache"
+
+# Per-module options:
+# [[tool.mypy.overrides]]
+# module                = "blah"
+# disallow_untyped_defs = true
+
+##-- end mypy
