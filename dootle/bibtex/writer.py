@@ -28,7 +28,7 @@ from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.structs.strang import CodeReference
 import bibtexparser as b
 from bibtexparser import model
-from bibble.io import Writer
+from bibble.io import Writer, PairStack
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares.middleware import BlockMiddleware
 import doot
@@ -95,13 +95,10 @@ class BibtexBuildWriter:
     Create the writer with its stack
     """
 
-    @DKeyed.references("stack")
+    @DKeyed.types("stack", check=PairStack|list)
     @DKeyed.references("class", fallback=None)
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, stack, _class, _update):
-        fn    = stack()
-        stack = fn(spec, state)
-
         match _class:
             case CodeReference():
                 writer_type = _class()

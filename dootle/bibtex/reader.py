@@ -27,8 +27,8 @@ from jgdv import Proto
 from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.structs.strang import CodeReference
 import bibtexparser as b
-from bibble.io import Reader
-from bibtexparser import middlewares as ms
+from bibble.io import Reader, PairStack
+import middlewares as ms
 from bibtexparser import model
 from bibtexparser.middlewares.middleware import BlockMiddleware, Middleware
 import doot
@@ -70,7 +70,7 @@ printer = doot.subprinter()
 ##-- end logging
 
 @Proto(Action_p)
-class BibtexLoadAction:
+class BibtexReadAction:
     """ Parse all the bibtext files into a state database, in place.
 
       addFn to state[`_entry_transform`] to use a custom entry transformer,
@@ -96,7 +96,7 @@ class BibtexLoadAction:
                 file_list   = [x.expand(spec, state) for x in _from]
             case x:
                 raise TypeError(type(x))
-                
+
         match _update or DB_KEY.expand(spec, state):
             case None:
                 db = b.Library()
@@ -124,12 +124,14 @@ class BibtexLoadAction:
 
 @Proto(Action_p)
 class BibtexBuildReader:
+    """
+    Build a bibtex reader object, with a given parse stack.
+    """
 
-    @DKeyed.references("stack", "db_base", "class")
+    @DKeyed.references("db_base", "class")
+    @DKeyed.types("stack", check=PairStack)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, stack, db_base, _class, _update):
-        fn = stack()
-        stack = fn(spec, state)
+    def __call__(self, spec, state, db_base, _class, stack, _update):
         match db_base:
             case CodeReference():
                 db_base = db_base()
