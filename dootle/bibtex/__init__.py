@@ -10,7 +10,7 @@ except ImportError as err:
 
 from .init_db import BibtexInitAction as InitDb
 from .reader import BibtexReadAction as DoRead
-from .loader import BibtexBuildReader as BuildReader
+from .reader import BibtexBuildReader as BuildReader
 from .writer import BibtexToStrAction as ToStr
 from .writer import BibtexBuildWriter as BuildWriter
 

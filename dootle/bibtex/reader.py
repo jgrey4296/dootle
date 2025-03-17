@@ -27,10 +27,9 @@ from jgdv import Proto
 from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.structs.strang import CodeReference
 import bibtexparser as b
-from bibble.io import Reader, PairStack
-import middlewares as ms
+from bibble import PairStack
+from bibble.io import Reader
 from bibtexparser import model
-from bibtexparser.middlewares.middleware import BlockMiddleware, Middleware
 import doot
 from doot._abstract.task import Action_p
 
