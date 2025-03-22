@@ -64,13 +64,10 @@ logging = logmod.getLogger(__name__)
 printer = doot.subprinter()
 ##-- end logging
 
-
 @Proto(Action_p)
 class BibtexInitAction:
     """
-      Initialise a bibtex database. Override '_entry_transform' for customisation of loading.
-
-      pass a callable as the spec.args value to use instead of _entry_transform
+      Initialise a bibtex database.
     """
 
     @DKeyed.references("db_base", fallback=None)
@@ -86,9 +83,10 @@ class BibtexInitAction:
 
         match db_base:
             case None:
-                db = b.Library()
+                ctor = b.Library
             case CodeReference:
-                db = (db_base.safe_import() or b.Library)()
+                ctor = (db_base.safe_import() or b.Library)
 
+        db = ctor()
         printer.info("Bibtex Database Initialised")
         return { _update : db }

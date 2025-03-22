@@ -22,10 +22,11 @@ from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
-# ##-- 3rd party imports
-from jgdv import Proto
+# ##-- 2rd party imports
+from jgdv import Proto, Maybe
 from jgdv.structs.dkey import DKey, DKeyed
 import bibtexparser as b
+from bibtexparser import Library
 import doot
 from bibtexparser import middlewares as ms
 from bibtexparser import model
@@ -35,7 +36,7 @@ from doot._abstract.task import Action_p
 # ##-- end 3rd party imports
 
 # ##-- 1st party imports
-from dootle.bibtex._interface import DB_KEY
+from ._interface import DB_KEY
 
 # ##-- end 1st party imports
 
@@ -49,17 +50,16 @@ from typing import Generic, NewType
 from typing import Protocol, runtime_checkable
 # Typing Decorators:
 from typing import no_type_check, final, override, overload
-# from dataclasses import InitVar, dataclass, field
-# from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
 
 if TYPE_CHECKING:
-    from jgdv import Maybe
     from typing import Final
     from typing import ClassVar, Any, LiteralString
     from typing import Never, Self, Literal
     from typing import TypeGuard
     from collections.abc import Iterable, Iterator, Callable, Generator
     from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+
+    from dootle.structs import ActionSpec
 
 # isort: on
 # ##-- end types
@@ -71,12 +71,12 @@ printer = doot.subprinter()
 
 @Proto(Action_p)
 class BibtexFailedBlocksWriteAction:
-    """ A reporter of blocks that failed to parse """
+    """ extract failed blocks from the library to task state """
 
-    @DKeyed.types("from", check=b.library.Library|None)
+    @DKeyed.types("from", check=Library|None)
     @DKeyed.paths("to", fallback=None)
     @DKeyed.redirects("update_", fallback=None)
-    def __call__(self, spec, state, _from, _to, _update):
+    def __call__(self, spec:ActionSpec, state:dict, _from:Maybe[Library], _to:Maybe[pl.Path], _update:str):
         match _from or DKey(DB_KEY).expand(spec, state):
             case None:
                 raise ValueError("No bib database found")
@@ -90,6 +90,5 @@ class BibtexFailedBlocksWriteAction:
                 with _to.open('w') as f:
                     for block in xs:
                         f.write(block.raw)
-
-        if _update is not None:
-            pass
+            case [*xs] if _update is not None:
+                return { _update : list(xs) }

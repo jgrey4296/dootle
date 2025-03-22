@@ -19,7 +19,8 @@ import pytest
 # ##-- end 3rd party imports
 
 import doot
-from dootle.bibtex import failed_blocks as fb
+from doot._abstract import Action_p
+from .. import failed_blocks as fb
 
 # ##-- types
 # isort: off
@@ -59,6 +60,14 @@ class TestFailedBlocks:
 
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
+
+
+    def test_ctor(self):
+        match fb.BibtexFailedBlocksWriteAction():
+            case Action_p():
+                assert(True)
+            case x:
+                 assert(False), x
         
     @pytest.mark.skip 
     def test_todo(self):
