@@ -58,18 +58,18 @@ logging = logmod.getLogger(__name__)
 
 # Vars:
 TRACE_LINES           : Final[dict[str, str|tuple[str,str,str]]] = {
-    "root"            : "┳",
-    "wait"            : "┃",
-    "act"             : "┼◇",
-    "branch"          : ("┣", "─", "─╮"),
-    "resume"          : ("┣", "╌", "╌╮"),
-    "inactive"        : "┊",
-    "begin"           : "▼",
-    "join"            :  ("┢◀", "─", "─╯"),
-    "pause"           :  ("┝", "╌", "╌╯"),
-    "final"           : "┻",
-    "fail"            : "❌",
-    "gap"             : " ",
+    "root"            :  "┳",
+    "wait"            :  "┃",
+    "act"             :  "┼◇",
+    "branch"          : ("┣", "─▶", "╮"),
+    "resume"          : ("┣", "╌╌", "╮"),
+    "inactive"        :  "┊",
+    "begin"           :  "▼",
+    "result"          : ("┢", "◀─", "╯"),
+    "pause"           : ("┝", "╌╌", "╯"),
+    "finished"        :  "┻",
+    "fail"            :  "❌",
+    "gap"             :  "  ",
 }
 
 BRANCH_PARTS : Final[dict[str, str]] = {
@@ -78,7 +78,7 @@ BRANCH_PARTS : Final[dict[str, str]] = {
     "branch-activate" : "▼",
     "branch-return"   : "╯",
     "branch-reduce"   : "─",
-    "branch-join"     : "◀",
+    "branch-result"     : "◀",
 }
 
 TRACE_LINES_ASCII     : Final[dict[str, str]] = {
@@ -90,10 +90,10 @@ TRACE_LINES_ASCII     : Final[dict[str, str]] = {
     "begin"           :     "Y",
     "return"          :   "=<]",
     "pause"           :   "-<]",
-    "return-terminal" : "|"
+    "return-terminal" : "|",
     "resume"          : "|->-[",
-    "join"            : "|<<<",
-    "final"           : "o",
+    "result"            : "|<<<",
+    "finished"           : "o",
     "fail"            : "X",
     "gap"             : " ",
 }
@@ -101,32 +101,41 @@ TRACE_LINES_ASCII     : Final[dict[str, str]] = {
 # eg: "{┣─}{╮}"
 LINE_PASS_FMT : Final[str] = "{ctx}{act}"
 # eg: "{┊ ┊ }{┃} [{blah}] : {bloo}"
-LINE_MSG_FMT  : Final[str] = "{ctx}{act} [{info}] : {msg}"
+LINE_MSG_FMT  : Final[str] = "{ctx}{act}{gap}[{info}]{gap2}: {detail}"
+
+ACT_SPACING  : Final[int] = 4
+MSG_SPACING  : Final[int] = 6
 # Body:
 
-class AltReporter_p(Protocol):
-    """
-    A Re-entrant ctx manager, used for reporting user-level information about a
-    task workflow run.
-
-    """
+class Reporter_d:
     level    : int
     ctx      : list[str]
     trace    : list
     line_fmt : str
     msg_fmt  : str
 
+@runtime_checkable
+class AltReporter_p(Protocol):
+    """
+    A Re-entrant ctx manager, used for reporting user-level information about a
+    task workflow run.
+
+    """
+
+    def add_trace(self, msg:str, *args:Any, flags:Any=None) -> None:
+        pass
+
     def __enter__(self) -> Self:
         # calls branch|resume
         # level+
         pass
 
-    def __exit(self, *exc:Any) -> bool:
-        # pause|join|fail|return
+    def __exit__(self, *exc:Any) -> bool:
+        # pause|result|fail|return
         # level-
         pass
 
-    def root(self) -> bool:
+    def root(self) -> None:
         # pass fmt
         pass
 
@@ -150,7 +159,7 @@ class AltReporter_p(Protocol):
         # msg fmt
         pass
 
-    def join(self, state:list[str]) -> None:
+    def result(self, state:list[str]) -> None:
         # Maybe msg fmt
         pass
 
@@ -158,9 +167,9 @@ class AltReporter_p(Protocol):
         # msg fmt
         pass
 
-    def final(self) -> bool:
+    def finished(self) -> None:
         # pass fmt
         pass
 
-    def summary(self) -> bool:
+    def summary(self) -> None:
         pass
