@@ -17,9 +17,9 @@ classifiers     = [
 
 dependencies   = [
     "doot>=1.0.0",
-    "jgdv>=1.0.0",
     "pony>=0.7",
     "networkx",
+    "jgdv",
 ]
 
 [project.optional-dependencies]
@@ -179,6 +179,9 @@ warn_return_any     = true
 warn_unused_configs = true
 exclude             = [] # regexs to ignore
 cache_dir           = ".temp/mypy_cache"
+
+[tool.uv.sources]
+jgdv = { path = "../../../jgdv", editable = true }
 
 # Per-module options:
 # [[tool.mypy.overrides]]
