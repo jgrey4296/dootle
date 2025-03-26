@@ -439,7 +439,7 @@ wheels = [
 [[package]]
 name = "doot"
 version = "1.0.4"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../../" }
 dependencies = [
     { name = "boltons" },
     { name = "jgdv" },
@@ -451,10 +451,28 @@ dependencies = [
     { name = "stackprinter" },
     { name = "sty" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7e/d2/a2e2202a2309fa4f0a55448208b0938919da04c7c3954e841c926b3d2881/doot-1.0.4.tar.gz", hash = "sha256:e2c61dfef81ac50558698174f1d65cab8d7f32419372c4e1343656a087de5ca1", size = 167291 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/6d/76/5911b7fc9f45ad91556b02fde7bb9cd5fc3a4f8ba7ae482c1d94a0e9f27c/doot-1.0.4-py3-none-any.whl", hash = "sha256:f06b381be5c5755708f28e2cb074852b5d0b0cb5f6e7f5bc2cc3a335f01fe34f", size = 247943 },
+
+[package.metadata]
+requires-dist = [
+    { name = "boltons", specifier = ">=23.0.0" },
+    { name = "jgdv", editable = "../../../jgdv" },
+    { name = "matplotlib" },
+    { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=4.0.1" },
+    { name = "networkx", specifier = ">3.0" },
+    { name = "packaging" },
+    { name = "pydantic", specifier = ">=2.7.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
+    { name = "sh", specifier = ">=2.0.6" },
+    { name = "sphinx", marker = "extra == 'dev'", specifier = ">=8.2.3" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3.0.2" },
+    { name = "stackprinter", specifier = ">=0.2.10" },
+    { name = "sty", specifier = ">=1.0.0" },
 ]
+provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = []
 
 [[package]]
 name = "dootle"
@@ -506,7 +524,7 @@ visual = [
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'net'" },
-    { name = "doot", specifier = ">=1.0.0" },
+    { name = "doot", editable = "../../" },
     { name = "jgdv", editable = "../../../jgdv" },
     { name = "mastodon-py", marker = "extra == 'net'", specifier = ">=1.8" },
     { name = "matplotlib", marker = "extra == 'visual'" },
@@ -675,23 +693,23 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "myst-parser", marker = "extra == 'docs'", specifier = ">=4.0.0" },
+    { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "networkx" },
-    { name = "packaging" },
+    { name = "packaging", specifier = ">=24.2" },
     { name = "pydantic", specifier = ">=2.9.0" },
     { name = "pyparsing" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.0" },
-    { name = "pytest-cov", marker = "extra == 'test'", specifier = ">=6.0.0" },
-    { name = "pytest-mock", marker = "extra == 'test'", specifier = ">=3.14.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
     { name = "python-statemachine", specifier = ">=2.5.0" },
     { name = "sh", specifier = ">=2.1.0" },
-    { name = "sphinx", marker = "extra == 'docs'", specifier = ">=8.1.0" },
-    { name = "sphinx-autoapi", marker = "extra == 'docs'", specifier = ">=3.5.0" },
-    { name = "sphinx-rtd-theme", marker = "extra == 'docs'", specifier = ">=3.0.0" },
+    { name = "sphinx", marker = "extra == 'dev'", specifier = ">=8.2.3" },
+    { name = "sphinx-autoapi", marker = "extra == 'dev'", specifier = ">=3.6.0" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3.0.2" },
     { name = "stackprinter", specifier = ">=0.2.0" },
     { name = "sty", specifier = ">=1.0.6" },
 ]
-provides-extras = ["docs", "test"]
+provides-extras = ["dev"]
 
 [[package]]
 name = "jinja2"

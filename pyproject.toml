@@ -179,13 +179,18 @@ warn_return_any     = true
 warn_unused_configs = true
 exclude             = [] # regexs to ignore
 cache_dir           = ".temp/mypy_cache"
+##-- end mypy
+
+##-- uv
 
 [tool.uv.sources]
 jgdv = { path = "../../../jgdv", editable = true }
+doot = { path = "../../", editable = true }
 
 # Per-module options:
 # [[tool.mypy.overrides]]
 # module                = "blah"
 # disallow_untyped_defs = true
 
-##-- end mypy
+
+##-- end uv
