@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 
+
 """
 # ruff: noqa:
 
@@ -71,112 +72,4 @@ TRACE_LINES           : Final[dict[str, str|tuple[str,str,str]]] = {
     "fail"            :  "❌",
     "gap"             :  "  ",
 }
-
-BRANCH_PARTS : Final[dict[str, str]] = {
-    "branch-extend"   : "─",
-    "branch-start"    : "╮",
-    "branch-activate" : "▼",
-    "branch-return"   : "╯",
-    "branch-reduce"   : "─",
-    "branch-result"     : "◀",
-}
-
-TRACE_LINES_ASCII     : Final[dict[str, str]] = {
-    "root"            : "Y",
-    "wait"            : "|",
-    "act"             : "| ->",
-    "branch"          : "|->=[",
-    "inactive"        : ":",
-    "begin"           :     "Y",
-    "return"          :   "=<]",
-    "pause"           :   "-<]",
-    "return-terminal" : "|",
-    "resume"          : "|->-[",
-    "result"            : "|<<<",
-    "finished"           : "o",
-    "fail"            : "X",
-    "gap"             : " ",
-}
-
-# eg: "{┣─}{╮}"
-LINE_PASS_FMT : Final[str] = "{ctx}{act}"
-# eg: "{┊ ┊ }{┃} [{blah}] : {bloo}"
-LINE_MSG_FMT  : Final[str] = "{ctx}{act}{gap}[{info}]{gap2}: {detail}"
-
-ACT_SPACING  : Final[int] = 4
-MSG_SPACING  : Final[int] = 6
 # Body:
-
-class Reporter_d:
-    level    : int
-    ctx      : list[str]
-    trace    : list
-    line_fmt : str
-    msg_fmt  : str
-
-@runtime_checkable
-class AltReporter_p(Protocol):
-    """
-    A Re-entrant ctx manager, used for reporting user-level information about a
-    task workflow run.
-
-    """
-
-    def add_trace(self, msg:str, *args:Any, flags:Any=None) -> None:
-        pass
-
-    def __enter__(self) -> Self:
-        # calls branch|resume
-        # level+
-        pass
-
-    def __exit__(self, *exc:Any) -> bool:
-        # pause|result|fail|return
-        # level-
-        pass
-
-    def root(self) -> None:
-        # pass fmt
-        pass
-
-    def wait(self) -> None:
-        # pass fmt
-        pass
-
-    def act(self, info:str, msg:str) -> None:
-        # msg fmt
-        pass
-
-    def fail(self, info:str, msg:str) -> None:
-        # msg fmt
-        pass
-
-    def branch(self, name:str) -> None:
-        # pass fmt
-        pass
-
-    def pause (self, reason:str) -> None:
-        # msg fmt
-        pass
-
-    def result(self, state:list[str]) -> None:
-        # Maybe msg fmt
-        pass
-
-    def resume(self, name:str) -> None:
-        # msg fmt
-        pass
-
-    def finished(self) -> None:
-        # pass fmt
-        pass
-
-    def summary(self) -> None:
-        pass
-
-
-    def queue(self, num:int) -> None:
-        raise NotImplementedError()
-
-    def state_result(self, vals:str) -> None:
-        raise NotImplementedError()

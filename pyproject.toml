@@ -183,7 +183,9 @@ warn_return_any        = true
 warn_unused_configs    = true
 ignore_missing_imports = true
 exclude                = [] 
+##-- end mypy
 
+##-- uv
 [tool.uv.sources]
 jgdv = { path = "../../../jgdv", editable = true }
 doot = { path = "../../", editable = true }

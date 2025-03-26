@@ -18,9 +18,10 @@ import warnings
 import pytest
 # ##-- end 3rd party imports
 
+from doot.reporters import _interface as API
+
 ##--|
 from .. import LineReporter
-from .. import _interface as API
 ##--|
 
 # ##-- types
@@ -63,7 +64,7 @@ class TestLineReporter:
 
     def test_ctor(self):
         match LineReporter():
-            case API.AltReporter_p():
+            case API.Reporter_p():
                 assert(True)
             case x:
                  assert(False), x

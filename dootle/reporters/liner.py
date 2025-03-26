@@ -28,7 +28,9 @@ import faulthandler
 # ##-- end stdlib imports
 
 from jgdv import Proto, Mixin
-from . import _interface as API  # noqa: N812
+from doot.reporters import _interface as API  # noqa: N812
+
+from . import _interface as LAPI
 
 # ##-- types
 # isort: off
@@ -64,14 +66,14 @@ logging = logmod.getLogger(__name__)
 
 # Body:
 
-@Proto(API.AltReporter_p)
+@Proto(API.Reporter_p)
 class LineReporter(API.Reporter_d):
     """ An alternative reporter  """
 
     def __init__(self, *args, logger:Maybe[Logger]=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._logger            = logger or logging
-        self._segments          = API.TRACE_LINES.copy()
+        self._segments          = LAPI.TRACE_LINES.copy()
         self._log_level         = logmod.INFO
         self._fmt               = TraceFormatter()
         self.level              = 0
@@ -134,6 +136,12 @@ class LineReporter(API.Reporter_d):
     def summary(self) -> None:
         pass
 
+    def queue(self, num:int) -> None:
+        pass
+
+    def state_result(self, *vals:str) -> None:
+        pass
+
     def _build_ctx(self) -> str:
         return "".join(self.ctx)
 
@@ -141,10 +149,11 @@ class LineReporter(API.Reporter_d):
         result = self._fmt(key, info=info, msg=msg, ctx=self.ctx)
         self._logger.log(self._log_level, result)
 
+@Proto(API.TraceFormatter_p)
 class TraceFormatter:
 
     def __init__(self):
-        self._segments         = API.TRACE_LINES.copy()
+        self._segments         = LAPI.TRACE_LINES.copy()
         self.line_fmt          = API.LINE_PASS_FMT
         self.msg_fmt           = API.LINE_MSG_FMT
 
