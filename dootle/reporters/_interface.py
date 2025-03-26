@@ -173,3 +173,10 @@ class AltReporter_p(Protocol):
 
     def summary(self) -> None:
         pass
+
+
+    def queue(self, num:int) -> None:
+        raise NotImplementedError()
+
+    def state_result(self, vals:str) -> None:
+        raise NotImplementedError()
