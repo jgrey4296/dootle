@@ -1,4 +1,5 @@
 ## pyproject.toml -*- mode: toml -*-
+
 [project]
 name            = "dootle"
 version         = "0.2.1"
@@ -20,18 +21,18 @@ dependencies   = [
     "pony>=0.7",
     "networkx",
     "jgdv",
+    "bibble",
 ]
 
 [project.optional-dependencies]
-dev      = ["sphinx" ]
-test     = ["pytest > 7.0" ]
-image    = ["Pillow"]
-net      = ["Requests", "beautifulsoup4", "mastodon.py>=1.8"]
-# bibtex   = ["bibtexparser>=2.0.0b4", "bibble @ git+https://github.com/jgrey4296/bibble.git", ]
-data     = ["PyYAML", "pandas", "scikit-learn", "xsdata"]
-visual   = ["matplotlib", "seaborn", "wordcloud"]
-pdf      = ["pdfrw", "pypandoc"]
-reactor  = ["twisted", "scrapy", "zope"]
+dev      = [
+    "myst-parser>=4.0.1",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "sphinx",
+    "sphinx-rtd-theme>=3.0.2",
+]
 
 ##-- urls
 [project.urls]
@@ -186,11 +187,11 @@ cache_dir           = ".temp/mypy_cache"
 [tool.uv.sources]
 jgdv = { path = "../../../jgdv", editable = true }
 doot = { path = "../../", editable = true }
+bibble = { path = "../bibble", editable = true }
 
 # Per-module options:
 # [[tool.mypy.overrides]]
 # module                = "blah"
 # disallow_untyped_defs = true
-
 
 ##-- end uv
