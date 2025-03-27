@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
+TEST File updated
 
 """
-# ruff: noqa: ANN201, ARG001, ANN001, ARG002, ANN202
+# ruff: noqa: ANN201, ARG001, ANN001, ARG002, ANN202, B011
 
 # Imports
 from __future__ import annotations
@@ -17,27 +18,27 @@ import warnings
 import pytest
 # ##-- end 3rd party imports
 
-import doot
-from dootle.bibtex import loader
+
+##--|
+from .. import BuildReader
+##--|
 
 # ##-- types
 # isort: off
 import abc
 import collections.abc
 from typing import TYPE_CHECKING, cast, assert_type, assert_never
-from typing import Generic, NewType
+from typing import Generic, NewType, Never
 # Protocols:
 from typing import Protocol, runtime_checkable
 # Typing Decorators:
 from typing import no_type_check, final, override, overload
-# from dataclasses import InitVar, dataclass, field
-# from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
 
 if TYPE_CHECKING:
     from jgdv import Maybe
     from typing import Final
     from typing import ClassVar, Any, LiteralString
-    from typing import Never, Self, Literal
+    from typing import Self, Literal
     from typing import TypeGuard
     from collections.abc import Iterable, Iterator, Callable, Generator
     from collections.abc import Sequence, Mapping, MutableMapping, Hashable
@@ -54,12 +55,17 @@ logging = logmod.getLogger(__name__)
 # Vars:
 
 # Body:
+class TestBuildReader:
 
-class TestBibtexLoader:
+    @pytest.fixture(scope="function")
+    def setup(self):
+        pass
 
+    ##--|
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
 
+    ##--|
     @pytest.mark.skip
     def test_todo(self):
         pass

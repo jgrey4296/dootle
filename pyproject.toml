@@ -22,6 +22,7 @@ dependencies   = [
     "networkx",
     "jgdv",
     "bibble",
+    "mastodon-py>=2.0.1",
 ]
 
 [project.optional-dependencies]
