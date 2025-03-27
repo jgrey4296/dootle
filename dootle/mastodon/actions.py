@@ -62,7 +62,6 @@ if TYPE_CHECKING:
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = doot.subprinter()
 ##-- end logging
 
 TOOT_SIZE            : Final[int]                   = doot.config.on_fail(250, int).mastodon.toot_size()
@@ -86,7 +85,7 @@ class MastodonSetup:
     @DKeyed.paths("mastodon_secrets")
     def __call__(self, spec, state, _data_key, _secrets) -> dict:
         if MastodonSetup._instance is None:
-            printer.info("---------- Initialising Mastodon", extra={"colour": "green"})
+            doot.report.trace("---------- Initialising Mastodon", extra={"colour": "green"})
             secrets = ChainGuard.load(_secrets)
             MastodonSetup._instance = mastodon.Mastodon(
                 access_token = secrets.mastodon.access_token,
@@ -94,7 +93,7 @@ class MastodonSetup:
             )
             doot.locs.ensure("image_temp", task=state['_task_name'])
         else:
-            printer.debug("Reusing Instance")
+            doot.report.detail("Reusing Instance")
 
         return { _data_key : MastodonSetup._instance }
 
@@ -120,23 +119,23 @@ class MastodonPost:
                 with RESOLUTION_BLACKLIST.open('a') as f:
                     f.write("\n" + resolution[1])
 
-            printer.error("Mastodon Resolution Failure: %s", repr(err))
+            doot.report.error("Mastodon Resolution Failure: %s", repr(err))
             return False
         except Exception as err:  # noqa: BLE001
-            printer.error("Mastodon Post Failed: %s", repr(err))
+            doot.report.error("Mastodon Post Failed: %s", repr(err))
             return False
 
     def _post_text(self, _instance, text) -> bool:
-        printer.info("Posting Text Toot: %s", text)
+        doot.report.trace("Posting Text Toot: %s", text)
         if len(text) >= TOOT_SIZE:
-            printer.warning("Resulting Toot too long for mastodon: %s\n%s", len(text), text)
+            doot.report.warn("Resulting Toot too long for mastodon: %s\n%s", len(text), text)
             return False
 
         result = _instance.status_post(text)
         return True
 
     def _post_image(self, _instance, text, _image_path, _image_desc) -> bool:
-        printer.info("Posting Image Toot")
+        doot.report.trace("Posting Image Toot")
 
         assert(_image_path.exists()), f"File Doesn't Exist {_image_path}"
         assert(_image_path.stat().st_size < TOOT_IMAGE_SIZE), "Image to large, needs to be smaller than 8MB"

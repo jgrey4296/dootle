@@ -61,7 +61,6 @@ if TYPE_CHECKING:
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = doot.subprinter()
 ##-- end logging
 
 git_diff                   = sh.git.bake("--no-pager", "diff", "--name-only")
@@ -106,14 +105,14 @@ class GetChangedFilesByCommit:
         potentials : list[pl.Path] = []
         match _build_cache_path(cache, _taskname):
             case pl.Path() as x if x.exists() and x.is_file():
-                printer.info("Reading Cache: %s", x)
+                doot.report.trace("Reading Cache: %s", x)
                 cached_commit  = x.read_text().strip()
-                printer.info("Diffing From %s to HEAD", cached_commit)
+                doot.report.trace("Diffing From %s to HEAD", cached_commit)
                 text_result    = git_diff(cached_commit, "HEAD")
                 potentials     = [pl.Path(x) for x in text_result.split("\n")]
             case x:
-                printer.warning("Commit Cache not found for task, expected: %s, Found: %s", cache, x)
-                printer.warning("Using files from HEAD~%s -> HEAD", head_count)
+                doot.report.warn("Commit Cache not found for task, expected: %s, Found: %s", cache, x)
+                doot.report.warn("Using files from HEAD~%s -> HEAD", head_count)
                 text_result    = git_diff(f"HEAD~{head_count}", "HEAD")
                 potentials     = [pl.Path(x) for x in text_result.strip().split("\n")]
 

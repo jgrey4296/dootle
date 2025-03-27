@@ -66,19 +66,19 @@ logging = logmod.getLogger(__name__)
 
 # Body:
 
-@Proto(API.Reporter_p)
+@Proto(API.WorkflowReporter_p, API.GeneralReporter_p)
 class LineReporter(API.Reporter_d):
     """ An alternative reporter  """
 
     def __init__(self, *args, logger:Maybe[Logger]=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._logger            = logger or logging
-        self._segments          = LAPI.TRACE_LINES.copy()
-        self._log_level         = logmod.INFO
-        self._fmt               = TraceFormatter()
-        self.level              = 0
-        self.ctx    : list      = []
-        self.trace  : list      = []
+        self._logger                 = logger or logging
+        self._segments               = LAPI.TRACE_LINES.copy()
+        self._log_level              = logmod.INFO
+        self._fmt                    = TraceFormatter()
+        self.level                   = 0
+        self.ctx         : list      = []
+        self._act_trace  : list      = []
 
     def add_trace(self, msg:str, *args:Any, flags:Any=None) -> None:
         pass

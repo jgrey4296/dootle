@@ -61,7 +61,6 @@ if TYPE_CHECKING:
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = doot.subprinter()
 ##-- end logging
 
 @Proto(Action_p)
@@ -88,5 +87,5 @@ class BibtexInitAction:
                 ctor = (db_base.safe_import() or b.Library)
 
         db = ctor()
-        printer.info("Bibtex Database Initialised")
+        doot.report.trace("Bibtex Database Initialised")
         return { _update : db }
