@@ -74,4 +74,4 @@ def recency_test(spec, state, target):
         return None
 
     doot.report.trace("%s is Stale", source.name)
-        return ActE.SKIP
+    return ActE.SKIP
