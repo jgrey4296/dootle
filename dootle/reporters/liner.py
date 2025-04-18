@@ -151,6 +151,7 @@ class LineReporter(API.Reporter_d):
 
 @Proto(API.TraceFormatter_p)
 class TraceFormatter:
+    """ An alternative formatter, using some pretty unicode symbols instead of basic ascii """
 
     def __init__(self):
         self._segments         = LAPI.TRACE_LINES.copy()
