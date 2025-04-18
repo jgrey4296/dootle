@@ -75,3 +75,34 @@ def recency_test(spec, state, target):
 
     doot.report.trace("%s is Stale", source.name)
     return ActE.SKIP
+
+
+@DKeyed.paths("source", "dest")
+@DKeyed.types("tolerance", check=int, fallback=10_000_000)
+def stale_test(spec, state, source, dest, tolerance):
+    """
+      Test two locations by their mod time.
+      if the soure is older, or within tolerance
+      skip rest of action group
+
+    """
+    # ExFat FS has lower resolution timestamps
+    # So guard by having a tolerance:
+    match source.exists(), dest.exists():
+        case False, _:
+            return True
+        case _, False:
+            return True
+        case True, True:
+            pass
+
+    source_ns       = source.stat().st_mtime_ns
+    dest_ns         = dest.stat().st_mtime_ns
+    source_newer    = source_ns > dest_ns
+    difference      = int(max(source_ns, dest_ns) - min(source_ns, dest_ns))
+    below_tolerance = difference <= tolerance
+
+    printer.debug("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
+    if (not source_newer) or below_tolerance:
+        printer.info("%s is Stale", source.name)
+        return ActE.SKIP
