@@ -24,7 +24,12 @@ html_js_files  = []
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['**/flycheck_*.py', "**/__tests/*", '/obsolete/*', "README.md"]
+exclude_patterns = [
+    '**/flycheck_*.py',
+    "**/__tests/*",
+    "_docs/_templates/*",
+    "README.md",
+]
 
 # -- Project information -----------------------------------------------------
 
@@ -76,22 +81,25 @@ html_theme_options.update({
 
 # -- Extension Options -------------------------------------------------
 # https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html
+autoapi_keep_files        = False
 autoapi_generate_api_docs = True
 autoapi_add_toctree_entry = False
 autoapi_type              = "python"
-autoapi_template_dir      = "../docs/_templates/autoapi"
-autoapi_root              = "autoapi"
-autoapi_dirs              = ['../dootle']
+autoapi_template_dir      = "_docs/_templates/autoapi"
+autoapi_root              = "_docs/autoapi"
+autoapi_dirs              = ['.']
 autoapi_file_patterns     = ["*.py", "*.pyi"]
-autoapi_ignore            = exclude_patterns
+autoapi_ignore            = [*exclude_patterns, "*_docs/conf.py"]
+autoapi_member_order      = "groupwise"
 autoapi_options           = [
     # 'imported-members',
+    # "inherited-members",
+    # 'show-inheritance-diagram',
     'members',
     'undoc-members',
     'private-members',
     'special_members',
     'show-inheritance',
-    # 'show-inheritance-diagram',
     'show-module-summary',
 ]
 
