@@ -42,9 +42,11 @@ class ShellBake:
       Create a pre-baked shell chain for reuse as in a ShellBakedRun,
       args are explicit
 
-    eg: {do='bake!', args=[...], update_="baked"},
-    ... {do="bake!', args=[...], in_="baked", update_="baked"},
-    ... {do="run!",  in_="baked", update_="result"}
+    eg::
+        {do='bake!', args=[...], update_="baked"},
+        {do="bake!', args=[...], in_="baked", update_="baked"},
+        {do="run!",  in_="baked", update_="result"}
+
     """
 
     @DKeyed.args
@@ -92,11 +94,13 @@ class ShellAction:
     For actions in subshells/processes.
     all other arguments are passed directly to the program, using `sh`
 
-    can use a pre-baked sh passed into what "shenv_" points to
+    Can use a pre-baked sh passed into what "env_" points to.
 
-    - `exitcodes` : list[int] for what is acceptable return values
-    - `splitlines` : bool for splitting the stdout result
-    - `errlimit` : int for how much of the tail of the stderr is printed ([x:])
+    ::
+
+        - `exitcodes` : list[int] for what is acceptable return values
+        - `splitlines` : bool for splitting the stdout result
+        - `errlimit` : int for how much of the tail of the stderr is printed ([x:])
     
     """
 
@@ -159,9 +163,10 @@ class ShellAction:
                     raise TypeError("Unexpected 'update' type", x)
 
 
-    def _print_err(self, err, limit):
+    def _print_err(self, err, limit:int):
         if not bool(err):
             return
+
         doot.report.user("-- Err: ")
         for errline in err.splitlines()[limit:]:
             doot.report.user("(CmdErr): %s", errline)

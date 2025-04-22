@@ -33,6 +33,7 @@ dev      = [
     "pytest-mock>=3.14.0",
     "sphinx",
     "sphinx-rtd-theme>=3.0.2",
+    "sphinx-autoapi>=3.6.0",
 ]
 
 ##-- urls
@@ -190,10 +191,5 @@ exclude                = []
 jgdv = { path = "../../../jgdv", editable = true }
 doot = { path = "../../", editable = true }
 bibble = { path = "../bibble", editable = true }
-
-# Per-module options:
-# [[tool.mypy.overrides]]
-# module                = "blah"
-# disallow_untyped_defs = true
 
 ##-- end uv
