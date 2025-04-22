@@ -61,7 +61,10 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 class MambaEnv:
-    """ Set up a mamba env to use, returns a baked command to pass to the normal shell action in shenv_ """
+    """ Set up a mamba env to use
+
+    returns a baked command to pass to the normal shell action in env
+    """
 
     @DKeyed.types("env", check=list|str)
     @DKeyed.redirects("update_", fallback=None)

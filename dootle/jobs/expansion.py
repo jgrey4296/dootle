@@ -161,12 +161,12 @@ class JobExpandAction(DootBaseAction):
 
 @Proto(Action_p)
 class JobMatchAction(DootBaseAction):
-    """
-      Take a 'mapping' of {pattern -> task} and a list,
-      and build a list of new subtasks
+    """ Take a 'mapping' of {pattern -> task} and a list,
+    and build a list of new subtasks
 
-      use `prepfn` to get a value from a taskspec to match on.
-    prepfn :: λ(spec) -> Maybe[str|TaskName]
+    use `prepfn` to get a value from a taskspec to match on.
+
+    > prepfn :: λ(spec) -> Maybe[str|TaskName]
 
     defaults to getting JobMatchAction._default_suffix_matcher,
     which tries spec.fpath for a suffix

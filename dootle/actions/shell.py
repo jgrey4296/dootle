@@ -94,13 +94,13 @@ class ShellAction:
     For actions in subshells/processes.
     all other arguments are passed directly to the program, using `sh`
 
-    Can use a pre-baked sh passed into what "env_" points to.
 
     ::
 
-        - `exitcodes` : list[int] for what is acceptable return values
+        - `env_`       : an indirect key for using a pre-baked sh environment
+        - `exitcodes`  : list[int] for what is acceptable return values
         - `splitlines` : bool for splitting the stdout result
-        - `errlimit` : int for how much of the tail of the stderr is printed ([x:])
+        - `errlimit`   : int for how much of the tail of the stderr is printed ([x:])
     
     """
 

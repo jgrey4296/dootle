@@ -56,15 +56,18 @@ logging = logmod.getLogger(__name__)
 
 @Proto(Action_p)
 class JobInjector:
-    """
-      Inject data into task specs.
-      inject={copy=[Xs], expand={Yks : Yvs}, replace=[Zs]}
-      'copy'   : redirects, and copies without further expansion : [a_,x] -> {a:2, x:{q}}
-      'expand' : redirects, expands, then copies         : [a_,x] -> {a:2, x:5}
-      'replace' sets keys to whatever replace value is passed in (for job.expand)
+    """ Inject data into task specs. ::
 
-      X,Y can be lists or dicts, for simple setting, or remapping
-      Z is just a straight list
+        inject={copy=[Xs], expand={Yks : Yvs}, replace=[Zs]}
+
+    ::
+
+        'copy'    : redirects, and copies without further expansion : [a_,x] -> {a:2, x:{q}}
+        'expand'  : redirects, expands, then copies                 : [a_,x] -> {a:2, x:5}
+        'replace' : sets keys to whatever replace value is passed in (for job.expand)
+
+    X,Y can be lists or dicts, for simple setting, or remapping
+    Z is just a straight list
 
     registered as: job.injector
     """

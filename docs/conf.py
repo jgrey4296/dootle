@@ -11,8 +11,6 @@
 import os
 import sys
 import pathlib as pl
-local_mod = str(pl.Path('../').resolve())
-sys.path.insert(0, local_mod)
 
 # (Relative to this file):
 templates_path   = ['_templates']
@@ -79,22 +77,36 @@ html_theme_options.update({
 # -- Extension Options -------------------------------------------------
 # https://sphinx-autoapi.readthedocs.io/en/latest/reference/config.html
 autoapi_generate_api_docs = True
-autoapi_add_toctree_entry = True
+autoapi_add_toctree_entry = False
 autoapi_type              = "python"
-autoapi_template_dir      = "_templates/autoapi"
+autoapi_template_dir      = "../docs/_templates/autoapi"
 autoapi_root              = "autoapi"
 autoapi_dirs              = ['../dootle']
 autoapi_file_patterns     = ["*.py", "*.pyi"]
 autoapi_ignore            = exclude_patterns
 autoapi_options           = [
-    'imported-members',
+    # 'imported-members',
     'members',
     'undoc-members',
     'private-members',
     'special_members',
     'show-inheritance',
     # 'show-inheritance-diagram',
-    # 'show-module-summary',
+    'show-module-summary',
 ]
+
+def filter_contains(val:list|str, *needles:str) -> bool:
+    match val:
+        case str():
+            return any(x in val for x in needles)
+        case list():
+            joined = " ".join(val)
+            return any(x in joined for x in needles)
+        case _:
+            return False
+
+def autoapi_prepare_jinja_env(jinja_env: jinja2.Environment) -> None:
+    jinja_env.add_extension("jinja2.ext.debug")
+    jinja_env.tests['contains'] = filter_contains
 
 # -- Imports --------------------------------------------------
