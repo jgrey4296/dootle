@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file.
 
 (Generated using [git-cliff](https://git-cliff.org/)
 
+## [0.3.0] - 2025-04-23
+
+### Bug Fixes
+
+- Bibtex loader
+- Bad indent
+- Return stale test
+
+### Dependencies
+
+- Version 0.2.1 -> 0.3.0
+
+### Refactoring
+
+- Bibtex load -> bibtex read
+- Subprinter -> reporter
+- Docs to in-tree
+- Move docs entirely within-tree
+
 ## [0.2.1] - 2025-03-02
 
 ### Dependencies
