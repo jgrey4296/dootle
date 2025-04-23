@@ -6,10 +6,10 @@ version         = "0.2.1"
 description     = "A Library of extensions for Doot task running"
 readme          = "README.md"
 requires-python = ">=3.12"
-license         = {file = "LICENSE"}
+license-files   = ["LICENSE"]
 keywords        = []
 authors         = [
-  {name  = "John Grey", email = "jgrey.n.plus.one@gmail.com"},
+  {name         = "John Grey", email = "jgrey.n.plus.one@gmail.com"},
 ]
 
 classifiers     = [
@@ -20,7 +20,7 @@ dependencies   = [
     "doot>=1.0.0",
     "pony>=0.7",
     "networkx",
-    "jgdv",
+    "jgdv>=1.0.1",
     "bibble",
     "mastodon-py>=2.0.1",
 ]

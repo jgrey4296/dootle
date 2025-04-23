@@ -308,7 +308,7 @@ wheels = [
 [[package]]
 name = "doot"
 version = "1.0.4"
-source = { editable = "../../../../../../../../home/john/github/python/doot" }
+source = { editable = "../../" }
 dependencies = [
     { name = "boltons" },
     { name = "jgdv" },
@@ -324,7 +324,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "boltons", specifier = ">=23.0.0" },
-    { name = "jgdv", editable = "../../../../../../../../home/john/github/python/jgdv" },
+    { name = "jgdv", editable = "../../../jgdv" },
     { name = "matplotlib" },
     { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "networkx", specifier = ">3.0" },
@@ -363,12 +363,8 @@ dev = [
     { name = "pytest-cov" },
     { name = "pytest-mock" },
     { name = "sphinx" },
-    { name = "sphinx-rtd-theme" },
-]
-
-[package.dev-dependencies]
-dev = [
     { name = "sphinx-autoapi" },
+    { name = "sphinx-rtd-theme" },
 ]
 
 [package.metadata]
@@ -384,12 +380,10 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
     { name = "sphinx", marker = "extra == 'dev'" },
+    { name = "sphinx-autoapi", marker = "extra == 'dev'", specifier = ">=3.6.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3.0.2" },
 ]
 provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "sphinx-autoapi", specifier = ">=3.6.0" }]
 
 [[package]]
 name = "fonttools"
@@ -478,7 +472,6 @@ name = "jgdv"
 version = "1.0.1"
 source = { editable = "../../../../../../../../home/john/github/python/jgdv" }
 dependencies = [
-    { name = "doot" },
     { name = "networkx" },
     { name = "packaging" },
     { name = "pydantic" },
@@ -491,7 +484,6 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "doot", editable = "../../../../../../../../home/john/github/python/doot" },
     { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "networkx" },
     { name = "packaging", specifier = ">=24.2" },
