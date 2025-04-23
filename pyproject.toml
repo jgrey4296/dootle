@@ -140,6 +140,8 @@ tag                = false
                    '^current_version\s+=\s+"{version}"'
 ]
 "dootle/__init__.py" = ['^__version__\s+=\s+"{version}"']
+"dootle/_docs/conf.py" = ['^release\s+=\s+"{version}"']
+
 
 ##-- end bumpver
 
