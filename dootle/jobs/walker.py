@@ -42,7 +42,6 @@ from jgdv.structs.strang import CodeReference
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = doot.subprinter()
 ##-- end logging
 
 @Proto(Action_p)

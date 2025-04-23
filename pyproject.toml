@@ -6,10 +6,10 @@ version         = "0.2.1"
 description     = "A Library of extensions for Doot task running"
 readme          = "README.md"
 requires-python = ">=3.12"
-license         = {file = "LICENSE"}
+license-files   = ["LICENSE"]
 keywords        = []
 authors         = [
-  {name  = "John Grey", email = "jgrey.n.plus.one@gmail.com"},
+  {name         = "John Grey", email = "jgrey.n.plus.one@gmail.com"},
 ]
 
 classifiers     = [
@@ -20,7 +20,7 @@ dependencies   = [
     "doot>=1.0.0",
     "pony>=0.7",
     "networkx",
-    "jgdv",
+    "jgdv>=1.0.1",
     "bibble",
     "mastodon-py>=2.0.1",
 ]
@@ -33,6 +33,7 @@ dev      = [
     "pytest-mock>=3.14.0",
     "sphinx",
     "sphinx-rtd-theme>=3.0.2",
+    "sphinx-autoapi>=3.6.0",
 ]
 
 ##-- urls
@@ -176,23 +177,19 @@ add_imports            = []
 ##-- mypy
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
-python_version      = "3.12"
-warn_return_any     = true
-warn_unused_configs = true
-exclude             = [] # regexs to ignore
-cache_dir           = ".temp/mypy_cache"
+python_version         = "3.12"
+follow_imports         = "skip"
+cache_dir              = ".temp/mypy_cache"
+warn_return_any        = true
+warn_unused_configs    = true
+ignore_missing_imports = true
+exclude                = [] 
 ##-- end mypy
 
 ##-- uv
-
 [tool.uv.sources]
 jgdv = { path = "../../../jgdv", editable = true }
 doot = { path = "../../", editable = true }
 bibble = { path = "../bibble", editable = true }
-
-# Per-module options:
-# [[tool.mypy.overrides]]
-# module                = "blah"
-# disallow_untyped_defs = true
 
 ##-- end uv

@@ -35,7 +35,6 @@ import numpy as np
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = doot.subprinter("action_exec")
 ##-- end logging
 
 RNG_STATE_S : Final[str] = "__rng"
@@ -77,7 +76,7 @@ def rng_spawn(spec, state, _rng, num, _update):
 def rng_ints(spec, state, _rng, count, _min, _max, _update):
     """ Use the rng to get a count of integers from min to max """
     result = _rng.integers(_min or 0, _max or 10, num or 10)
-    printer.info("Got: %s", result)
+    doot.report.trace("Got: %s", result)
 
     return { _update : result }
 
@@ -95,7 +94,7 @@ def rng_draw(spec, state, _rng, dist, shape, args, _update):
     gen = getattr(_rng, dist)
     result = gen(*args, size=shape)
     assert(result is not None)
-    printer.debug("Generated Random (%s): %s", dist, result)
+    doot.report.detail("Generated Random (%s): %s", dist, result)
     return { _update : result }
 
 @DKeyed.types(RNG_STATE_S, check=np.random.Generator)

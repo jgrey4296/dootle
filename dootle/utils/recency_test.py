@@ -59,7 +59,6 @@ if TYPE_CHECKING:
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = doot.subprinter()
 ##-- end logging
 
 TODAY                       = datetime.datetime.now().date()
@@ -74,8 +73,9 @@ def recency_test(spec, state, target):
     if not (TODAY <= mod_date):
         return None
 
-    printer.info("%s was modified today", target.name)
+    doot.report.trace("%s is Stale", source.name)
     return ActE.SKIP
+
 
 @DKeyed.paths("source", "dest")
 @DKeyed.types("tolerance", check=int, fallback=10_000_000)

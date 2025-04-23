@@ -65,7 +65,6 @@ if TYPE_CHECKING:
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = doot.subprinter()
 ##-- end logging
 
 @Proto(Action_p)
@@ -103,20 +102,20 @@ class BibtexReadAction:
             case b.Library() as x:
                 db = x
 
-        printer.debug("Starting to load %s files", len(file_list))
+        doot.report.detail("Starting to load %s files", len(file_list))
         for loc in file_list:
-            printer.info("Loading bibtex: %s", loc)
+            doot.report.trace("Loading bibtex: %s", loc)
             try:
                 filelib = reader.read(loc, into=db)
-                printer.info("Loaded: %s entries",  len(filelib.entries))
+                doot.report.trace("Loaded: %s entries",  len(filelib.entries))
             except OSError as err:
-                printer.error("Bibtex File Loading Errored: %s : %s", loc, err)
+                doot.report.error("Bibtex File Loading Errored: %s : %s", loc, err)
                 return False
 
-        printer.info("Total DB Entry Count: %s", len(db.entries))
+        doot.report.trace("Total DB Entry Count: %s", len(db.entries))
         if len(file_list) == 1:
             loc = file_list[0]
-            printer.info("Current year: %s", loc.stem)
+            doot.report.trace("Current year: %s", loc.stem)
             results.update({ year_key: loc.stem })
 
         return results

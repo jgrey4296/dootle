@@ -62,7 +62,6 @@ if TYPE_CHECKING:
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = doot.subprinter()
 ##-- end logging
 
 @Proto(Action_p)
@@ -77,9 +76,9 @@ class BookmarksPonyExtraction:
     def __call__(self, spec, state, _from, debug, _update) -> dict:
         db_loc         = _from
         try:
-            printer.info("Starting Extraction")
+            doot.report.trace("Starting Extraction")
             result       = pony_extract(db_loc, debug=debug)
-            printer.info("Extraction Complete: %s results", len(result))
+            doot.report.trace("Extraction Complete: %s results", len(result))
         except Exception as err:
             raise doot.errors.ActionError("Pony Errored: %s", str(err)) from err
         else:
@@ -93,9 +92,9 @@ class BookmarksLoad:
     def __call__(self, spec, state, _from, _update) -> dict:
         load_path = _from
         data_key  = _update
-        printer.info("Loading Bookmarks from: %s", load_path)
+        doot.report.trace("Loading Bookmarks from: %s", load_path)
         result    = BookmarkCollection.read(load_path)
-        printer.info("Loaded %s Bookmarks", len(result))
+        doot.report.trace("Loaded %s Bookmarks", len(result))
         return { data_key : result }
 
 @Proto(Action_p)
@@ -113,7 +112,7 @@ class BookmarksMerge:
                     pre_count = len(merged)
                     merged   += x
                     growth    = len(merged) - pre_count
-                    printer.info("Added %s bookmarks, Total Growth: %s", len(x), growth)
+                    doot.report.trace("Added %s bookmarks, Total Growth: %s", len(x), growth)
                 case _:
                     raise doot.errors.ActionError("Unknown type tried to merge into bookmarks", x)
 
@@ -128,7 +127,7 @@ class BookmarksToStr:
     def __call__(self, spec, state, _from, _update) -> dict:
         source_data : BookmarkCollection           = _from
 
-        printer.info("Writing Bookmark Collection of size: %s", len(source_data))
+        doot.report.trace("Writing Bookmark Collection of size: %s", len(source_data))
         return { _update : str(source_data) }
 
 @Proto(Action_p)
@@ -142,4 +141,4 @@ class BookmarksRemoveDuplicates:
         pre_count = len(source_data)
         source_data.merge_duplicates()
         post_count = len(source_data)
-        printer.info("Merged %s entries", pre_count - post_count)
+        doot.report.trace("Merged %s entries", pre_count - post_count)

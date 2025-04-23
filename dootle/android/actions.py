@@ -57,7 +57,6 @@ if TYPE_CHECKING:
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = doot.subprinter()
 ##-- end logging
 
 try:
@@ -82,19 +81,19 @@ class AndroidRunning:
             adb("start-server", _bg=True)
             transport = self._get_transport_id()
             if transport:
-                printer.info("ADB connected, transport id: %s", transport)
+                doot.report.trace("ADB connected, transport id: %s", transport)
                 return { data_key : transport }
 
             device = input("Device Ip:Port: ")
             result = adb("connect", device, _return_cmd=True)
-            printer.info("ADB: %s", result.stdout.decode())
+            doot.report.trace("ADB: %s", result.stdout.decode())
             transport = self._get_transport_id()
             if not transport:
                 raise doot.errors.TaskFailed("No Transport Ids Identified")
 
             return { data_key : transport }
         except sh.ErrorReturnCode as err:
-            printer.error("ADB Failure: %s", err.stdout.decode())
+            doot.report.error("ADB Failure: %s", err.stdout.decode())
             raise doot.errors.TaskFailed("Failed to connect") from err
 
     def _get_transport_id(self) -> None|str:
@@ -106,8 +105,8 @@ class AndroidRunning:
             case [] | None:
                 return None
             case [*xs]:
-                printer.info("Multiple Transport Ids Found, select one:")
-                printer.info("%s", xs)
+                doot.report.trace("Multiple Transport Ids Found, select one:")
+                doot.report.trace("%s", xs)
                 return input("Transport Id: ")
 
 @Proto(Action_p)
@@ -118,10 +117,10 @@ class AndroidPush:
     def __call__(self, spec, state, transport, local, remote):
         try:
             push        = adb.bake("-t", transport, "push", "--sync", _return_cmd=True)
-            printer.info("ADB Push: %s -> %s", local, remote)
+            doot.report.trace("ADB Push: %s -> %s", local, remote)
             result = push(str(local), str(remote))
         except sh.ErrorReturnCode as err:
-            printer.error("ADB Failure: %s", err.stdout.decode())
+            doot.report.trace("ADB Failure: %s", err.stdout.decode())
             raise doot.errors.TaskFailed("Push Failed") from err
 
 @Proto(Action_p)
@@ -133,12 +132,12 @@ class AndroidPull:
         result     = None
         try:
             pull   = adb.bake("-t", transport, "pull", "-a", _return_cmd=True)
-            printer.info("ADB Pull: %s -> %s", remote, local)
+            doot.report.trace("ADB Pull: %s -> %s", remote, local)
             # TODO get list of local files, list of remote files, diff, pull those lacking.
 
             result = pull(str(remote), str(local))
         except sh.ErrorReturnCode as err:
-            printer.error("ADB Failure: %s", err.stdout.decode())
+            doot.report.trace("ADB Failure: %s", err.stdout.decode())
             raise doot.errors.TaskFailed("Pull Failed") from err
 
 @Proto(Action_p)
@@ -150,10 +149,10 @@ class AndroidInstall:
         try:
             target   = package
             install  = adb.bake("-t", transport, "install", _return_cmd=True)
-            printer.info("ADB Installing: %s", target)
+            doot.report.trace("ADB Installing: %s", target)
             result = install(str(target))
         except sh.ErrorReturnCode as err:
-            printer.error("ADB Failure: %s", err.stdout.decode())
+            doot.report.error("ADB Failure: %s", err.stdout.decode())
             raise doot.errors.TaskFailed("Install Failed") from err
 
 @Proto(Action_p)
@@ -167,9 +166,9 @@ class AndroidRemoteCmd:
             data_key  = _update
             adb_cmd   = adb.bake("-t", transport, "shell", "", _return_cmd=True)
             args      = [DKey(x, fallback=x, mark=DKey.Mark.MULTI).expand(spec, state) for x in spec.args]
-            printer.info("ADB Cmd: %s : %s", cmd, args)
+            doot.report.trace("ADB Cmd: %s : %s", cmd, args)
             result = adb_cmd(cmd, *args)
             return { data_key : result.stdout.decode() }
         except sh.ErrorReturnCode as err:
-            printer.error("ADB Failure: %s : %s", err.stdout.decode(), err.stderr.decode())
+            doot.report.error("ADB Failure: %s : %s", err.stdout.decode(), err.stderr.decode())
             raise doot.errors.TaskFailed("Cmd Failed") from err

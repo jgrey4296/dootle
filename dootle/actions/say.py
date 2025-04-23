@@ -35,9 +35,6 @@ from doot.errors import TaskError, TaskFailed
 
 ##-- logging
 logging = logmod.getLogger(__name__)
-printer = doot.subprinter()
-act_l   = doot.subprinter("action_exec")
-fail_l  = doot.subprinter("fail")
 ##-- end logging
 
 EXITCODES : Final[list[int]] = [0]
@@ -62,25 +59,25 @@ class SayAction:
                 case _:
                     return False
         except sh.ForkException as err:
-            fail_l.error("Shell Command failed: %s", err)
+            doot.report.error("Shell Command failed: %s", err)
         except sh.CommandNotFound as err:
-            fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
+            doot.report.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
         except sh.ErrorReturnCode as err:
-            fail_l.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
+            doot.report.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
             if bool(err.stdout):
-                fail_l.error("-- Stdout: ")
-                fail_l.error("%s", err.stdout.decode())
-                fail_l.error("")
-                fail_l.error("-- Stdout End")
-                fail_l.error("")
+                doot.report.error("-- Stdout: ")
+                doot.report.error("%s", err.stdout.decode())
+                doot.report.error("")
+                doot.report.error("-- Stdout End")
+                doot.report.error("")
 
-            fail_l.info("")
+            doot.report.gap()
             if bool(err.stderr):
-                fail_l.error("-- Stderr: ")
-                fail_l.error("%s", err.stderr.decode())
-                fail_l.error("")
-                fail_l.error("-- Stderr End")
-                fail_l.error("")
+                doot.report.error("-- Stderr: ")
+                doot.report.error("%s", err.stderr.decode())
+                doot.report.error("")
+                doot.report.error("-- Stderr End")
+                doot.report.error("")
 
         return False
 
@@ -93,8 +90,8 @@ class SayAction:
         expanded                = [str(x.expand(spec, state)) for x in keys]
         result = cmd(*expanded, _return_cmd=True, _bg=background)
         if result.exit_code not in EXITCODES:
-            fail_l.warning("Shell Command Failed: %s", result.exit_code)
-            fail_l.warning(result.stderr.decode())
+            doot.report.warn("Shell Command Failed: %s", result.exit_code)
+            doot.report.warn(result.stderr.decode())
             return False
 
         logging.debug("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, cmd, args)
@@ -112,8 +109,8 @@ class SayAction:
         expanded                = [str(x.expand(spec, state)) for x in keys]
         result = cmd(*args, _return_cmd=True, _bg=background)
         if result.exit_code not in EXITCODES:
-            fail_l.warning("Shell Command Failed: %s", result.exit_code)
-            fail_l.warning(result.stderr.decode())
+            doot.report.warn("Shell Command Failed: %s", result.exit_code)
+            doot.report.warn(result.stderr.decode())
             return False
 
         logging.debug("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, cmd, args)
@@ -150,10 +147,10 @@ class SayTimeAction:
                 case _:
                     return False
         except sh.CommandNotFound as err:
-            fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
+            doot.report.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
             return False
         except sh.ErrorReturnCode:
-            fail_l.error("Shell Command '%s' exited with code: %s for args: %s", args[0], result.exit_code, args)
+            doot.report.error("Shell Command '%s' exited with code: %s for args: %s", args[0], result.exit_code, args)
             return False
 
 
@@ -164,8 +161,8 @@ class SayTimeAction:
             sleep(10)
         result = cmd(*args, _return_cmd=True, _bg=spec.kwargs.on_fail(False, bool).background())
         assert(result.exit_code == 0)
-        printer.debug("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, cmd, args)
-        printer.info("%s", result, extra={"colour":"reset"})
+        doot.report.detail("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, cmd, args)
+        doot.report.trace("%s", result, extra={"colour":"reset"})
         return True
 
 
@@ -176,6 +173,6 @@ class SayTimeAction:
             sleep(10)
         result = cmd(*args, _return_cmd=True, _bg=spec.kwargs.on_fail(False, bool).background())
         assert(result.exit_code == 0)
-        printer.debug("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, cmd, args)
-        printer.info("%s", result, extra={"colour":"reset"})
+        doot.report.detail("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, cmd, args)
+        doot.report.trace("%s", result, extra={"colour":"reset"})
         return True
