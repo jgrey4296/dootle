@@ -1,7 +1,7 @@
 # -*- mode:toml; -*-
 
 [startup]
-doot_version             = "1.0"
+doot_version             = "1.1"
 loaders                  = { commands="default", task="default", parser="default" }
 location_check           = { make_missing=true }
 sources                  = { tasks=[".tasks"], code=[] }
@@ -73,4 +73,4 @@ src     = "protect::>dootle"
 temp    = "clean::>.temp"
 logs    = "{temp}/logs"
 build   = "{temp}/build"
-docs    = "docs"
+docs    = "{src}/__docs"

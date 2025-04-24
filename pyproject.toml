@@ -21,7 +21,7 @@ dependencies   = [
     "pony>=0.7",
     "networkx",
     "jgdv>=1.0.1",
-    "bibble",
+    "bibtex-bibble",
     "mastodon-py>=2.0.1",
 ]
 
@@ -145,7 +145,7 @@ tag                = false
                    '^current_version\s+=\s+"{version}"'
 ]
 "dootle/__init__.py" = ['^__version__\s+=\s+"{version}"']
-"dootle/_docs/conf.py" = ['^release\s+=\s+"{version}"']
+"dootle/__docs/conf.py" = ['^release\s+=\s+"{version}"']
 
 
 ##-- end bumpver
@@ -197,6 +197,6 @@ exclude                = []
 [tool.uv.sources]
 jgdv = { path = "../../../jgdv", editable = true }
 doot = { path = "../../", editable = true }
-bibble = { path = "../bibble", editable = true }
+bibtex-bibble = { path = "../bibble", editable = true }
 
 ##-- end uv
