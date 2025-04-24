@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 (Generated using [git-cliff](https://git-cliff.org/)
 
+## [0.3.2] - 2025-04-24
+
+### Features
+
+- Shellbakedrun back
+
+### Dependencies
+
+- Version 0.3.1 -> 0.3.2
+
 ## [0.3.1] - 2025-04-24
 
 ### Features
