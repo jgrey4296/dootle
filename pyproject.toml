@@ -195,8 +195,6 @@ exclude                = []
 
 ##-- uv
 [tool.uv.sources]
-jgdv = { path = "../../../jgdv", editable = true }
-doot = { path = "../../", editable = true }
 bibtex-bibble = { path = "../bibble", editable = true }
 
 ##-- end uv

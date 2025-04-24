@@ -36,7 +36,7 @@ from doot.task.core.task import DootTask
 # ##-- end 3rd party imports
 
 # ##-- 1st party imports
-from dootle.actions.shell import ShellAction, ShellBake, ShellBakedRun
+from dootle.actions.shell import ShellAction, ShellBake, ShellInteractive, ShellBakedRun
 
 # ##-- end 1st party imports
 

@@ -36,6 +36,7 @@ from doot.errors import TaskError
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
+
 @Proto(Action_p)
 class ShellBake:
     """
@@ -86,6 +87,38 @@ class ShellBake:
                 case None:
                     return True
                 case str():
+                    return { str(_update) : baked }
+
+@Proto(Action_p)
+class ShellBakedRun:
+    """
+      Run a series of baked commands
+    """
+
+    @DKeyed.redirects("in_")
+    @DKeyed.redirects("update_", fallback=None)
+    def __call__(self, spec, state, _in, _update):
+        cmd    = _in.expand(spec,state, check=sh.Command|None)
+        try:
+            result = cmd()
+        except sh.CommandNotFound as err:
+            fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0])
+            return False
+        except sh.ErrorReturnCode as err:
+            fail_l.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
+            if bool(err.stdout):
+                fail_l.error("%s", err.stdout.decode())
+
+            fail_l.info("")
+            if bool(err.stderr):
+                fail_l.error("%s", err.stderr.decode())
+
+            return False
+        else:
+            match _update:
+                case None:
+                    return True
+                case str():
                     return { str(_update) : result }
 
 @Proto(Action_p)
@@ -94,14 +127,13 @@ class ShellAction:
     For actions in subshells/processes.
     all other arguments are passed directly to the program, using `sh`
 
-
     ::
 
         - `env_`       : an indirect key for using a pre-baked sh environment
         - `exitcodes`  : list[int] for what is acceptable return values
         - `splitlines` : bool for splitting the stdout result
         - `errlimit`   : int for how much of the tail of the stderr is printed ([x:])
-    
+
     """
 
     @DKeyed.args
@@ -119,14 +151,14 @@ class ShellAction:
         expanded                = [str(x.expand(spec, state)) for x in keys]
         try:
             # Build the command by getting it from env:
-            cmd_name                = expanded[0]
-            cmd                     = getattr(env, cmd_name)
-            result                  = cmd(*expanded[1:],
-                                          _return_cmd=True,
-                                          _bg=background,
-                                          _tty_out=not notty,
-                                          _cwd=cwd,
-                                          _iter=True)
+            cmd_name = expanded[0]
+            cmd      = getattr(env, cmd_name)
+            result   = cmd(*expanded[1:],
+                           _return_cmd=True,
+                           _bg=background,
+                           _tty_out=not notty,
+                           _cwd=cwd,
+                           _iter=True)
 
         except sh.ForkException as err:
             doot.report.error("Shell Command failed: %s", err)
@@ -144,7 +176,7 @@ class ShellAction:
                 doot.report.user("(Cmd): %s", line.strip())
 
             self._print_err(result.stderr.decode(), errlimit)
-            
+
             if result.exit_code not in exitcodes:
                 doot.report.user("Shell Command Failed: %s", result.exit_code)
                 return False
@@ -162,7 +194,6 @@ class ShellAction:
                 case x:
                     raise TypeError("Unexpected 'update' type", x)
 
-
     def _print_err(self, err, limit:int):
         if not bool(err):
             return
@@ -173,9 +204,8 @@ class ShellAction:
         else:
             doot.report.user("-- Err.")
 
-        
 @Proto(Action_p)
-class DootInteractiveAction:
+class ShellInteractive:
     """
       An interactive command, which uses the self.interact method as a callback for sh.
 
