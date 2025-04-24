@@ -92,12 +92,14 @@ include-package-data = true
 namespaces = true
 where      = ["."]
 include    = ["dootle*"]
+exclude    = ["dootle._docs*"]
 
 [tool.setuptools.package-data]
 "*" = ["*"]
 "dootle.__data"    = ["*.so"]
 
 [tool.setuptools.exclude-package-data]
+dootle = ["**.rst"]
 
 [tool.distutils.egg_info]
 # from https://github.com/pypa/setuptools/discussions/3348#discussioncomment-6556887
