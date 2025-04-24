@@ -66,7 +66,7 @@ logging = logmod.getLogger(__name__)
 
 # Body:
 
-@Proto(API.WorkflowReporter_p, API.GeneralReporter_p)
+@Proto(API.WorkflowReporter_p)
 class LineReporter(API.Reporter_d):
     """ An alternative reporter  """
 

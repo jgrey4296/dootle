@@ -64,7 +64,7 @@ class TestLineReporter:
 
     def test_ctor(self):
         match LineReporter():
-            case API.Reporter_p():
+            case API.WorkflowReporter_p():
                 assert(True)
             case x:
                  assert(False), x
