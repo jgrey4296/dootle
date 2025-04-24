@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 (Generated using [git-cliff](https://git-cliff.org/)
 
+## [0.3.1] - 2025-04-24
+
+### Features
+
+- Bumpver target for docs conf.py
+
+### Bug Fixes
+
+- Dependencies
+
+### Dependencies
+
+- Version 0.3.0 -> 0.3.1
+
 ## [0.3.0] - 2025-04-23
 
 ### Bug Fixes

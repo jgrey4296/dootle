@@ -36,7 +36,7 @@ exclude_patterns = [
 project   = 'dootle'
 copyright = '2024, John Grey'
 author    = 'John Grey'
-release   = "0.3.0"
+release   = "0.3.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
