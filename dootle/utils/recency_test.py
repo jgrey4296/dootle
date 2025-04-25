@@ -102,7 +102,7 @@ def stale_test(spec, state, source, dest, tolerance):
     difference      = int(max(source_ns, dest_ns) - min(source_ns, dest_ns))
     below_tolerance = difference <= tolerance
 
-    printer.debug("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
+    logging.debug("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
     if (not source_newer) or below_tolerance:
-        printer.info("%s is Stale", source.name)
+        logging.info("%s is Stale", source.name)
         return ActE.SKIP
