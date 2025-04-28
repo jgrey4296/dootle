@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 
-
 """
 # ruff: noqa:
 
@@ -28,7 +27,11 @@ import atexit # for @atexit.register
 import faulthandler
 # ##-- end stdlib imports
 
-import doot.reporters._interface as API
+from jgdv import Proto, Mixin
+from doot.reporters import _interface as API  # noqa: N812
+from doot.reporters import BasicReporter, TraceFormatter
+
+from . import _interface as LAPI
 
 # ##-- types
 # isort: off
@@ -50,6 +53,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Callable, Generator
     from collections.abc import Sequence, Mapping, MutableMapping, Hashable
 
+    type Logger = logmod.Logger
 ##--|
 
 # isort: on
@@ -58,21 +62,22 @@ if TYPE_CHECKING:
 ##-- logging
 logging = logmod.getLogger(__name__)
 ##-- end logging
+
 # Vars:
-GAP : Final[str] = (" "*API.SEGMENT_SIZES[1])
-FANCY_SEGMENTS  : Final[dict[str, str|tuple[str,str,str]]] = {
-    "root"            :  "┳",
-    "wait"            :  "┃",
-    "branch"          : ("┣", "─▶", "╮"),
-    "act"             : ("┃", GAP, "┼◇"),
-    "resume"          : ("┣", "╌╌", "╮"),
-    "inactive"        :  "┊",
-    "begin"           : ("┃", GAP, "▼"),
-    "result"          : ("┢", "◀─", "╯"),
-    "fail"            : ("┢", "", "❌" ),
-    "pause"           : ("┝", "╌╌", "╯"),
-    "finished"        :  "┻",
-    "gap"             : GAP,
-    "just_char"       :  "─",
-}
+
 # Body:
+
+@Proto(API.WorkflowReporter_p)
+class FancyReporter(BasicReporter):
+    """ An alternative reporter.
+
+
+    Activated by setting doot.toml:
+    settings.commands.run.reporter = 'dootle.reporter:FancyReporter'
+    """
+
+    def __init__(self, *args:Any, logger:Maybe[Logger]=None, segments:Maybe[dict]=None, **kwargs:Any) -> None:
+        super().__init__(*args,
+                         logger=logger,
+                         segments=segments or LAPI.FANCY_SEGMENTS,
+                         **kwargs)

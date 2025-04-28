@@ -87,5 +87,5 @@ class BibtexInitAction:
                 ctor = (db_base.safe_import() or b.Library)
 
         db = ctor()
-        doot.report.trace("Bibtex Database Initialised")
+        doot.report.act(info="", msg="Bibtex Database Initialised", level=-10)
         return { _update : db }

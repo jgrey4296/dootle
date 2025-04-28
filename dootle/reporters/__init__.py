@@ -36,4 +36,4 @@ https://archive.docs.dagger.io/0.9/sdk/elixir/756758/get-started/
 
 """
 
-from .liner import LineReporter
+from .fancy import FancyReporter
