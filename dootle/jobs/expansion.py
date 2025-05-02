@@ -75,10 +75,12 @@ class JobExpandAction(DootBaseAction):
     @DKeyed.types("__expansion_count", fallback=0)
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update):
+        result      : list[TaskSpec]
+        inject_spec : Maybe[InjectSpec]
         actions, sources = self._prep_template(template)
         build_queue      = self._prep_data(_from)
-        root            = _basename.pop()
-        base_head       = root.with_head()
+        root             = _basename.pop()
+        base_head        = root.with_head()
 
         match prefix:
             case "prefix":
@@ -92,7 +94,9 @@ class JobExpandAction(DootBaseAction):
             case [*xs, x]:
                 base_subtask = x
 
-        result : list[TaskSpec] = []
+        inject_spec = InjectSpec.build(inject)
+
+        result = []
         logging.info("Generating %s SubTasks of: %s from %s", len(build_queue), base_subtask, root)
         for arg in build_queue:
             _count += 1
@@ -102,12 +106,12 @@ class JobExpandAction(DootBaseAction):
                              actions = actions or [],
                              required_for=[base_head],
                              )
-
-            match InjectSpec.build(inject, sources=[spec, state], insertion=arg):
-                case None:
-                    pass
-                case x:
-                    base_dict |= x.as_dict()
+            if inject_spec is not None:
+                base_dict |= (inject_spec.apply_from_spec(spec)
+                              | inject_spec.apply_from_target(spec)
+                              | inject_spec.apply_from_state(state)
+                              | inject_spec.apply_literal(arg)
+                              )
 
             new_spec  = TaskSpec.build(base_dict)
             result.append(new_spec)

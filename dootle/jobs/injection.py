@@ -74,18 +74,18 @@ class JobInjector:
 
     @DKeyed.types("onto", "inject")
     def __call__(self, spec, state, onto, inject):
-        match InjectSpec.build(inject, sources=[spec, state]):
+        match InjectSpec.build(inject):
             case None:
-                injection = {}
+                inject_d = {}
             case x:
-                injection = x.as_dict(constraint=spec)
+                inject_d = x.apply_from_spec(spec) | x.apply_from_state(state)
 
         match onto:
             case list():
                 for x in onto:
-                    x.model_extra.update(dict(**x.extra, **injection))
+                    x.model_extra.update(dict(**x.extra, **inject_d))
             case TaskSpec():
-                onto.model_extra.update(dict(**x.extra, **injection))
+                onto.model_extra.update(dict(**x.extra, **inject_d))
 
 @Proto(Action_p)
 class JobPrependActions:
