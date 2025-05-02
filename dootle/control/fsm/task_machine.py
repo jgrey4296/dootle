@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 
+
 """
 
 # Imports:
@@ -42,16 +43,11 @@ from doot.enums import TaskStatus_e
 logging = logmod.getLogger(__name__)
 ##-- end loggingw
 
-class TaskTrackModel:
-
-    def check_for_spec(self):
-        return False
-
 class TaskTrackMachine(StateMachine):
     """
       A Statemachine controlling the tracking of task states
     """
-    # State
+    # States
     _ = States.from_enum(TaskStatus_e, initial=TaskStatus_e.NAMED, final=TaskStatus_e.DEAD, use_enum_instance=True)
 
     # Events
@@ -90,6 +86,9 @@ class TaskTrackMachine(StateMachine):
     progress = (setup | run | disable | skip | fail | halt | succeed | complete)
 
     # Listeners
+    def check_for_spec(self) -> bool:
+        return False
+
 
 class ArtifactMachine(StateMachine):
     """

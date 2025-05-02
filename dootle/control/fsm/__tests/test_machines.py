@@ -24,7 +24,7 @@ class TestTaskStateMachine:
 
     @pytest.fixture(scope="function")
     def model(self):
-        return tm.TaskTrackMachine(model=tm.TaskTrackModel())
+        return tm.TaskTrackMachine()
 
     def test_sanity(self, model):
         assert(True is True)
@@ -33,7 +33,7 @@ class TestTaskStateMachine:
 
     def test_setup_transition(self):
         assert(True is True)
-        model = tm.TaskTrackMachine(model=tm.TaskTrackModel())
+        model = tm.TaskTrackMachine()
         assert(model.current_state.value is TaskStatus_e.NAMED)
         model.send("progress")
         assert(model.current_state.value is TaskStatus_e.DECLARED)
