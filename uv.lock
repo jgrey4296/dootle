@@ -49,7 +49,7 @@ wheels = [
 
 [[package]]
 name = "bibtex-bibble"
-version = "0.0.1"
+version = "0.1.1"
 source = { editable = "../bibble" }
 dependencies = [
     { name = "bibtexparser" },
@@ -303,7 +303,7 @@ wheels = [
 [[package]]
 name = "doot"
 version = "1.1.1"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../../" }
 dependencies = [
     { name = "boltons" },
     { name = "jgdv" },
@@ -315,14 +315,32 @@ dependencies = [
     { name = "stackprinter" },
     { name = "sty" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9f/92/3d417ec830b90e875594d0bae92bc995af538762f81391ced77e226478ee/doot-1.1.1.tar.gz", hash = "sha256:15f8db950c87b2ea285b70b3074d1efe8425daecfbeba3f4bb4763b9fb59e534", size = 166992 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/97/50/220a41d9303532dc61660a75e572971592d3e60745ea1020a1272880ffff/doot-1.1.1-py3-none-any.whl", hash = "sha256:819649496e8b4e239d99b7f4ec75b2a6bdba058838bea87bf38e289edf7f2af8", size = 254531 },
+
+[package.metadata]
+requires-dist = [
+    { name = "boltons", specifier = ">=23.0.0" },
+    { name = "jgdv", editable = "../../../jgdv" },
+    { name = "matplotlib", specifier = ">=3.10.1" },
+    { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=4.0.1" },
+    { name = "networkx", specifier = ">3.0" },
+    { name = "packaging", specifier = ">=24.2" },
+    { name = "pydantic", specifier = ">=2.7.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
+    { name = "sh", specifier = ">=2.0.6" },
+    { name = "sphinx", marker = "extra == 'dev'", specifier = ">=8.2.3" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3.0.2" },
+    { name = "stackprinter", specifier = ">=0.2.10" },
+    { name = "sty", specifier = ">=1.0.0" },
 ]
+provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = []
 
 [[package]]
 name = "dootle"
-version = "0.3.1"
+version = "0.3.2"
 source = { editable = "." }
 dependencies = [
     { name = "bibtex-bibble" },
@@ -347,7 +365,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "bibtex-bibble", editable = "../bibble" },
-    { name = "doot", specifier = ">=1.0.0" },
+    { name = "doot", editable = "../../" },
     { name = "jgdv", specifier = ">=1.0.1" },
     { name = "mastodon-py", specifier = ">=2.0.1" },
     { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=4.0.1" },
@@ -447,7 +465,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/28/e0/f7bec3443f5e9cd9d
 [[package]]
 name = "jgdv"
 version = "1.1.0"
-source = { registry = "https://pypi.org/simple" }
+source = { editable = "../../../jgdv" }
 dependencies = [
     { name = "networkx" },
     { name = "packaging" },
@@ -458,10 +476,26 @@ dependencies = [
     { name = "stackprinter" },
     { name = "sty" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c2/eb/c19bb37b0cda5e8cf8348b2b547f46f995aa37752282f6616fafeda457dc/jgdv-1.1.0.tar.gz", hash = "sha256:27e201295c5ce0e36faaa58b57e5e43b65935b0c078999d833ba0114079cf8c6", size = 153371 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/2d/0a/e320055f0ef254848ed241ac841f511616ed6628d5e9ca8c320d474e5077/jgdv-1.1.0-py3-none-any.whl", hash = "sha256:3152906e73a71a1144fb980a3d3d702af2cd3d6199a671633d2b6a8230d717cf", size = 262226 },
+
+[package.metadata]
+requires-dist = [
+    { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=4.0.1" },
+    { name = "networkx" },
+    { name = "packaging", specifier = ">=24.2" },
+    { name = "pydantic", specifier = ">=2.9.0" },
+    { name = "pyparsing" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
+    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
+    { name = "python-statemachine", specifier = ">=2.5.0" },
+    { name = "sh", specifier = ">=2.1.0" },
+    { name = "sphinx", marker = "extra == 'dev'", specifier = ">=8.2.3" },
+    { name = "sphinx-autoapi", marker = "extra == 'dev'", specifier = ">=3.6.0" },
+    { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3.0.2" },
+    { name = "stackprinter", specifier = ">=0.2.0" },
+    { name = "sty", specifier = ">=1.0.6" },
 ]
+provides-extras = ["dev"]
 
 [[package]]
 name = "jinja2"

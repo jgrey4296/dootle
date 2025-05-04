@@ -198,5 +198,6 @@ exclude                = []
 ##-- uv
 [tool.uv.sources]
 bibtex-bibble = { path = "../bibble", editable = true }
+doot = { path = "../../", editable = true }
 
 ##-- end uv
