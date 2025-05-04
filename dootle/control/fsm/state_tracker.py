@@ -5,7 +5,6 @@ Uses FSM's to simplify StateTracker.next_for.
 
 The FSM wraps a DootTask/Job/Artifact, and manages its progression
 
-
 """
 # Imports:
 from __future__ import annotations
@@ -139,6 +138,12 @@ class StateTracker:
     def validate_network(self) -> None:
         self._network.validate_network()
 
+    def clear_queue(self):
+        self._queue.clear_queue()
+
+    def generate_plan(self):
+        pass
+
     def next_for(self, target:Maybe[str|TaskName]=None) -> Maybe[Task_p|TaskArtifact]:
         """ ask for the next task that can be performed
 
@@ -168,14 +173,7 @@ class StateTracker:
 
             # Run The FSM of the task/artifact
 
-
         else:
             logging.info("[Next.For] <- %s", result)
             # wrap the result in an execution FSM
             return result
-
-    def clear_queue(self):
-        self._queue.clear_queue()
-
-    def generate_plan(self):
-        pass

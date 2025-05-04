@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
 
-
 """
 
 # Imports:
@@ -48,7 +47,10 @@ class TaskTrackMachine(StateMachine):
       A Statemachine controlling the tracking of task states
     """
     # States
-    _ = States.from_enum(TaskStatus_e, initial=TaskStatus_e.NAMED, final=TaskStatus_e.DEAD, use_enum_instance=True)
+    _ = States.from_enum(TaskStatus_e,
+                         initial=TaskStatus_e.NAMED,
+                         final=TaskStatus_e.DEAD,
+                         use_enum_instance=True)
 
     # Events
     setup = (
@@ -56,18 +58,17 @@ class TaskTrackMachine(StateMachine):
         | _.NAMED.to(_.DECLARED)
         | _.DECLARED.to(_.DEFINED)
         | _.DEFINED.to(_.INIT)
-        # | _.INIT.to.itself(internal=True)
+        | _.INIT.to.itself(internal=True)
         )
 
     run = (
         _.INIT.to(_.WAIT)
-        # | _.WAIT.to.itself(cond=None, internal=True)
+        | _.WAIT.to.itself(cond="should_wait", internal=True)
         | _.WAIT.to(_.READY)
         | _.READY.to(_.RUNNING)
-        # | _.RUNNING.to.itself(cond=None, internal=True)
-        | _.RUNNING.to(_.SKIPPED, cond=None)
-        | _.RUNNING.to(_.HALTED,  cond=None)
-        | _.RUNNING.to(_.FAILED,  cond=None)
+        | _.RUNNING.to(_.SKIPPED, cond="should_skip")
+        | _.RUNNING.to(_.HALTED,  cond="should_halt")
+        | _.RUNNING.to(_.FAILED,  cond="should_fail")
         | _.RUNNING.to(_.SUCCESS)
         )
 
@@ -86,60 +87,100 @@ class TaskTrackMachine(StateMachine):
     progress = (setup | run | disable | skip | fail | halt | succeed | complete)
 
     # Listeners
+
+    def __call__(self) -> Any:
+        pass
+
     def check_for_spec(self) -> bool:
         return False
 
+    def should_wait(self) -> bool:
+        pass
+
+    def should_skip(self) -> bool:
+        pass
+
+    def should_halt(self) -> bool:
+        pass
+
+    def should_fail(self) -> bool:
+        pass
 
 class ArtifactMachine(StateMachine):
     """
       A statemachine of artifact
     """
     # State
-    Declared    = State(initial=True)
-    Stale       = State()
-    ToClean     = State()
-    Removed     = State()
-    Exists      = State(final=True)
+    Declared     = State(initial=True)
+    Stale        = State()
+    ToClean      = State()
+    Removed      = State()
+    Exists       = State()
+    Finished     = State(final=True)
 
-    progress = (
-        Declared.to(Stale, cond=None)
-        | Declared.to(ToClean, cond=None)
-        | Declared.to(Exists)
+    progress     = (
+        Declared.to(Stale, cond="is_stale")
+        | Declared.to(ToClean, cond="should_clean")
+        | Declared.to(Exists, cond="does_exists")
+        | Declared.to(Finished)
         | Stale.to(Removed)
         | ToClean.to(Removed)
         | Removed.to(Declared)
+        | Exists.to(Finished)
     )
 
+    def __call__(self) -> Any:
+        pass
+
+    def is_stale(self) -> bool:
+        pass
+
+    def should_clean(self) -> bool:
+        pass
+
+    def does_exist(self) -> bool:
+        pass
 
 class TaskExecutionMachine(StateMachine):
     """
       Manaages the state progression of a running task
     """
     # State
-    Ready    = State(initial=True)
-    Finished = State(final=True)
-    Check    = State()
-    Setup    = State()
-    Body     = State()
-    Action   = State()
-    Relation = State()
-    Report   = State()
-    Failed   = State()
-    Cleanup  = State()
-    Sleep    = State()
+    Ready      = State(initial=True)
+    Finished   = State(final=True)
+    Check      = State()
+    Setup      = State()
+    Body       = State()
+    Action     = State()
+    Relation   = State()
+    Report     = State()
+    Failed     = State()
+    Successors = State()
 
     # Events
     run = (Ready.to(Check)
-        | Check.to(Setup)
-        | Setup.to(Body)
-        | Body.to(Report)
-        | Report.to(Cleanup, cond="is_not_job")
-        | Cleanup.to(Finished)
-        | Report.to(Sleep)
-        | Sleep.to(Finished)
-        )
-    action = (Body.to(Action, Relation) | Action.to(Body) | Relation.to(Body))
-    fail   = (Failed.from_(Check, Setup, Body, Action, Relation, Report) | Failed.to(Cleanup))
+           | Check.to(Setup)
+           | Setup.to(Body)
+           | Body.to(Report, cond="no_actions_remain")
+           | Report.to(Successors)
+           | Successors.to(Finished)
+           )
+    action = (Body.to(Action, Relation, cond="actions_remain")
+              | Action.to(Body)
+              | Relation.to(Body)
+              )
+    fail   = (Failed.from_(Check, Setup, Body, Action, Relation, Report)
+              | Failed.to(Successors)
+              )
 
     # Composite Events
     progress = (action | run | fail)
+
+    def __call__(self) -> Any:
+        pass
+
+    def actions_remain(self) -> bool:
+        pass
+
+    def no_actions_remain(self) -> bool:
+        pass

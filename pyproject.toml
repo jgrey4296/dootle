@@ -23,6 +23,7 @@ dependencies   = [
     "jgdv>=1.0.1",
     "bibtex-bibble",
     "mastodon-py>=2.0.1",
+    "python-statemachine>=2.5.0",
 ]
 
 [project.optional-dependencies]
