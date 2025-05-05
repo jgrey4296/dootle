@@ -31,14 +31,14 @@ import doot
 import doot.errors
 from doot._structs.relation_spec import RelationSpec
 from doot.enums import (ArtifactStatus_e, EdgeType_e, LocationMeta_e,
-                        QueueMeta_e, RelationMeta_e, TaskMeta_e, TaskStatus_e)
-from doot.structs import ActionSpec, TaskArtifact, TaskName, TaskSpec
+                        QueueMeta_e, RelationMeta_e, TaskMeta_e)
+from doot.structs import ActionSpec
 from doot.task.core.task import DootTask
 from jgdv import Proto
 
 # ##-- end 3rd party imports
 
-from . import _interface as API
+from . import _interface as API  # noqa: N812
 from doot.control.split_tracker.track_registry import TrackRegistry
 from doot.control.split_tracker.track_network import TrackNetwork
 from doot.control.split_tracker.track_queue import TrackQueue
@@ -54,6 +54,8 @@ from typing import Protocol, runtime_checkable
 from typing import no_type_check, final, override, overload
 
 if TYPE_CHECKING:
+   from doot.structs import TaskArtifact, TaskName, TaskSpec
+   from doot.enums import (TaskStatus_e)
    from jgdv import Maybe
    from typing import Final
    from typing import ClassVar, Any, LiteralString
@@ -61,6 +63,8 @@ if TYPE_CHECKING:
    from typing import TypeGuard
    from collections.abc import Iterable, Iterator, Callable, Generator
    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+
+   import networkx as nx
    type Abstract[T] = T
    type Concrete[T] = T
 
@@ -95,11 +99,11 @@ class StateTracker:
         self._queue    = TrackQueue(self._registry, self._network)
 
     @property
-    def active_set(self) -> set:
-        return self._queue.active_set
+    def active_set(self) -> set[Task_p]:
+        return self._queue.active_set # type: ignore
 
     @property
-    def network(self) -> DiGraph:
+    def network(self) -> nx.DiGraph:
         return self._network._graph
 
     @property
@@ -131,6 +135,7 @@ class StateTracker:
 
     def set_status(self, task:Concrete[TaskName]|TaskArtifact|Task_p, state:TaskStatus_e) -> bool:
         self._registry.set_status(task, state)
+        return True
 
     def build_network(self, *, sources:Maybe[True|list[Concrete[TaskName]|TaskArtifact]]=None) -> None:
         self._network.build_network(sources=sources)
@@ -138,11 +143,11 @@ class StateTracker:
     def validate_network(self) -> None:
         self._network.validate_network()
 
-    def clear_queue(self):
+    def clear_queue(self) -> None:
         self._queue.clear_queue()
 
-    def generate_plan(self):
-        pass
+    def generate_plan(self) -> list:
+        return []
 
     def next_for(self, target:Maybe[str|TaskName]=None) -> Maybe[Task_p|TaskArtifact]:
         """ ask for the next task that can be performed
@@ -162,7 +167,7 @@ class StateTracker:
             raise doot.errors.TrackingError("Network is in an invalid state")
 
         if target and target not in self._queue.active_set:
-            self.queue_entry(target, silent=True)
+            self.queue_entry(target)
 
         count  = API.MAX_LOOP
         result = None

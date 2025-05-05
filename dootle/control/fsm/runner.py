@@ -30,7 +30,7 @@ from jgdv.debugging import SignalHandler, NullHandler
 from doot.control.runner import DootRunner
 # ##-- end 3rd party imports
 
-from statemachine import StateMachine
+from .task import FSMTask
 
 # ##-- 1st party imports
 import doot
@@ -98,7 +98,7 @@ class FSMRunner(DootRunner):
             match (task:=self.tracker.next_for()):
                 case None:
                     pass
-                case StateMachine():
+                case FSMTask():
                     self._run_fsm(task)
                 case TaskArtifact():
                     self._notify_artifact(task)
@@ -122,7 +122,6 @@ class FSMRunner(DootRunner):
             self._sleep(task)
             self.step += 1
 
-    def _run_fsm(self, fsm:StateMachine) -> None:
+    def _run_fsm(self, fsm:FSMTask) -> None:
         # Execute the fsm, possibly add additional tasks to the tracker
-
-        pass
+        fsm(step=self.step, tracker=self.tracker)
