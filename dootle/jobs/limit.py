@@ -27,7 +27,7 @@ from jgdv import Maybe
 from jgdv.structs.dkey import DKey, DKeyed
 import doot
 import doot.errors
-from doot.actions.core.action import DootBaseAction
+from doot.workflow.actions import DootBaseAction
 from doot.mixins.path_manip import Walker_m
 from doot.structs import TaskName, TaskSpec
 from jgdv.structs.strang import CodeReference

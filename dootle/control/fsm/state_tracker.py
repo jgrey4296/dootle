@@ -29,19 +29,18 @@ from uuid import UUID, uuid1
 # ##-- 3rd party imports
 import doot
 import doot.errors
-from doot._structs.relation_spec import RelationSpec
-from doot.enums import (ArtifactStatus_e, EdgeType_e, LocationMeta_e,
-                        QueueMeta_e, RelationMeta_e, TaskMeta_e)
-from doot.structs import ActionSpec
-from doot.task.core.task import DootTask
+from doot.workflow import RelationSpec, DootTask, ActionSpec
+from doot.workflow._interface import (ArtifactStatus_e, QueueMeta_e, RelationMeta_e, TaskMeta_e)
+from doot.control.tracker._interface import EdgeType_e
 from jgdv import Proto
+from jgdv.structs.locator._interface import LocationMeta_e
 
 # ##-- end 3rd party imports
 
 from . import _interface as API  # noqa: N812
-from doot.control.split_tracker.track_registry import TrackRegistry
-from doot.control.split_tracker.track_network import TrackNetwork
-from doot.control.split_tracker.track_queue import TrackQueue
+from doot.control.tracker.registry import TrackRegistry
+from doot.control.tracker.network import TrackNetwork
+from doot.control.tracker.queue import TrackQueue
 
 # ##-- types
 # isort: off
@@ -54,7 +53,7 @@ from typing import Protocol, runtime_checkable
 from typing import no_type_check, final, override, overload
 
 if TYPE_CHECKING:
-   from doot.structs import TaskArtifact, TaskName, TaskSpec
+   from doot.workflow import TaskArtifact, TaskName, TaskSpec
    from doot.enums import (TaskStatus_e)
    from jgdv import Maybe
    from typing import Final
@@ -69,7 +68,8 @@ if TYPE_CHECKING:
    type Concrete[T] = T
 
 ##--|
-from doot._abstract import Task_p, TaskTracker_p
+from doot.workflow._interface import Task_p
+from doot.control.tracker._interface import TaskTracker_p
 # isort: on
 # ##-- end types
 

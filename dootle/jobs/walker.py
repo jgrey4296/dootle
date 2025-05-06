@@ -29,14 +29,14 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto, Mixin
-from jgdv.structs.dkey import DKey, DKeyed
+from jgdv.structs.strang import CodeReference
 import doot
 import doot.errors
-from doot._abstract import Action_p
-from doot.actions.core.action import DootBaseAction
+from doot.workflow._interface import Action_p
+from doot.workflow import TaskName, TaskSpec
+from doot.workflow.actions import DootBaseAction
 from doot.mixins.path_manip import Walker_m
-from doot.structs import TaskName, TaskSpec
-from jgdv.structs.strang import CodeReference
+from doot.util.dkey import DKey, DKeyed
 
 # ##-- end 3rd party imports
 

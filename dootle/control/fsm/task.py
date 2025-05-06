@@ -30,10 +30,9 @@ import faulthandler
 from jgdv import Proto, Mixin, Maybe
 import doot
 from doot.structs import TaskSpec, ActionSpec, RelationSpec, TaskName
-from doot._abstract.task import Task_d, Task_p, Job_p
-from doot.tasks.core.task import DootTask
-from doot.enums import ActionResponse_e as ActRE
-from doot.enums import TaskMeta_e, TaskStatus_e
+from doot.workflow._interface import Task_p, Job_p, TaskMeta_e, TaskStatus_e
+from doot.workflow._interface import ActionResponse_e as ActRE
+from doot.workflow import DootTask
 
 # ##-- types
 # isort: off
@@ -77,7 +76,7 @@ DEPENDS_GROUP              : Final[str] = "depends_on"
 # Body:
 
 @Proto(Task_p)
-class FSMTask(Task_d):
+class FSMTask(Task_p):
     """
 
     """

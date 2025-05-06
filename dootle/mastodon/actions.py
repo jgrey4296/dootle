@@ -30,8 +30,8 @@ from jgdv.structs.chainguard import ChainGuard
 import doot
 import doot.errors
 import mastodon
-from doot._abstract import Task_p
-from doot.structs import ActionSpec
+from doot.workflow._interface import Task_p
+from doot.workflow import ActionSpec
 
 # ##-- end 3rd party imports
 

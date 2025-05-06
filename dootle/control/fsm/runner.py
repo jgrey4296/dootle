@@ -35,9 +35,8 @@ from .task import FSMTask
 # ##-- 1st party imports
 import doot
 import doot.errors
-from doot._structs.relation_spec import RelationSpec
-from doot.enums import ActionResponse_e as ActRE
-from doot.structs import ActionSpec, TaskArtifact, TaskName, TaskSpec
+from doot.workflow import RelationSpec, ActionSpec, TaskArtifact, TaskName, TaskSpec
+from doot.workflow._interface import ActionResponse_e as ActRE
 
 from . import _runner_util as RU
 
@@ -64,7 +63,10 @@ if TYPE_CHECKING:
     from collections.abc import Sequence, Mapping, MutableMapping, Hashable
 
 ##--|
-from doot._abstract import (Action_p, Job_p, Task_p, TaskRunner_p, TaskTracker_p)
+from doot.workflow._interface import (Action_p, Job_p, Task_p)
+from doot.control.runner._interface import TaskRunner_p
+from doot.control.tracker._interface import TaskTracker_p
+
 from typing import ContextManager
 # isort: on
 # ##-- end types

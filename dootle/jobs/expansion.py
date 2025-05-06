@@ -32,12 +32,13 @@ from jgdv import Proto
 from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.structs.chainguard import ChainGuard
 from jgdv.structs.strang import CodeReference
+from jgdv.structs.locator import Location
 import doot
 import doot.errors
-from doot._abstract import Action_p
-from doot.actions.core.action import DootBaseAction
-from doot.enums import ActionResponse_e as ActRE
-from doot.structs import Location, TaskName, TaskSpec, InjectSpec
+from doot.workflow._interface import Action_p
+from doot.workflow._interface import ActionResponse_e as ActRE
+from doot.workflow import TaskName, TaskSpec, InjectSpec
+from doot.workflow.actions import DootBaseAction
 
 # ##-- end 3rd party imports
 
@@ -45,7 +46,7 @@ from doot.structs import Location, TaskName, TaskSpec, InjectSpec
 # isort: off
 if TYPE_CHECKING:
    from jgdv import Maybe
-   from doot.structs import ActionSpec
+   from doot.workflow import ActionSpec
 
 # isort: on
 # ##-- end types

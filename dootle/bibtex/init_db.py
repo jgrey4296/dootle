@@ -32,7 +32,7 @@ from bibtexparser import middlewares as ms
 from bibtexparser.middlewares import BlockMiddleware
 from bibtexparser.middlewares.middleware import BlockMiddleware
 import doot
-from doot._abstract.task import Action_p
+from doot.workflow._interface import Action_p
 
 # ##-- end 3rd party imports
 

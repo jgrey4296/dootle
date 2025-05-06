@@ -31,7 +31,7 @@ from bibble import PairStack
 from bibble.io import Reader
 from bibtexparser import model
 import doot
-from doot._abstract.task import Action_p
+from doot.workflow._interface import Action_p
 
 # ##-- end 3rd party imports
 

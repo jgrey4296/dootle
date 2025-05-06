@@ -19,11 +19,9 @@ import pytest
 
 import doot
 
-import doot._abstract
-from doot.structs import TaskName, ActionSpec
-from doot._abstract.task import Action_p
-from doot.task.core.task import DootTask
-from doot.actions.core.action import DootBaseAction
+from doot.workflow import TaskName, ActionSpec, DootTask
+from doot.workflow._interface import Action_p
+from doot.workflow.actions import DootBaseAction
 from dootle.actions import postbox as pb
 
 class TestInternalPostBox:

@@ -28,7 +28,7 @@ from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.files.bookmarks.collection import BookmarkCollection
 import doot
 import doot.errors
-from doot._abstract import Action_p
+from doot.workflow._interface import Action_p
 
 # ##-- end 3rd party imports
 

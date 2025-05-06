@@ -26,12 +26,10 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 import doot
-import doot._abstract
-import doot.structs
 import pytest
 import sh
-from doot.actions.core.action import DootBaseAction
-from doot.task.core.task import DootTask
+from doot.workflow import DootTask, ActionSpec
+from doot.workflow.actions import DootBaseAction
 
 # ##-- end 3rd party imports
 
@@ -56,7 +54,7 @@ class TestShellAction:
     def test_call_action(self, caplog, mocker):
         caplog.set_level(logmod.DEBUG, logger="_printer_")
         action = ShellAction()
-        spec = doot.structs.ActionSpec.build({"do":IMPORT_STR,
+        spec = ActionSpec.build({"do":IMPORT_STR,
                                               "args":["ls"],
                                               "update_":"blah",
                                               })
@@ -70,7 +68,7 @@ class TestShellAction:
     def test_call_action_split_lines(self, caplog, mocker):
         caplog.set_level(logmod.DEBUG, logger="_printer_")
         action = ShellAction()
-        spec = doot.structs.ActionSpec.build({"do":IMPORT_STR,
+        spec = ActionSpec.build({"do":IMPORT_STR,
                                               "args":["ls", "-l"],
                                               "update_":"blah",
                                               })
@@ -84,7 +82,7 @@ class TestShellAction:
     def test_call_action_fail(self, caplog, mocker):
         caplog.set_level(logmod.DEBUG, logger="_printer_")
         action = ShellAction()
-        spec = doot.structs.ActionSpec.build({"do":IMPORT_STR,
+        spec = ActionSpec.build({"do":IMPORT_STR,
                                               "args":["awgg"],
                                               "update_":"blah",
                                               })
@@ -110,7 +108,7 @@ class TestShellBaking:
     def test_call_action(self, caplog, mocker):
         caplog.set_level(logmod.DEBUG, logger="_printer_")
         action = ShellBake()
-        spec = doot.structs.ActionSpec.build({"do":IMPORT_STR,
+        spec = ActionSpec.build({"do":IMPORT_STR,
                                               "args":["ls"],
                                               "update_":"blah",
                                               })
@@ -124,11 +122,11 @@ class TestShellBaking:
     def test_chain(self, caplog, mocker):
         caplog.set_level(logmod.DEBUG, logger="_printer_")
         action = ShellBake()
-        spec1 = doot.structs.ActionSpec.build({"do":IMPORT_STR,
+        spec1 = ActionSpec.build({"do":IMPORT_STR,
                                               "args":["ls"],
                                               "update_":"blah",
                                               })
-        spec2 = doot.structs.ActionSpec.build({"do":IMPORT_STR,
+        spec2 = ActionSpec.build({"do":IMPORT_STR,
                                                "args":["grep", "doot"],
                                                "in_":"blah",
                                                "update_":"bloo"
@@ -150,16 +148,16 @@ class TestShellBaking:
         caplog.set_level(logmod.DEBUG, logger="_printer_")
         bake_action = ShellBake()
         run_action = ShellBakedRun()
-        spec1 = doot.structs.ActionSpec.build({"do":IMPORT_STR,
+        spec1 = ActionSpec.build({"do":IMPORT_STR,
                                               "args":["ls"],
                                               "update_":"blah",
                                               })
-        spec2 = doot.structs.ActionSpec.build({"do":IMPORT_STR,
+        spec2 = ActionSpec.build({"do":IMPORT_STR,
                                                "args":["grep", "doot"],
                                                "in_":"blah",
                                                "update_":"bloo"
                                                 })
-        run_spec = doot.structs.ActionSpec.build({"do":IMPORT_STR,
+        run_spec = ActionSpec.build({"do":IMPORT_STR,
                                                   "in_":"bloo",
                                                   "update_":"out"})
         state  = { "count" : 0  }
@@ -174,7 +172,7 @@ class TestShellBaking:
     def test_call_action_fail(self, caplog, mocker):
         caplog.set_level(logmod.DEBUG, logger="_printer_")
         action = ShellBake()
-        spec = doot.structs.ActionSpec.build({"do":IMPORT_STR,
+        spec = ActionSpec.build({"do":IMPORT_STR,
                                               "args":["aweg"],
                                               "update_":"blah",
                                               })

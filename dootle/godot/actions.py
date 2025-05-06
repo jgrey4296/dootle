@@ -28,8 +28,8 @@ from jgdv.structs.dkey import DKey, DKeyed
 import doot
 import doot.errors
 import sh
-from doot._abstract import Action_p
-from doot.enums import ActionResponse_e as ActRE
+from doot.workflow._interface import Action_p
+from doot.workflow._interface import ActionResponse_e as ActRE
 
 # ##-- end 3rd party imports
 

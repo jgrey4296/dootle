@@ -34,9 +34,9 @@ from jgdv import Proto
 from jgdv.structs.dkey import DKey, DKeyed
 import doot
 import sh
-from doot._abstract import Action_p
+from doot.workflow._interface import Action_p
+from doot.workflow import TaskName
 from doot.errors import TaskError, TaskFailed
-from doot.structs import TaskName
 
 # ##-- end 3rd party imports
 

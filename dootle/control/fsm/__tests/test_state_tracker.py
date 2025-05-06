@@ -28,9 +28,8 @@ import networkx as nx
 # ##-- 1st party imports
 import doot
 import doot.errors
-import doot.structs
 from dootle.control.fsm.state_tracker import StateTracker
-from doot.enums import TaskStatus_e
+from doot.workflow import TaskSpec
 from doot.utils import mock_gen
 
 # ##-- end 1st party imports
@@ -56,7 +55,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence, Mapping, MutableMapping, Hashable
 
 ##--|
-from doot._abstract import Task_p
+from doot.workflow._interface import Task_p, TaskStatus_e
 # isort: on
 # ##-- end types
 
@@ -84,7 +83,7 @@ class TestStateTracker:
 
     def test_next_for_no_connections(self):
         obj  = StateTracker()
-        spec = doot.structs.TaskSpec.build({"name":"basic::Task"})
+        spec = TaskSpec.build({"name":"basic::Task"})
         obj.register_spec(spec)
         t_name = obj.queue_entry(spec.name)
         assert(obj.get_status(t_name) is TaskStatus_e.INIT)
@@ -98,8 +97,8 @@ class TestStateTracker:
 
     def test_next_simple_dependendency(self):
         obj  = StateTracker()
-        spec = doot.structs.TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
-        dep  = doot.structs.TaskSpec.build({"name":"basic::dep"})
+        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
+        dep  = TaskSpec.build({"name":"basic::dep"})
         obj.register_spec(spec, dep)
         t_name = obj.queue_entry(spec.name, from_user=True)
         assert(obj.get_status(t_name) is TaskStatus_e.INIT)
@@ -114,8 +113,8 @@ class TestStateTracker:
 
     def test_next_dependency_success_produces_ready_state_(self):
         obj  = StateTracker()
-        spec = doot.structs.TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
-        dep  = doot.structs.TaskSpec.build({"name":"basic::dep"})
+        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
+        dep  = TaskSpec.build({"name":"basic::dep"})
         obj.register_spec(spec, dep)
         t_name = obj.queue_entry(spec.name, from_user=True)
         assert(obj.get_status(t_name) is TaskStatus_e.INIT)
@@ -133,8 +132,8 @@ class TestStateTracker:
 
     def test_next_artificial_success(self):
         obj  = StateTracker()
-        spec = doot.structs.TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
-        dep  = doot.structs.TaskSpec.build({"name":"basic::dep"})
+        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
+        dep  = TaskSpec.build({"name":"basic::dep"})
         obj.register_spec(spec, dep)
         t_name   = obj.queue_entry(spec.name)
         dep_inst = obj.queue_entry(dep.name)
@@ -152,8 +151,8 @@ class TestStateTracker:
 
     def test_next_halt(self):
         obj  = StateTracker()
-        spec = doot.structs.TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
-        dep  = doot.structs.TaskSpec.build({"name":"basic::dep"})
+        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
+        dep  = TaskSpec.build({"name":"basic::dep"})
         obj.register_spec(spec, dep)
         t_name   = obj.queue_entry(spec.name, from_user=True)
         dep_inst = obj.queue_entry(dep.name)
@@ -171,8 +170,8 @@ class TestStateTracker:
 
     def test_next_fail(self):
         obj  = StateTracker()
-        spec = doot.structs.TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
-        dep  = doot.structs.TaskSpec.build({"name":"basic::dep"})
+        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
+        dep  = TaskSpec.build({"name":"basic::dep"})
         obj.register_spec(spec, dep)
         t_name   = obj.queue_entry(spec.name, from_user=True)
         dep_inst = obj.queue_entry(dep.name)
@@ -189,8 +188,8 @@ class TestStateTracker:
 
     def test_next_job_head(self):
         obj       = StateTracker()
-        job_spec  = doot.structs.TaskSpec.build({"name":"basic::+.job", "meta": ["JOB"], "cleanup":["basic::task"]})
-        task_spec = doot.structs.TaskSpec.build({"name":"basic::task", "test_key": "bloo"})
+        job_spec  = TaskSpec.build({"name":"basic::+.job", "meta": ["JOB"], "cleanup":["basic::task"]})
+        task_spec = TaskSpec.build({"name":"basic::task", "test_key": "bloo"})
         obj.register_spec(job_spec)
         obj.register_spec(task_spec)
         obj.queue_entry(job_spec, from_user=True)
@@ -213,9 +212,9 @@ class TestStateTracker:
 
     def test_next_job_head_with_subtasks(self):
         obj       = StateTracker()
-        job_spec  = doot.structs.TaskSpec.build({"name":"basic::+.job", "meta": ["JOB"]})
-        sub_spec1 = doot.structs.TaskSpec.build({"name":"basic::task.1", "test_key": "bloo", "required_for": ["basic::+.job..$head$"]})
-        sub_spec2 = doot.structs.TaskSpec.build({"name":"basic::task.2", "test_key": "blah", "required_for": ["basic::+.job..$head$"]})
+        job_spec  = TaskSpec.build({"name":"basic::+.job", "meta": ["JOB"]})
+        sub_spec1 = TaskSpec.build({"name":"basic::task.1", "test_key": "bloo", "required_for": ["basic::+.job..$head$"]})
+        sub_spec2 = TaskSpec.build({"name":"basic::task.2", "test_key": "blah", "required_for": ["basic::+.job..$head$"]})
         obj.register_spec(job_spec)
         obj.queue_entry(job_spec, from_user=True)
         assert(job_spec.name in obj._registry.concrete)
