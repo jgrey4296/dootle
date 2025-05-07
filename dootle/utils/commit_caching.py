@@ -30,7 +30,7 @@ import doot
 import doot.errors
 import sh
 from doot.mixins.path_manip import PathManip_m
-from doot.structs import TaskName
+from doot.workflow import TaskName
 
 # ##-- end 3rd party imports
 

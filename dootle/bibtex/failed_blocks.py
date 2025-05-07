@@ -22,7 +22,7 @@ from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
-# ##-- 2rd party imports
+# ##-- 3rd party imports
 from jgdv import Proto, Maybe
 from jgdv.structs.dkey import DKey, DKeyed
 import bibtexparser as b

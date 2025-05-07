@@ -32,7 +32,8 @@ from jgdv.structs.strang import CodeReference
 # ##-- end 3rd party imports
 
 # ##-- 3rd party imports
-from doot.structs import ActionSpec, DKey, TaskName, TaskSpec
+from doot.workflow import ActionSpec, TaskName, TaskSpec
+from doot.util.dkey import DKey
 
 # ##-- end 3rd party imports
 

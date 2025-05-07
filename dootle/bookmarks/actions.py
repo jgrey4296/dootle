@@ -24,10 +24,10 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto
-from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.files.bookmarks.collection import BookmarkCollection
 import doot
 import doot.errors
+from doot.util.dkey import DKey, DKeyed
 from doot.workflow._interface import Action_p
 
 # ##-- end 3rd party imports

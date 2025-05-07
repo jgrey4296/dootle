@@ -67,7 +67,7 @@ logging = logmod.getLogger(__name__)
 
 # Body:
 
-@Proto(API.WorkflowReporter_p)
+@Proto(API.Reporter_i)
 class FancyReporter(BasicReporter):
     """ An alternative reporter.
 

@@ -30,7 +30,8 @@ import pytest
 
 # ##-- 3rd party imports
 import doot.errors
-from doot.structs import ActionSpec, DKey, TaskName
+from doot.workflow import ActionSpec, TaskName
+from doot.util.dkey import DKey
 
 # ##-- end 3rd party imports
 

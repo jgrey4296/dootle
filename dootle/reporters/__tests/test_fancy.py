@@ -69,7 +69,7 @@ class TestFancyReporter:
 
     def test_ctor(self):
         match FancyReporter():
-            case API.WorkflowReporter_p():
+            case API.Reporter_p():
                 assert(True)
             case x:
                  assert(False), x

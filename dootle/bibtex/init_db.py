@@ -25,13 +25,13 @@ from uuid import UUID, uuid1
 # ##-- 3rd party imports
 from jgdv import Proto
 from jgdv.structs.strang import CodeReference
-from jgdv.structs.dkey import DKey, DKeyed
 import bibtexparser as b
 import bibtexparser.model as model
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares import BlockMiddleware
 from bibtexparser.middlewares.middleware import BlockMiddleware
 import doot
+from doot.util.dkey import DKey, DKeyed
 from doot.workflow._interface import Action_p
 
 # ##-- end 3rd party imports

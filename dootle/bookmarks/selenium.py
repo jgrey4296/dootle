@@ -25,11 +25,11 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv.files.bookmarks.collection import BookmarkCollection
-from jgdv.structs.dkey import DKey, DKeyed
 
 import doot
 import doot.errors
-from doot.enums import ActionResponse_e
+from doot.workflow._interface import ActionResponse_e
+from doot.util.dkey import DKey, DKeyed
 from selenium.webdriver import Firefox, FirefoxOptions, FirefoxService
 from selenium.webdriver.common.print_page_options import PrintOptions
 
@@ -55,7 +55,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Callable, Generator
     from collections.abc import Sequence, Mapping, MutableMapping, Hashable
 
-    from doot.structs import ActionSpec
+    from doot.workflow import ActionSpec
 ##--|
 
 # isort: on

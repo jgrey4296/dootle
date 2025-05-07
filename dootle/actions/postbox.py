@@ -30,10 +30,10 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
-from jgdv import Proto
-from jgdv.structs.dkey import DKey, DKeyed
-import doot
 import sh
+from jgdv import Proto
+import doot
+from doot.util.dkey import DKey, DKeyed
 from doot.workflow._interface import Action_p
 from doot.workflow import TaskName
 from doot.errors import TaskError, TaskFailed
