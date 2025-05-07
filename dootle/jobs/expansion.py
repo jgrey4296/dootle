@@ -108,8 +108,7 @@ class JobExpandAction(DootBaseAction):
                              required_for=[base_head],
                              )
             if inject_spec is not None:
-                base_dict |= (inject_spec.apply_from_spec(spec)
-                              | inject_spec.apply_from_target(spec)
+                base_dict |= (inject_spec.apply_from_spec(state)
                               | inject_spec.apply_from_state(state)
                               | inject_spec.apply_literal(arg)
                               )
