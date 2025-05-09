@@ -38,6 +38,8 @@ from jgdv.structs.locator._interface import LocationMeta_e
 # ##-- end 3rd party imports
 
 from . import _interface as API  # noqa: N812
+from doot.control.tracker import Tracker_abs
+from doot.control.tracker._interface import TaskTracker_p
 from doot.control.tracker.registry import TrackRegistry
 from doot.control.tracker.network import TrackNetwork
 from doot.control.tracker.queue import TrackQueue
@@ -53,8 +55,9 @@ from typing import Protocol, runtime_checkable
 from typing import no_type_check, final, override, overload
 
 if TYPE_CHECKING:
+   from doot.workflow._interface import Task_p
    from doot.workflow import TaskArtifact, TaskName, TaskSpec
-   from doot.enums import (TaskStatus_e)
+   from doot.workflow._interface import TaskStatus_e
    from jgdv import Maybe
    from typing import Final
    from typing import ClassVar, Any, LiteralString
@@ -68,86 +71,18 @@ if TYPE_CHECKING:
    type Concrete[T] = T
 
 ##--|
-from doot.workflow._interface import Task_p
-from doot.control.tracker._interface import TaskTracker_p
 # isort: on
 # ##-- end types
 
 ##-- logging
 logging    = logmod.getLogger(__name__)
-printer    = doot.subprinter()
-track_l    = doot.subprinter("track")
-fail_l     = doot.subprinter("fail")
-skip_l     = doot.subprinter("skip")
-task_l     = doot.subprinter("task")
-artifact_l = doot.subprinter("artifact")
 ##-- end logging
 
 @Proto(TaskTracker_p)
-class StateTracker:
-    """ The public part of the standard tracker implementation
-    Has three components:
-    _registry : db for specs and tasks
-    _network  : the links between specs in the registry
-    _queue    : the logic for determining what task to run next
-
+class FSMTracker(Tracker_abs):
     """
 
-    def __init__(self):
-        self._registry = TrackRegistry()
-        self._network  = TrackNetwork(self._registry)
-        self._queue    = TrackQueue(self._registry, self._network)
-
-    @property
-    def active_set(self) -> set[Task_p]:
-        return self._queue.active_set # type: ignore
-
-    @property
-    def network(self) -> nx.DiGraph:
-        return self._network._graph
-
-    @property
-    def _root_node(self) -> TaskName:
-        return self._network._root_node
-
-    def __bool__(self) -> bool:
-        return bool(self._queue)
-
-    def register_spec(self, *specs:TaskSpec)-> None:
-        self._registry.register_spec(*specs)
-
-    def queue_entry(self, name:str|Concrete[TaskName|TaskSpec]|TaskArtifact|Task_p, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, parent:Maybe[TaskName]=None) -> Maybe[Concrete[TaskName|TaskArtifact]]:
-        queued : TaskName = self._queue.queue_entry(name, from_user=from_user, status=status)
-        if not parent:
-            return queued
-        if '__on_queue' not in self._registry.specs[queued].extra:
-            return queued
-
-        parent_task = self._registry.tasks[parent]
-        task        = self._registry.tasks[queued]
-        for x,y in task.state['__on_queue'].items():
-            task.state[x] = y(parent_task.state)
-        else:
-            return queued
-
-    def get_status(self, task:Concrete[TaskName]|TaskArtifact) -> TaskStatus_e:
-        return self._registry.get_status(task)
-
-    def set_status(self, task:Concrete[TaskName]|TaskArtifact|Task_p, state:TaskStatus_e) -> bool:
-        self._registry.set_status(task, state)
-        return True
-
-    def build_network(self, *, sources:Maybe[True|list[Concrete[TaskName]|TaskArtifact]]=None) -> None:
-        self._network.build_network(sources=sources)
-
-    def validate_network(self) -> None:
-        self._network.validate_network()
-
-    def clear_queue(self) -> None:
-        self._queue.clear_queue()
-
-    def generate_plan(self) -> list:
-        return []
+    """
 
     def next_for(self, target:Maybe[str|TaskName]=None) -> Maybe[Task_p|TaskArtifact]:
         """ ask for the next task that can be performed
