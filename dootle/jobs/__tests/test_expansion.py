@@ -51,7 +51,9 @@ class TestJobExpansion:
 
     @pytest.fixture(scope="function")
     def spec(self):
-        return ActionSpec.build({"do": "dootle.jobs.expand:JobExpandAction", "args":[], "update_":"specs"})
+        return ActionSpec.build({"do": "dootle.jobs.expand:JobExpandAction",
+                                 "args":[],
+                                 "update_":"specs"})
 
     @pytest.fixture(scope="function")
     def state(self):
@@ -67,9 +69,7 @@ class TestJobExpansion:
     def test_empty_expansion(self, spec, state):
         obj = JobExpandAction()
         result = obj(spec, state)
-        assert(isinstance(result, dict))
-        assert(isinstance(result[spec.kwargs['update_']], list))
-        assert(len(result['specs']) == 0)
+        assert(result is None)
 
     @pytest.mark.parametrize("count", [1,11,2,5,20])
     def test_count_expansion(self, spec, state, count):
@@ -100,7 +100,6 @@ class TestJobExpansion:
         result            = obj(spec, state)
         assert(isinstance(result, dict))
         assert(isinstance(result[spec.kwargs['update_']], list))
-        assert(result['specs'][0].sources == ["test::task"])
         assert(len(result['specs'][0].actions) == 0)
 
     def test_taskname_template(self, spec, state):

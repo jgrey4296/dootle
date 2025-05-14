@@ -349,6 +349,7 @@ dependencies = [
     { name = "mastodon-py" },
     { name = "networkx" },
     { name = "pony" },
+    { name = "python-statemachine" },
 ]
 
 [package.optional-dependencies]
@@ -374,6 +375,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
+    { name = "python-statemachine", specifier = ">=2.5.0" },
     { name = "sphinx", marker = "extra == 'dev'" },
     { name = "sphinx-autoapi", marker = "extra == 'dev'", specifier = ">=3.6.0" },
     { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3.0.2" },

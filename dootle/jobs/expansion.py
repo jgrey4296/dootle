@@ -83,6 +83,9 @@ class JobExpandAction(DootBaseAction):
         root             = _basename.pop()
         base_head        = root.with_head()
 
+        if not bool(build_queue):
+            return None
+
         match prefix:
             case "prefix":
                 prefix = "{JobGenerated}"
@@ -90,10 +93,15 @@ class JobExpandAction(DootBaseAction):
                 pass
 
         match sources:
-            case [] | [None]:
-                base_subtask = root
-            case [*xs, x]:
+            case [*xs, x] if x in doot.loaded_tasks:
                 base_subtask = x
+                source_task = doot.loaded_tasks[x]
+            case [*xs, TaskName() as x]:
+                base_subtask = x
+                source_task = TaskSpec.build({"name":x})
+            case _:
+                base_subtask = root
+                source_task = TaskSpec.build({"name":root})
 
         inject_spec = InjectSpec.build(inject)
 
@@ -113,7 +121,7 @@ class JobExpandAction(DootBaseAction):
                               | inject_spec.apply_literal(arg)
                               )
 
-            new_spec  = TaskSpec.build(base_dict)
+            new_spec  = source_task.under(base_dict)
             result.append(new_spec)
         else:
             return { _update : result , "__expansion_count":  _count }

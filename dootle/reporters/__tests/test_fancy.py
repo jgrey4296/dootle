@@ -110,20 +110,20 @@ class TestFancyReporter:
         obj = FancyReporter()
         assert(obj.state.depth == L0_DEPTH)
         obj.root()
-        with obj.branch("first"):
-            assert(obj.state.depth == L1_DEPTH)
-            assert(obj.state.log_level > logmod.INFO)
-            obj.act("Log", "act1")
+        obj.branch("first")
+        assert(obj.state.depth == L1_DEPTH)
+        assert(obj.state.log_level > logmod.INFO)
+        obj.act("Log", "act1")
 
-            with obj.branch("second"):
-                assert(obj.state.depth == L2_DEPTH)
-                obj.act("Log", "act2")
-                obj.act("Log", "act3")
-                obj.result(["second"])
+        obj.branch("second")
+        assert(obj.state.depth == L2_DEPTH)
+        obj.act("Log", "act2")
+        obj.act("Log", "act3")
+        obj.result(["second"])
 
-            assert(obj.state.depth == L1_DEPTH)
-            obj.act("Log", "act4")
-            obj.result(["first"])
+        assert(obj.state.depth == L1_DEPTH)
+        obj.act("Log", "act4")
+        obj.result(["first"])
 
         assert(obj.state.depth == L0_DEPTH)
         obj.finished()
