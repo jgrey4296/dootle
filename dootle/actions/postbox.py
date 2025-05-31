@@ -73,10 +73,10 @@ class _DootPostBox:
 
     @staticmethod
     def put(key:TaskName, val:None|list|set|Any):
-        if key.bmark_e.mark not in key:
+        if key.Marks.mark not in key:
             raise ValueError("Tried to use a postbox key with no subkey", key)
         subbox = str(key[-1])
-        box    = str(key.root())
+        box    = str(key.pop(top=True))
         match val:
             case None | [] | {} | dict() if not bool(val):
                 pass
@@ -87,9 +87,9 @@ class _DootPostBox:
 
     @staticmethod
     def get(key:TaskName) -> list|dict:
-        if key.bmark_e.mark not in key:
+        if key.Marks.mark not in key:
             raise ValueError("tried to get from postbox with no subkey", key)
-        box    = str(key.root())
+        box    = str(key.pop(top=True))
         subbox = str(key[-1])
         match subbox:
             case "*" | None:
@@ -99,9 +99,9 @@ class _DootPostBox:
 
     @staticmethod
     def clear_box(key:TaskName):
-        if key.bmark_e.mark not in key:
+        if key.Marks.mark not in key:
             raise ValueError("tried to clear a box without a subkey", key)
-        box    = str(key.root())
+        box    = str(key.pop(top=True))
         subbox = str(key[-1])
         match subbox:
             case x if x == _DootPostBox.whole_box_key:
@@ -135,7 +135,7 @@ class PutPostAction:
         self._add_to_target_box(spec, state, kwargs, _basename)
 
     def _add_to_task_box(self, spec, state, args, _basename):
-        target = _basename.root().push(_DootPostBox.default_subkey)
+        target = _basename.pop(top=True).push(_DootPostBox.default_subkey)
         logging.debug("Adding to task box: %s : %s", target, args)
         for statekey in args:
             data = DKey(statekey, implicit=True).expand(spec, state)

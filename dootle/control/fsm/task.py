@@ -29,10 +29,10 @@ import faulthandler
 
 from jgdv import Proto, Mixin, Maybe
 import doot
-from doot.structs import TaskSpec, ActionSpec, RelationSpec, TaskName
-from doot.workflow._interface import Task_p, Job_p, TaskMeta_e, TaskStatus_e
+from doot.workflow import TaskSpec, ActionSpec, RelationSpec, TaskName, DootTask
+from doot.workflow._interface import Task_i, Job_p, TaskMeta_e, TaskStatus_e
 from doot.workflow._interface import ActionResponse_e as ActRE
-from doot.workflow import DootTask
+from . import _interface as API
 
 # ##-- types
 # isort: off
@@ -75,8 +75,52 @@ DEPENDS_GROUP              : Final[str] = "depends_on"
 
 # Body:
 
-@Proto(Task_p)
-class FSMTask(Task_p):
+class _Predicates_m:
+
+    def should_skip(self) -> bool:
+        """ run a task's depends_on group, coercing to a bool
+        returns False if the runner should skip the rest of the task
+        """
+        match self._execute_action_group(group=DEPENDS_GROUP):
+            case None:
+                return True
+            case _, ActRE.SKIP | ActRE.FAIL:
+                return False
+            case _:
+                return True
+
+    def spec_missing(self, tracker) -> bool:
+        # check the tracker for the spec,
+        # False if it isn't registered
+        pass
+
+    def should_disable(self) -> bool:
+        return self.spec.disabled
+
+    def should_wait(self, tracker) -> bool:
+        # check dependencies in depends_on,
+        deps = tracker.get_deps(self.spec.depends_on)
+        # queue them if necessary
+        return False
+
+    def should_cancel(self) -> bool:
+        # if waiting too long, time out
+        return False
+
+    def should_skip(self) -> bool:
+        # Run tests in depends_on
+        self._execute_action_group(group=DEPENDS_GROUP)
+        return False
+
+    def should_halt(self) -> bool:
+        return False
+
+    def should_fail(self) -> bool:
+        return False
+
+@Proto(Task_i, API.TaskModel_p)
+@Mixin(_Predicates_m)
+class FSMTask:
     """
 
     """
@@ -89,7 +133,6 @@ class FSMTask(Task_p):
     state    : dict
 
     def __init__(self, spec:TaskSpec):
-        super().__init__()
         self.step                              = -1
         self.spec                              = spec
         self.priority                          = self.spec.priority
@@ -99,7 +142,7 @@ class FSMTask(Task_p):
 
     def __repr__(self) -> str:
         cls = self.__class__.__qualname__
-        return f"<{cls}: {self.spec.name.readable}>"
+        return f"<{cls}: {self.spec.name[:]}>"
 
     def __bool__(self) -> bool:
         return False
@@ -111,7 +154,7 @@ class FSMTask(Task_p):
         match other:
             case str() | TaskName():
                 full     = self.spec.name
-                readable = self.spec.name.readable
+                readable = self.spec.name[:]
                 return other == full or other == readable
             case Task_p():
                 return self.spec.name == other.spec.name
@@ -172,13 +215,13 @@ class FSMTask(Task_p):
             case None:
                 doot.report.act(f"Action: {self.step}.{count}", action.do)
 
-        logging.debug("Action Executing for Task: %s", self.spec.name.readable)
+        logging.debug("Action Executing for Task: %s", self.spec.name[:])
         logging.debug("Action State: %s.%s: args=%s kwargs=%s. state(size)=%s", self.step, count, action.args, dict(action.kwargs), len(self.state.keys()))
         match (result:=action(self.state)):
             case None | True:
                 result = ActRE.SUCCESS
             case False | ActRE.FAIL:
-                raise doot.errors.TaskFailed("Task %s: Action Failed: %s", self.task.name.readable, action.do, task=self.spec)
+                raise doot.errors.TaskFailed("Task %s: Action Failed: %s", self.task.name[:], action.do, task=self.spec)
             case ActRE.SKIP:
                 # result will be returned, and expand_job/execute_task will handle it
                 doot.report.result(["Skip"])
@@ -189,7 +232,7 @@ class FSMTask(Task_p):
             case list() if all(isinstance(x, TaskName|TaskSpec) for x in result):
                 pass
             case _:
-                raise doot.errors.TaskError("Task %s: Action %s Failed: Returned an unplanned for value: %s", self.spec.name.readable, action.do, result, task=self.spec)
+                raise doot.errors.TaskError("Task %s: Action %s Failed: Returned an unplanned for value: %s", self.spec.name[:], action.do, result, task=self.spec)
 
         return result
 
@@ -202,47 +245,6 @@ class FSMTask(Task_p):
         logging.warning("Unknown Groupname: %s", group_name)
         return []
 
-    def should_skip(self) -> bool:
-        """ run a task's depends_on group, coercing to a bool
-        returns False if the runner should skip the rest of the task
-        """
-        match self._execute_action_group(group=DEPENDS_GROUP):
-            case None:
-                return True
-            case _, ActRE.SKIP | ActRE.FAIL:
-                return False
-            case _:
-                return True
-
-    def spec_missing(self, tracker) -> bool:
-        # check the tracker for the spec,
-        # False if it isn't registered
-        pass
-
-    def should_disable(self) -> bool:
-        return self.spec.disabled
-
-    def should_wait(self, tracker) -> bool:
-        # check dependencies in depends_on,
-        deps = tracker.get_deps(self.spec.depends_on)
-        # queue them if necessary
-        return False
-
-    def should_cancel(self) -> bool:
-        # if waiting too long, time out
-        return False
-
-    def should_skip(self) -> bool:
-        # Run tests in depends_on
-        self._execute_action_group(group=DEPENDS_GROUP)
-        return False
-
-    def should_halt(self) -> bool:
-        return False
-
-    def should_fail(self) -> bool:
-        return False
-
     def on_enter_init(self):
         """
         initialise state,
@@ -253,7 +255,7 @@ class FSMTask(Task_p):
         self.state['_action_step']    = 0
 
     def on_enter_running(self, step:int, tracker) -> None:
-        logmod.debug("-- Executing Task %s: %s", step, self.spec.name.readable)
+        logmod.debug("-- Executing Task %s: %s", step, self.spec.name[:])
         self._execute_action_group(group=SETUP_GROUP)
         self._execute_action_group(group=ACTION_GROUP)
 
@@ -279,7 +281,7 @@ class FSMJob(FSMTask):
     """
 
     def on_enter_running(self, step, tracker):
-        logmod.debug("-- Expanding Job %s: %s", step, self.spec.name.readable)
+        logmod.debug("-- Expanding Job %s: %s", step, self.spec.name[:])
         new_queue : list[TaskSpec] = []
         self._execute_action_group(group=SETUP_GROUP)
         match self._execute_action_group(group=ACTION_GROUP):

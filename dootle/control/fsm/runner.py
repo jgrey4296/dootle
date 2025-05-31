@@ -79,11 +79,6 @@ logging           = logmod.getLogger(__name__)
 skip_msg                   : Final[str] = doot.constants.printer.skip_by_condition_msg
 max_steps                  : Final[int] = doot.config.on_fail(100_000).settings.tasks.max_steps()
 
-SETUP_GROUP                : Final[str] = "setup"
-ACTION_GROUP               : Final[str] = "actions"
-FAIL_GROUP                 : Final[str] = "on_fail"
-DEPENDS_GROUP              : Final[str] = "depends_on"
-
 ##--|
 
 @Proto(TaskRunner_p, check=False)

@@ -30,7 +30,7 @@ from statemachine.states import States
 # ##-- 1st party imports
 import doot
 import doot.errors
-from doot.enums import TaskStatus_e
+from doot.workflow._interface import TaskStatus_e
 
 from . import _interface as API
 # ##-- end 1st party imports
@@ -88,7 +88,7 @@ class TaskTrackMachine(StateMachine):
     run = (
         _.INIT.to(_.WAIT)
         | _.WAIT.to.itself(cond="should_wait", internal=True)
-        | _.WAIT.to(_.FAILED,   cond="should_cancel")
+        | _.WAIT.to(_.FAILED, cond="should_cancel")
         | _.WAIT.to(_.READY)
         | _.READY.to(_.SKIPPED, cond="should_skip")
         | _.READY.to(_.RUNNING)
@@ -179,19 +179,50 @@ class DootMainMachine(StateMachine):
     commands  = State()
     tasks     = State()
     run       = State()
-    fail      = State()
+    failed    = State()
     report    = State()
     shutdown  = State()
     finished  = State(final=True)
 
     # Events
+    progress = (
+        init.to(setup)
+        | setup.to(plugins)
+        | plugins.to(cli)
+        | cli.to(reporter)
+        | reporter.to(commands)
+        | commands.to(tasks)
+        | tasks.to(failed, cond="should_fail")
+        | tasks.to(run)
+        | report.from_(run, failed)
+        | report.to(shutdown)
+        | shutdown.to(finished)
+    )
+
+    fail = failed.from_(setup, plugins, cli, reporter, commands, tasks, run)
+
 
 class DootOverlordMachine(StateMachine):
 
-    init        = State(initial=True)
-    constants   = State()
-    config_file = State()
-    logging     = State()
-    locations   = State()
-    global      = State()
-    ready       = State(final=True)
+    init              = State(initial=True)
+    constants         = State()
+    config_file       = State()
+    logging           = State()
+    locations         = State()
+    shared            = State()
+    ready             = State()
+    failed            = State()
+    finished          = State(final=True)
+
+    # Events
+    progress = (
+        init.to(constants)
+        | constants.to(config_file)
+        | config_file.to(logging)
+        | logging.to(locations)
+        | locations.to(shared)
+        | shared.to(ready)
+        | finished.from_(ready, failed)
+    )
+
+    fail = failed.from_(constants, config_file, logging, locations, shared, ready)

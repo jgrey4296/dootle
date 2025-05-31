@@ -73,7 +73,7 @@ def _build_cache_path(cache:None|pl.Path, taskname:TaskName) -> pl.Path:
     if cache is not None and cache.exists() and cache.is_file():
         return cache
 
-    root_taskname   = taskname.root()
+    root_taskname   = taskname.pop(top=True)
     temp_dir        = temp_key.expand()
     return temp_dir / CACHE_PATTERN.format(root_taskname)
 
