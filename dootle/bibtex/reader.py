@@ -87,10 +87,10 @@ class BibtexReadAction:
             case pl.Path() as x:
                 file_list = [x]
             case str():
-                _from = [DKey(_from, mark=DKey.Mark.PATH)]
+                _from = [DKey(_from, mark=DKey.Marks.PATH)]
                 file_list   = [x.expand(spec, state) for x in _from]
             case [*xs]:
-                _from = [DKey(x, mark=DKey.Mark.PATH) for x in xs]
+                _from = [DKey(x, mark=DKey.Marks.PATH) for x in xs]
                 file_list   = [x.expand(spec, state) for x in _from]
             case x:
                 raise TypeError(type(x))

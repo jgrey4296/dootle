@@ -47,7 +47,9 @@ class TestPathInjection:
 
     @pytest.fixture(scope="function")
     def spec(self):
-        return ActionSpec.build({"do": "basic", "args":["test::simple", "test::other"], "update_":"specs"})
+        return ActionSpec.build({"do": "basic",
+                                 "args":["test::simple", "test::other"],
+                                 "update_":"specs"})
 
     @pytest.fixture(scope="function")
     def state(self):

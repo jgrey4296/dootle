@@ -75,7 +75,7 @@ class JobExpandAction(DootBaseAction):
     @DKeyed.types("inject", check=dict|ChainGuard)
     @DKeyed.types("__expansion_count", fallback=0)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update):
+    def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update) -> Maybe[dict]:  # noqa: ARG002
         result      : list[TaskSpec]
         inject_spec : Maybe[InjectSpec]
         actions, sources = self._prep_template(template)
@@ -110,7 +110,7 @@ class JobExpandAction(DootBaseAction):
         for arg in build_queue:
             _count += 1
             # TODO change job subtask naming scheme
-            base_dict = dict(name=base_subtask.push(prefix, _count), # noqa: C408
+            base_dict = dict(name=base_subtask.push(prefix, _count),
                              sources=sources,
                              actions = actions or [],
                              required_for=[base_head],

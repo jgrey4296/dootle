@@ -86,7 +86,7 @@ class SayAction:
     @DKeyed.types("background", fallback=False, check=bool)
     def _say_linux(self, spec, state, args, wait, background) -> bool:
         cmd    = sh.espeak
-        keys                    = [DKey(x, mark=DKey.Mark.MULTI, fallback=x) for x in args[0:]]
+        keys                    = [DKey(x, fallback=x) for x in args[0:]]
         expanded                = [str(x.expand(spec, state)) for x in keys]
         result = cmd(*expanded, _return_cmd=True, _bg=background)
         if result.exit_code not in EXITCODES:
@@ -105,7 +105,7 @@ class SayAction:
     @DKeyed.types("background", fallback=False, check=bool)
     def _say_mac(self, spec, state, args, wait, background) -> bool:
         cmd    = sh.say
-        keys                    = [DKey(x, mark=DKey.Mark.MULTI, fallback=x) for x in args[0:]]
+        keys                    = [DKey(x, fallback=x) for x in args[0:]]
         expanded                = [str(x.expand(spec, state)) for x in keys]
         result = cmd(*args, _return_cmd=True, _bg=background)
         if result.exit_code not in EXITCODES:

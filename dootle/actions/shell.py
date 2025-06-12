@@ -102,16 +102,16 @@ class ShellBakedRun:
         try:
             result = cmd()
         except sh.CommandNotFound as err:
-            fail_l.error("Shell Commmand '%s' Not Action: %s", err.args[0])
+            logging.error("Shell Commmand '%s' Not Action: %s", err.args[0])
             return False
         except sh.ErrorReturnCode as err:
-            fail_l.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
+            logging.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
             if bool(err.stdout):
-                fail_l.error("%s", err.stdout.decode())
+                logging.error("%s", err.stdout.decode())
 
-            fail_l.info("")
+            logging.info("")
             if bool(err.stderr):
-                fail_l.error("%s", err.stderr.decode())
+                logging.error("%s", err.stderr.decode())
 
             return False
         else:
@@ -147,7 +147,7 @@ class ShellAction:
     def __call__(self, spec, state, args, background, notty, env, cwd, exitcodes, splitlines, errlimit, _update) -> dict|bool|None:
         result     = None
         env        = env or sh
-        keys                    = [DKey(x, mark=DKey.Mark.MULTI, fallback=x) for x in args]
+        keys                    = [DKey(x, fallback=x) for x in args]
         expanded                = [str(x.expand(spec, state)) for x in keys]
         try:
             # Build the command by getting it from env:
@@ -225,7 +225,7 @@ class ShellInteractive:
             env                     = env or sh
             cmd                     = getattr(env, DKey(args[0], fallback=args[0]).expand(spec, state))
             args                    = spec.args[1:]
-            keys                    = [DKey(x, mark=DKey.Mark.MULTI, fallback=x) for x in args[1:]]
+            keys                    = [DKey(x, mark=DKey.Marks.MULTI, fallback=x) for x in args[1:]]
             expanded                = [str(x.expand(spec, state)) for x in keys]
             result                  = cmd(*expanded, _return_cmd=True, _bg=False, _out=self.interact, _out_bufsize=0, _tty_in=True, _unify_ttys=True)
             assert(result.exit_code == 0)

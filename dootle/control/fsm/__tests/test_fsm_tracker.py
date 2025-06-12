@@ -62,7 +62,6 @@ from doot.workflow._interface import Task_p, TaskStatus_e
 
 logging = logmod.root
 
-@pytest.mark.skip
 class TestStateTracker:
 
     def test_sanity(self):
@@ -83,20 +82,22 @@ class TestStateTracker:
         obj.build_network()
         assert(obj.next_for() is None)
 
+    @pytest.mark.xfail
     def test_next_for_no_connections(self):
         obj  = FSMTracker()
         spec = TaskSpec.build({"name":"basic::Task"})
         obj.register_spec(spec)
         t_name = obj.queue_entry(spec.name)
-        assert(obj.get_status(t_name) is TaskStatus_e.INIT)
+        assert(obj.get_status(t_name) is TaskStatus_e.DECLARED)
         obj.build_network()
         match obj.next_for():
             case Task_p():
                 assert(True)
-            case _:
-                assert(False)
+            case x:
+                assert(False), x
         assert(obj.get_status(t_name) is TaskStatus_e.RUNNING)
 
+    @pytest.mark.xfail
     def test_next_simple_dependendency(self):
         obj  = FSMTracker()
         spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
@@ -109,10 +110,11 @@ class TestStateTracker:
             case Task_p() as result:
                 assert(dep.name < result.name)
                 assert(True)
-            case _:
-                assert(False)
+            case x:
+                assert(False), x
         assert(obj.get_status(t_name) is TaskStatus_e.WAIT)
 
+    @pytest.mark.xfail
     def test_next_dependency_success_produces_ready_state_(self):
         obj  = FSMTracker()
         spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
@@ -128,10 +130,11 @@ class TestStateTracker:
             case Task_p() as result:
                 assert(spec.name < result.name)
                 assert(True)
-            case _:
-                assert(False)
+            case x:
+                assert(False), x
         assert(obj.get_status(t_name) is TaskStatus_e.RUNNING)
 
+    @pytest.mark.xfail
     def test_next_artificial_success(self):
         obj  = FSMTracker()
         spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
@@ -147,10 +150,11 @@ class TestStateTracker:
             case Task_p() as result:
                 assert(spec.name < result.name)
                 assert(True)
-            case _:
-                assert(False)
+            case x:
+                assert(False), x
         assert(obj.get_status(t_name) is TaskStatus_e.RUNNING)
 
+    @pytest.mark.xfail
     def test_next_halt(self):
         obj  = FSMTracker()
         spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
@@ -170,6 +174,7 @@ class TestStateTracker:
                 continue
             assert(x.status in [TaskStatus_e.HALTED, TaskStatus_e.DEAD])
 
+    @pytest.mark.xfail
     def test_next_fail(self):
         obj  = FSMTracker()
         spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
@@ -188,6 +193,7 @@ class TestStateTracker:
                 continue
             assert(x.status in [TaskStatus_e.DEAD])
 
+    @pytest.mark.xfail
     def test_next_job_head(self):
         obj       = FSMTracker()
         job_spec  = TaskSpec.build({"name":"basic::+.job", "meta": ["JOB"], "cleanup":["basic::task"]})
@@ -212,6 +218,7 @@ class TestStateTracker:
         # A new job head hasn't been built
         assert(len(obj._registry.concrete[job_spec.name.with_head()]) == 1)
 
+    @pytest.mark.xfail
     def test_next_job_head_with_subtasks(self):
         obj       = FSMTracker()
         job_spec  = TaskSpec.build({"name":"basic::+.job", "meta": ["JOB"]})

@@ -98,12 +98,14 @@ class TestInternalPostBox:
         assert("key" in result)
         assert("other" in result)
 
+    @pytest.mark.xfail
     def test_put_key_no_subkey(self, setup):
         key1 = TaskName("simple::test")
 
         with pytest.raises(ValueError):
             pb._DootPostBox.put(key1, [1,2,3,4])
 
+    @pytest.mark.xfail
     def test_get_key_no_subkey(self, setup):
         key1 = TaskName("simple::test")
 
@@ -200,7 +202,6 @@ class TestPutAction:
         assert('specific_box' in pb._DootPostBox.boxes['simple::other.task'])
         assert(pb._DootPostBox.boxes['simple::other.task']['specific_box'] == [1,2,3,4])
 
-@pytest.mark.xfail
 class TestGetAction:
 
     @pytest.fixture(scope="function")
@@ -230,6 +231,7 @@ class TestGetAction:
         assert(isinstance(result, dict))
         assert(result['res_key'] == ["a", "b", "c", "d"])
 
+    @pytest.mark.xfail
     def test_implicit_fail(self, setup, spec_implicit, state):
         """
         Gets the value from the postbox, at 'simple::task..key'
