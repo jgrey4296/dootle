@@ -87,10 +87,10 @@ class BibtexReadAction:
             case pl.Path() as x:
                 file_list = [x]
             case str():
-                _from = [DKey(_from, mark=DKey.Marks.PATH)]
+                _from = [DKey[pl.Path](_from)]
                 file_list   = [x.expand(spec, state) for x in _from]
             case [*xs]:
-                _from = [DKey(x, mark=DKey.Marks.PATH) for x in xs]
+                _from = [DKey[pl.Path](x) for x in xs]
                 file_list   = [x.expand(spec, state) for x in _from]
             case x:
                 raise TypeError(type(x))
@@ -104,6 +104,7 @@ class BibtexReadAction:
 
         doot.report.detail("Starting to load %s files", len(file_list))
         for loc in file_list:
+            assert(isinstance(loc, pl.Path))
             doot.report.trace("Loading bibtex: %s", loc)
             try:
                 filelib = reader.read(loc, into=db)

@@ -139,7 +139,7 @@ class ShellAction:
     @DKeyed.args
     @DKeyed.types("background", "notty", check=bool, fallback=False)
     @DKeyed.types("env", fallback=None, check=sh.Command|None)
-    @DKeyed.paths("cwd", fallback=".", check=pl.Path|None)
+    @DKeyed.paths("cwd", fallback=pl.Path.cwd(), check=pl.Path|None)
     @DKeyed.types("exitcodes", fallback=[0])
     @DKeyed.toggles("splitlines", fallback=False)
     @DKeyed.types("errlimit", fallback=-10)
@@ -225,7 +225,7 @@ class ShellInteractive:
             env                     = env or sh
             cmd                     = getattr(env, DKey(args[0], fallback=args[0]).expand(spec, state))
             args                    = spec.args[1:]
-            keys                    = [DKey(x, mark=DKey.Marks.MULTI, fallback=x) for x in args[1:]]
+            keys                    = [DKey[list](x, fallback=x) for x in args[1:]]
             expanded                = [str(x.expand(spec, state)) for x in keys]
             result                  = cmd(*expanded, _return_cmd=True, _bg=False, _out=self.interact, _out_bufsize=0, _tty_in=True, _unify_ttys=True)
             assert(result.exit_code == 0)

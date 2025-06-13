@@ -71,11 +71,9 @@ class TestJobExpansion:
         result = obj(spec, state)
         assert(result is None)
 
-    @pytest.mark.xfail
     @pytest.mark.parametrize("count", [1,11,2,5,20])
     def test_count_expansion(self, spec, state, count):
         """ generate a certain number of subtasks """
-        # TODO from is being treate as a string, need to fix that
         spec.kwargs._table()['from'] = count
         obj = JobExpandAction()
         result = obj(spec, state)

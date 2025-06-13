@@ -108,7 +108,7 @@ class InjectMultiShadow:
             case TaskSpec() as spec:
                 _onto = [spec]
 
-        roots = [DKey(x, mark=DKey.Marks.PATH).expand(spec, state) for x in _shadow_roots]
+        roots = [DKey[pl.Path](x).expand(spec, state) for x in _shadow_roots]
         for x in _onto:
             updates : list[pl.Path] = _shadow_paths(x.extra[_key], roots)
             x.model_extra.update(dict(**x.extra, **{"shadow_paths": updates}))
@@ -125,7 +125,7 @@ class CalculateShadowDirs:
     @DKeyed.paths("rpath")
     def __call__(self, spec, state, _sroots, rpath):
         assert(not rpath.is_absolute())
-        _sroots = [DKey(x, mark=DKey.Marks.PATH).expand(spec, state) for x in _sroots]
+        _sroots = [DKey[pl.Path](x).expand(spec, state) for x in _sroots]
         result : list[pl.Path] = _shadow_paths(rpath,  _sroots)
         return { "shadow_paths" : result}
 
@@ -149,7 +149,7 @@ class MultiBackupAction:
     @DKeyed.taskname
     def __call__(self, spec, state, _from, pattern, shadow_paths, tolerance, _name) -> Maybe[dict|bool]:
         source_loc = _from
-        pattern_key = DKey(pattern, mark=DKey.Marks.PATH)
+        pattern_key = DKey[pl.Path](pattern)
 
         doot.report.trace("Backing up : %s", source_loc)
         for shadow_path in shadow_paths:

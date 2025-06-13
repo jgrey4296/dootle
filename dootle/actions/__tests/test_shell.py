@@ -55,9 +55,9 @@ class TestShellAction:
         caplog.set_level(logmod.DEBUG, logger="_printer_")
         action = ShellAction()
         spec = ActionSpec.build({"do":IMPORT_STR,
-                                              "args":["ls"],
-                                              "update_":"blah",
-                                              })
+                                 "args":["ls"],
+                                 "update_":"blah",
+                                 })
         state  = { "count" : 0  }
         match action(spec, state):
             case {"blah": str()}:

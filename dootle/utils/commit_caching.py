@@ -124,7 +124,7 @@ class GetChangedFilesByCommit:
           filter found potential files by roots, exts, and a test fn
         """
         exts    = {y for x in (exts or []) for y in [x.lower(), x.upper()]}
-        roots   = [DKey(x, mark=DKey.Marks.PATH).expand(spec, state) for x in (roots or [])]
+        roots   = [DKey[pl.Path](x).expand(spec, state) for x in (roots or [])]
         match fn:
             case CodeReference():
                 accept_fn = fn()
