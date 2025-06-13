@@ -32,6 +32,7 @@ from uuid import UUID, uuid1
 # ##-- 3rd party imports
 import sh
 from jgdv import Proto, Maybe
+from jgdv.structs.strang import StrangError
 import doot
 from doot.util.dkey import DKey, DKeyed
 from doot.workflow._interface import Action_p
@@ -47,9 +48,24 @@ logging = logmod.getLogger(__name__)
 
 STATE_TASK_NAME_K : Final[str] = doot.constants.patterns.STATE_TASK_NAME_K
 
+NO_SUBBOX : Final[str] = "The Provided key doesn't have a subbox"
 ##-- expansion keys
 TASK_NAME   : Final[DKey] = DKey[TaskName](STATE_TASK_NAME_K, implicit=True)
 ##-- end expansion keys
+def _validate_key(key:TaskName) -> tuple[str,str]:
+    """ Validate and split a key into (box, subbox) """
+    match key.args():
+        case [x]:
+            subbox = x
+        case ["<uuid>", x]:
+            subbox = x
+        case ["<uuid>"]:
+            subbox = key.uuid()
+        case _:
+            subbox = _DootPostBox.default_subbox
+    ##--|
+    assert(subbox is not None)
+    return key[:,:], subbox
 
 class _DootPostBox:
     """
@@ -64,15 +80,14 @@ class _DootPostBox:
       which corresponds to body[example::task][key]
     """
 
-    boxes : ClassVar[dict[str,dict[str, list[Any]]]] = defaultdict(lambda: defaultdict(list))
+    boxes : ClassVar[dict[str,dict[str, list[Any]]]]  = defaultdict(lambda: defaultdict(list))
 
-    default_subkey                        = "-"
-    whole_box_key                         = "*"
+    default_subbox                                    = "-"
+    whole_box_key                                     = "*"
 
     @staticmethod
     def put(key:TaskName, val:None|list|set|Any) -> None:
-        subbox = key[1,-1]
-        box    = key.pop(top=True)[:,:]
+        box, subbox = _validate_key(key)
         match val:
             case None | [] | {} | dict() if not bool(val):
                 pass
@@ -83,8 +98,7 @@ class _DootPostBox:
 
     @staticmethod
     def get(key:TaskName) -> list|dict:
-        box    = key.pop(top=True)[:,:]
-        subbox = key[1,-1]
+        box, subbox = _validate_key(key)
         match subbox:
             case "*" | None:
                 return _DootPostBox.boxes[box].copy()
@@ -93,8 +107,7 @@ class _DootPostBox:
 
     @staticmethod
     def clear_box(key:TaskName) -> None:
-        box    = key.pop(top=True)[:,:]
-        subbox = key[1,-1]
+        box, subbox = _validate_key(key)
         match subbox:
             case x if x == _DootPostBox.whole_box_key:
                 _DootPostBox.boxes[box] = defaultdict(list)
@@ -105,6 +118,7 @@ class _DootPostBox:
     def clear() -> None:
         _DootPostBox.boxes.clear()
 
+##--| Actions:
 @Proto(Action_p)
 class PutPostAction:
     """
@@ -127,34 +141,38 @@ class PutPostAction:
         self._add_to_target_box(spec, state, kwargs, _basename)
 
     def _add_to_task_box(self, spec, state, args, _basename) -> None:  # noqa: ANN001
-        target = _basename.pop(top=True).push(_DootPostBox.default_subkey)
-        logging.debug("Adding to task box: %s : %s", target, args)
+        logging.debug("Adding to task box: %s : %s", _basename, args)
         for statekey in args:
             data = DKey(statekey, implicit=True).expand(spec, state)
-            _DootPostBox.put(target, data)
+            _DootPostBox.put(_basename, data)
 
     def _add_to_target_box(self, spec, state, kwargs, _basename) -> None:  # noqa: ANN001
         logging.debug("Adding to target boxes: %s", kwargs)
+        targets  : list[DKey]
+        box_key  : DKey
+        box      : TaskName
+
         for box_str, statekey in kwargs.items():
-            box_key = DKey(box_str)
-            box_key_ex = box_key.expand(spec, state)
+            box_key = DKey(box_str).expand(spec, state)
             try:
                 # Explicit target
-                box = TaskName(box_key_ex)
-            except ValueError:
+                box = TaskName(box_key)
+            except StrangError:
                 # Implicit
-                box = _basename.root().push(box_key_ex)
+                box = _basename.push(box_key)
 
             match statekey:
+                case DKey():
+                    targets = [statekey]
                 case str():
-                    target = [statekey]
+                    targets = [DKey(statekey)]
                 case [*xs]:
-                    target = list(xs)
+                    targets = [DKey(x) for x in xs]
                 case x:
                     raise TypeError(type(x))
 
-            for x in statekey:
-                data = DKey(x).expand(spec, state)
+            for x in targets:
+                data = x.expand(spec, state)
                 _DootPostBox.put(box, data)
 
 @Proto(Action_p)
