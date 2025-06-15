@@ -55,7 +55,9 @@ if TYPE_CHECKING:
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-FALLBACK_KEY : Final[str] = "_"
+FALLBACK_KEY      : Final[str] = "_"
+FALLBACK_MISSING  : Final[str] = f"Data->Source Mapping lacks a fallback value '{FALLBACK_KEY}'"
+MAPPING_TYPE_FAIL : Final[str] = "Mapping is not a dict"
 
 @Proto(Action_p)
 class JobExpandAction(DootBaseAction):
@@ -75,54 +77,35 @@ class JobExpandAction(DootBaseAction):
     @DKeyed.types("inject", check=dict|ChainGuard)
     @DKeyed.types("__expansion_count", fallback=0)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update) -> Maybe[dict]:  # noqa: ARG002
-        result      : list[TaskSpec]
-        inject_spec : Maybe[InjectSpec]
-        actions, sources = self._prep_template(template)
-        build_queue      = self._prep_data(_from)
-        root             = _basename.pop()
-        base_head        = root.with_head()
+    def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update) -> Maybe[dict]:
+        result       : list[TaskSpec]
+        inject_spec  : Maybe[InjectSpec]
+        base_head    : TaskName
+        build_queue  : list
+        target_name  : TaskName
+        ##--|
+        build_queue   = self._prep_data(_from)
+        inject_spec   = InjectSpec.build(inject)
+        base_head     = _basename.with_head()
+        base_subtask  = _basename.push("subtasks")
+        result        = []
 
+        ##--| early exit
         if not bool(build_queue):
             return None
-
-        match prefix:
-            case "prefix":
-                prefix = "{JobGenerated}"
-            case _:
-                pass
-
-        match sources:
-            case [*xs, x] if x in doot.loaded_tasks:
-                base_subtask = x
-                source_task = doot.loaded_tasks[x]
-            case [*xs, TaskName() as x]:
-                base_subtask = x
-                source_task = TaskSpec.build({"name":x})
-            case _:
-                base_subtask = root
-                source_task = TaskSpec.build({"name":root})
-
-        inject_spec = InjectSpec.build(inject)
-
-        result = []
-        logging.info("Generating %s SubTasks of: %s from %s", len(build_queue), base_subtask, root)
+        ##--|
+        logging.info("Generating %s SubTasks of: %s from %s", len(build_queue), template, _basename)
         for arg in build_queue:
-            _count += 1
+            _count     += 1
             # TODO change job subtask naming scheme
-            base_dict = dict(name=base_subtask.push(prefix, _count),
-                             sources=sources,
-                             actions = actions or [],
-                             required_for=[base_head],
-                             )
-            if inject_spec is not None:
-                base_dict |= (inject_spec.apply_from_spec(state)
-                              | inject_spec.apply_from_state(state)
-                              | inject_spec.apply_literal(arg)
-                              )
-
-            new_spec  = source_task.under(base_dict)
-            result.append(new_spec)
+            target_name = base_subtask.push(prefix, _count)
+            result.append(self._build_spec(name=target_name,
+                                           data=arg,
+                                           template=template,
+                                           base_req=base_head,
+                                           inject=inject_spec,
+                                           spec=spec,
+                                           state=state))
         else:
             return { _update : result , "__expansion_count":  _count }
 
@@ -171,47 +154,85 @@ class JobExpandAction(DootBaseAction):
 
         return actions, sources
 
+    def _build_spec(self, *, name:TaskName, data:Any, template:TaskName, base_req:TaskName, inject:InjectSpec, spec:ActionSpec, state:dict) -> TaskSpec:  # noqa: PLR0913
+        actions, sources  = self._prep_template(template)
+        match sources:
+            case [*_, x] if x in doot.loaded_tasks:
+                source_task = doot.loaded_tasks[x]
+            case x:
+                raise doot.errors.TrackingError("Unknown source task", x)
+
+        base_dict = dict(name=name,
+                         sources=sources,
+                         actions = actions or [],
+                         required_for=[base_req],
+                         )
+        if inject is not None:
+            base_dict |= (inject.apply_from_spec(spec)
+                          | inject.apply_from_state(state)
+                          | inject.apply_literal(data)
+                          )
+
+        new_spec  = source_task.under(base_dict)
+        return new_spec
+
 @Proto(Action_p)
-class JobMatchAction(DootBaseAction):
-    """ Take a 'mapping' of {pattern -> task} and a list,
+class MatchExpansionAction(JobExpandAction):
+    """ Take a mapping of {pattern -> task} and a list,
     and build a list of new subtasks
 
     use `prepfn` to get a value from a taskspec to match on.
 
     > prepfn :: λ(spec) -> Maybe[str|TaskName]
 
-    defaults to getting JobMatchAction._default_suffix_matcher,
+    defaults to getting JobMatchAction._default_prep_fn,
     which tries spec.fpath for a suffix
 
     registered as: job.match
     """
 
-    @DKeyed.redirects("onto_")
+    @DKeyed.taskname
     @DKeyed.references("prepfn")
     @DKeyed.types("mapping")
-    def __call__(self, spec, state, _onto, prepfn, mapping):
+    @DKeyed.types("from", check=int|list|str|pl.Path)
+    @DKeyed.types("inject", check=dict|ChainGuard)
+    @DKeyed.types("__expansion_count", fallback=0)
+    @DKeyed.redirects("update_")
+    def __call__(self, spec, state, _basename, prepfn, mapping, _from, inject, _count, _update) -> dict:
+        result  : list[TaskSpec]  = []
+        data                      = self._prep_data(_from)
+        inject_spec               = InjectSpec.build(inject)
+        base_head                 = _basename.with_head()
+        if not isinstance(mapping, dict):
+            raise doot.errors.TrackingError(MAPPING_TYPE_FAIL, type(mapping))
+        if FALLBACK_KEY not in mapping:
+            raise doot.errors.TrackingError(FALLBACK_MISSING)
+
         match prepfn:
             case CodeReference():
                 fn = prepfn(raise_error=True)
             case None:
-                fn = self._default_suffix_matcher
+                fn = self._default_prep_fn
+        ##--| Map data to base tasks
+        mapped_data = {x:fn(x) for x in data}
+        # Use the mapping
+        for val in data:
+            _count += 1
+            template     = mapping.get(fn(val), None) or mapping[FALLBACK_KEY]
+            target_name  = TaskName(template).push("matched", _count)
+            result.append(self._build_spec(name=target_name,
+                                           data=val,
+                                           template=template,
+                                           base_req=base_head,
+                                           inject=inject_spec,
+                                           spec=spec,
+                                           state=state))
+        else:
+            return { _update : result , "__expansion_count":  _count }
 
-        _onto_val = _onto.expand(spec, state) or []
-        for x in _onto_val:
-            match fn(x):
-                case TaskName() as target:
-                    x.sources = [target]
-                case None if FALLBACK_KEY in mapping:
-                    x.sources = [mapping["_"]]
-                case str() as key if key in mapping:
-                    x.sources = [TaskName(mapping[key])]
-                case _:
-                    pass
-
-    def _default_suffix_matcher(self, x:TaskSpec) -> Maybe[str]:
-        match x.extra.on_fail(None).fpath():
-            case None:
-                return None
+    def _default_prep_fn(self, x:pl.Path|str) -> Maybe[str]:
+        """ The default matcher. get the 'fpath' from a spec """
+        match x:
             case str() as x:
                 return pl.Path(x).suffix
             case pl.Path() as x:

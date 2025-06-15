@@ -140,7 +140,7 @@ class JobQueueAction:
                             result.append(x)
                 case str() as x:
                     sub = TaskSpec.build(dict(
-                        name=TaskName(x).push(count),
+                        name=TaskName(x).push(count, None, TaskName.Marks.partial),
                         sources=[TaskName(x)],
                         required_for=[head],
                         depends_on=[],
