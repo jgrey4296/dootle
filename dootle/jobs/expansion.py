@@ -203,6 +203,9 @@ class MatchExpansionAction(JobExpandAction):
         data                      = self._prep_data(_from)
         inject_spec               = InjectSpec.build(inject)
         base_head                 = _basename.with_head()
+        if not bool(_from):
+            return None
+
         if not isinstance(mapping, dict):
             raise doot.errors.TrackingError(MAPPING_TYPE_FAIL, type(mapping))
         if FALLBACK_KEY not in mapping:
@@ -214,11 +217,15 @@ class MatchExpansionAction(JobExpandAction):
             case None:
                 fn = self._default_prep_fn
         ##--| Map data to base tasks
-        mapped_data = {x:fn(x) for x in data}
-        # Use the mapping
         for val in data:
             _count += 1
-            template     = mapping.get(fn(val), None) or mapping[FALLBACK_KEY]
+            match fn(val):
+                case x if x in mapping:
+                    template = mapping[x]
+                case TaskName() as x:
+                    template = x
+                case _:
+                    template = mapping[FALLBACK_KEY]
             target_name  = TaskName(template).push("matched", _count)
             result.append(self._build_spec(name=target_name,
                                            data=val,
