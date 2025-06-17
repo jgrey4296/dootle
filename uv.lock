@@ -321,22 +321,26 @@ requires-dist = [
     { name = "boltons", specifier = ">=23.0.0" },
     { name = "jgdv", editable = "../../../jgdv" },
     { name = "matplotlib", specifier = ">=3.10.1" },
-    { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "networkx", specifier = ">3.0" },
     { name = "packaging", specifier = ">=24.2" },
     { name = "pydantic", specifier = ">=2.7.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
     { name = "sh", specifier = ">=2.0.6" },
-    { name = "sphinx", marker = "extra == 'dev'", specifier = ">=8.2.3" },
-    { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3.0.2" },
     { name = "stackprinter", specifier = ">=0.2.10" },
     { name = "sty", specifier = ">=1.0.0" },
 ]
-provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = []
+dev = [
+    { name = "dootle", editable = "." },
+    { name = "jgdv", editable = "../../../jgdv" },
+    { name = "myst-parser", specifier = ">=4.0.1" },
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-cov", specifier = ">=6.2.1" },
+    { name = "pytest-mock", specifier = ">=3.14.0" },
+    { name = "sphinx", specifier = ">=8.2.3" },
+    { name = "sphinx-autoapi", specifier = ">=3.6.0" },
+    { name = "sphinx-rtd-theme", specifier = ">=3.0.2" },
+]
 
 [[package]]
 name = "dootle"
@@ -353,6 +357,17 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+dev = [
+    { name = "myst-parser" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "sphinx" },
+    { name = "sphinx-autoapi" },
+    { name = "sphinx-rtd-theme" },
+]
+
+[package.dev-dependencies]
 dev = [
     { name = "myst-parser" },
     { name = "pytest" },
@@ -381,6 +396,17 @@ requires-dist = [
     { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3.0.2" },
 ]
 provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "myst-parser", specifier = ">=4.0.1" },
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-cov", specifier = ">=6.1.1" },
+    { name = "pytest-mock", specifier = ">=3.14.0" },
+    { name = "sphinx", specifier = ">=8.2.3" },
+    { name = "sphinx-autoapi", specifier = ">=3.6.0" },
+    { name = "sphinx-rtd-theme", specifier = ">=3.0.2" },
+]
 
 [[package]]
 name = "fonttools"
@@ -466,7 +492,7 @@ sdist = { url = "https://files.pythonhosted.org/packages/28/e0/f7bec3443f5e9cd9d
 
 [[package]]
 name = "jgdv"
-version = "1.1.0"
+version = "1.2.0"
 source = { editable = "../../../jgdv" }
 dependencies = [
     { name = "networkx" },
@@ -481,23 +507,26 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "myst-parser", marker = "extra == 'dev'", specifier = ">=4.0.1" },
     { name = "networkx" },
     { name = "packaging", specifier = ">=24.2" },
     { name = "pydantic", specifier = ">=2.9.0" },
     { name = "pyparsing" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.5" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
-    { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.14.0" },
     { name = "python-statemachine", specifier = ">=2.5.0" },
     { name = "sh", specifier = ">=2.1.0" },
-    { name = "sphinx", marker = "extra == 'dev'", specifier = ">=8.2.3" },
-    { name = "sphinx-autoapi", marker = "extra == 'dev'", specifier = ">=3.6.0" },
-    { name = "sphinx-rtd-theme", marker = "extra == 'dev'", specifier = ">=3.0.2" },
     { name = "stackprinter", specifier = ">=0.2.0" },
     { name = "sty", specifier = ">=1.0.6" },
 ]
-provides-extras = ["dev"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "myst-parser", specifier = ">=4.0.1" },
+    { name = "pytest", specifier = ">=8.3.5" },
+    { name = "pytest-cov", specifier = ">=6.0.0" },
+    { name = "pytest-mock", specifier = ">=3.14.0" },
+    { name = "sphinx", specifier = ">=8.2.3" },
+    { name = "sphinx-autoapi", specifier = ">=3.6.0" },
+    { name = "sphinx-rtd-theme", specifier = ">=3.0.2" },
+]
 
 [[package]]
 name = "jinja2"

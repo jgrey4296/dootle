@@ -26,17 +26,6 @@ dependencies   = [
     "python-statemachine>=2.5.0",
 ]
 
-[project.optional-dependencies]
-dev      = [
-    "myst-parser>=4.0.1",
-    "pytest>=8.3.5",
-    "pytest-cov>=6.0.0",
-    "pytest-mock>=3.14.0",
-    "sphinx",
-    "sphinx-rtd-theme>=3.0.2",
-    "sphinx-autoapi>=3.6.0",
-]
-
 ##-- urls
 [project.urls]
 homepage      = "https://github.com/jgrey4296/dootle"
@@ -200,5 +189,16 @@ exclude                = []
 [tool.uv.sources]
 bibtex-bibble = { path = "../bibble", editable = true }
 doot = { path = "../../", editable = true }
+
+[dependency-groups]
+dev = [
+    "myst-parser>=4.0.1",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.1.1",
+    "pytest-mock>=3.14.0",
+    "sphinx>=8.2.3",
+    "sphinx-autoapi>=3.6.0",
+    "sphinx-rtd-theme>=3.0.2",
+]
 
 ##-- end uv
