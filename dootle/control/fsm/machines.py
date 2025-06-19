@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-
+The FSM's for various components of doot
 """
 
 # Imports:
@@ -22,18 +22,15 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
+import doot
+import doot.errors
+from doot.workflow._interface import TaskStatus_e
 from statemachine import State, StateMachine
 from statemachine.states import States
 
 # ##-- end 3rd party imports
 
-# ##-- 1st party imports
-import doot
-import doot.errors
-from doot.workflow._interface import TaskStatus_e
-
-from . import _interface as API
-# ##-- end 1st party imports
+from . import _interface as API # noqa: N812
 
 # ##-- types
 # isort: off
@@ -64,6 +61,8 @@ if TYPE_CHECKING:
 logging = logmod.getLogger(__name__)
 ##-- end loggingw
 
+BASE_BREAK_STATES : Final[list[TaskStatus_e]] = [TaskStatus_e.TEARDOWN, TaskStatus_e.DEAD]
+##--|
 class TaskTrackMachine(StateMachine):
     """
       A Statemachine controlling the tracking of task states
@@ -75,7 +74,7 @@ class TaskTrackMachine(StateMachine):
                          use_enum_instance=True)
 
     # Events
-    # Setup: named -> init | dead
+    # Setup, run when a task is queued.
     setup = (
         _.NAMED.to(_.DEAD, cond='spec_missing')
         | _.NAMED.to(_.DECLARED)
@@ -84,20 +83,25 @@ class TaskTrackMachine(StateMachine):
         | _.DEFINED.to(_.INIT)
         )
 
-    # Run: init -> success | failed | halted | skipped
-    run = (
+    # Prepare: in tracker, before being sent to runner
+    prepare = (
         _.INIT.to(_.WAIT)
-        | _.WAIT.to.itself(cond="should_wait", internal=True)
         | _.WAIT.to(_.FAILED, cond="should_cancel")
+        | _.WAIT.to.itself(cond="should_wait")
         | _.WAIT.to(_.READY)
-        | _.READY.to(_.SKIPPED, cond="should_skip")
+    )
+
+    # Run: for use in runner
+    run = (
+        _.READY.to(_.SKIPPED, cond="should_skip")
         | _.READY.to(_.RUNNING)
+        # | _.RUNNING.to.itself(cond="still_running")
         | _.RUNNING.to(_.HALTED,  cond="should_halt")
         | _.RUNNING.to(_.FAILED,  cond="should_fail")
         | _.RUNNING.to(_.SUCCESS)
         )
 
-    # Finish: success | failed | halted | skipped -> dead
+    # Finish: cleanup
     finish   = (
         _.TEARDOWN.from_(_.SUCCESS, _.FAILED, _.HALTED, _.SKIPPED, _.DISABLED)
         | _.TEARDOWN.to(_.DEAD)
@@ -110,13 +114,17 @@ class TaskTrackMachine(StateMachine):
     fail     = _.FAILED.from_(_.READY, _.RUNNING, _.WAIT, _.INIT, _.DECLARED, _.DEFINED)
 
     # Composite Events
-    progress = (setup | run | disable | skip | fail | halt | finish )
+    progress = (setup | prepare | run | disable | skip | halt | fail | finish)
 
-    def __init__(self, task:API.TaskModel_p):
-        super().__init__(task)
+    def __init__(self, task:API.TaskModel_p) -> None:
+        if not isinstance(task, API.TaskModel_Conditions_p):
+            msg = "To run a TaskTrackMachine, it requires an underlying model which implements dootle.control.fms._interface.TaskModel_Conditions_p"
+            raise TypeError(msg, type(task))
+        super().__init__(task, state_field="status")
 
-    def __call__(self, *, until:Maybe[TaskStatus_e|list[TaskStatus_e]]=None, **kwargs) -> Any:
-        base_states = [TaskStatus_e.DEAD]
+    def __call__(self, *, until:Maybe[TaskStatus_e|Iterable[TaskStatus_e]]=None, **kwargs:Any) -> Any:
+        """ A unified method for running a task to completion """
+        base_states = BASE_BREAK_STATES[:]
         match until:
             case None | []:
                 pass
@@ -125,16 +133,21 @@ class TaskTrackMachine(StateMachine):
             case [*xs]:
                 base_states += xs
 
-        while self.current_state_value not in base_states:
+        # Current as None to start, ensures you can loop while waiting
+        current : Maybe[TaskStatus_e] = None
+        while current not in base_states:
             try:
                 self.progress(**kwargs)
             except doot.errors.DootError as err:
                 self.fail()
+            else:
+                current = self.current_state_value
         else:
             return self.current_state_value
 
-    def after_transition(self, event, state):
-        logging.info("%s : %s", event, state)
+    def after_transition(self, source, event, state) -> None:
+        logging.info("%s -> %s -> %s", source, event, state)
+
 
 class ArtifactMachine(StateMachine):
     """
@@ -162,14 +175,11 @@ class ArtifactMachine(StateMachine):
     def __init__(self, artifact:API.ArtifactModel_p):
         super().__init__(artifact)
 
-
-
-
-class DootMainMachine(StateMachine):
+class MainMachine(StateMachine):
     """
     For running doot as main
     """
-    
+
     # States
     init      = State(initial=True)
     setup     = State()
@@ -201,8 +211,7 @@ class DootMainMachine(StateMachine):
 
     fail = failed.from_(setup, plugins, cli, reporter, commands, tasks, run)
 
-
-class DootOverlordMachine(StateMachine):
+class OverlordMachine(StateMachine):
 
     init              = State(initial=True)
     constants         = State()

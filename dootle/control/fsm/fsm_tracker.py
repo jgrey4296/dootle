@@ -43,6 +43,9 @@ from doot.control.tracker._interface import TaskTracker_p
 from doot.control.tracker.registry import TrackRegistry
 from doot.control.tracker.network import TrackNetwork
 from doot.control.tracker.queue import TrackQueue
+from doot.workflow import TaskArtifact, TaskName
+from doot.workflow._interface import TaskStatus_e
+from .machines import TaskTrackMachine
 
 # ##-- types
 # isort: off
@@ -56,8 +59,7 @@ from typing import no_type_check, final, override, overload
 
 if TYPE_CHECKING:
    from doot.workflow._interface import Task_p
-   from doot.workflow import TaskArtifact, TaskName, TaskSpec
-   from doot.workflow._interface import TaskStatus_e
+   from doot.workflow import TaskSpec
    from jgdv import Maybe
    from typing import Final
    from typing import ClassVar, Any, LiteralString
@@ -78,13 +80,41 @@ if TYPE_CHECKING:
 logging    = logmod.getLogger(__name__)
 ##-- end logging
 
+SETUP_STATE_TARGETS : Final[list[TaskStatus_e]] = [TaskStatus_e.INIT]
+READY_STATE_TARGETS : Final[list[TaskStatus_e]] = [TaskStatus_e.READY, TaskStatus_e.WAIT, TaskStatus_e.TEARDOWN]
+
+##--|
 @Proto(TaskTracker_p)
 class FSMTracker(Tracker_abs):
     """
-
+    Tracks tasks by their FSM state
     """
+    machines : dict[TaskName, TaskTrackMachine]
 
-    def next_for(self, target:Maybe[str|TaskName]=None) -> Maybe[Task_p|TaskArtifact]:
+    def __init__(self):
+        super().__init__()
+        self.machines = {}
+
+
+    def get_status(self, name:TaskName) -> TaskStatus_e:
+        return self.machines[name].current_state_value
+    def set_status(self, *args) -> None:
+        pass
+
+    def queue_entry(self, name:str|Concrete[TaskName|TaskSpec]|TaskArtifact, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, **kwargs:Any) -> Maybe[Concrete[TaskName|TaskArtifact]]:
+        match super().queue_entry(name, from_user=from_user, status=status):
+            case TaskName() as queued if queued not in self.machines:
+                # instantiate FSM task
+                self._registry._make_task(queued, parent=kwargs.pop("parent", None))
+                task = self._registry.tasks[queued]
+                fsm = TaskTrackMachine(task)
+                self.machines[queued] = fsm
+                fsm(until=SETUP_STATE_TARGETS, tracker=self)
+                return queued
+            case x:
+                return x
+
+    def next_for(self, target:Maybe[str|TaskName]=None) -> Maybe[TaskTrackMachine|TaskArtifact]:
         """ ask for the next task that can be performed
 
           Returns a Task or Artifact that needs to be executed or created
@@ -92,11 +122,9 @@ class FSMTracker(Tracker_abs):
           or if theres nothing left in the queue
 
         """
-        focus : str|TaskName|TaskArtifact
-        count : int
-        result : Maybe[Task_p|TaskArtifact]
-        status : TaskStatus_e
-
+        focus   : str|TaskName|TaskArtifact
+        count   : int
+        result  : Maybe[TaskTrackMachine|Task_p|TaskArtifact]
         logging.info("[Next.For] (Active: %s)", len(self._queue.active_set))
         if not self._network.is_valid:
             raise doot.errors.TrackingError("Network is in an invalid state")
@@ -108,11 +136,25 @@ class FSMTracker(Tracker_abs):
         result = None
         while (result is None) and bool(self._queue) and 0 < (count:=count-1):
             focus  = self._queue.deque_entry()
-            status = self._registry.get_status(focus)
-            logging.debug("[Next.For.Head]: %s : %s", status, focus)
-
-            # Run The FSM of the task/artifact
-
+            logging.debug("[Next.For.Head]: %s", focus)
+            match focus:
+                case TaskName() as x if x in self._registry.tasks:
+                    # get and run the machine
+                    fsm   = self.machines[x]
+                    match fsm.current_state_value:
+                        case TaskStatus_e.READY | TaskStatus_e.TEARDOWN | TaskStatus_e.RUNNING:
+                            result = fsm.model
+                        case TaskStatus_e.DEAD:
+                            pass
+                        case TaskStatus_e.WAIT | TaskStatus_e.INIT:
+                            fsm(until=READY_STATE_TARGETS, tracker=self)
+                            self.queue_entry(x)
+                        case x:
+                            raise TypeError(type(x), x)
+                case TaskArtifact() as x:
+                    return x
+                case _:
+                    continue
         else:
             logging.info("[Next.For] <- %s", result)
             # wrap the result in an execution FSM

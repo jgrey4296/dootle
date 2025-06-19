@@ -149,7 +149,7 @@ class TestStateTracker_NextFor:
                 assert(False), x
         assert(obj.get_status(t_name) is TaskStatus_e.WAIT)
 
-    def test_dependency_success_produces_ready_state_(self):
+    def test_dependency_success_produces_ready_state(self):
         obj  = FSMTracker()
         spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"], "ctor":"dootle.control.fsm.task:FSMTask"})
         dep  = TaskSpec.build({"name":"basic::dep", "ctor":"dootle.control.fsm.task:FSMTask"})
@@ -159,17 +159,13 @@ class TestStateTracker_NextFor:
         # Get the dep and run it
         dep_inst = obj.next_for()
         assert(dep.name < dep_inst.name)
+        assert(isinstance(obj.machines[dep_inst.name].model, FSMTask))
         obj.machines[dep_inst.name](step=1, tracker=obj)
         assert(obj.get_status(dep_inst.name) is TaskStatus_e.TEARDOWN)
         # Now check the top is no longer blocked
-        match obj.next_for():
-            case Task_p() as result:
-                assert(spec.name < result.name)
-                assert(result.name in obj.machines)
-                assert(obj.get_status(result.name) is TaskStatus_e.READY)
-            case x:
-                assert(False), x
-
+        assert(obj.get_status(t_name) is TaskStatus_e.WAIT)
+        obj.machines[t_name](step=1, tracker=obj, until=[TaskStatus_e.READY])
+        assert(obj.get_status(t_name) is TaskStatus_e.READY)
 
     @pytest.mark.xfail
     def test_halt(self, mocker):

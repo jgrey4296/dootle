@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-
+An FSM b acked Task and job
 """
 # ruff: noqa:
 
@@ -30,8 +30,9 @@ import faulthandler
 from jgdv import Proto, Mixin, Maybe
 import doot
 from doot.workflow import TaskSpec, ActionSpec, RelationSpec, TaskName, DootTask
-from doot.workflow._interface import Task_i, Job_p, TaskMeta_e, TaskStatus_e
+from doot.workflow._interface import Task_i, Job_p, TaskMeta_e, TaskStatus_e, Task_p
 from doot.workflow._interface import ActionResponse_e as ActRE
+from doot.control.tracker._interface import TaskTracker_p
 from . import _interface as API
 
 # ##-- types
@@ -65,52 +66,61 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 # Vars:
-skip_msg          : Final[str] = doot.constants.printer.skip_by_condition_msg
-STATE_TASK_NAME_K : Final[str] = doot.constants.patterns.STATE_TASK_NAME_K # type: ignore
+skip_msg           : Final[str]  = doot.constants.printer.skip_by_condition_msg
+STATE_TASK_NAME_K  : Final[str]  = doot.constants.patterns.STATE_TASK_NAME_K # type: ignore
 
-SETUP_GROUP                : Final[str] = "setup"
-ACTION_GROUP               : Final[str] = "actions"
-FAIL_GROUP                 : Final[str] = "on_fail"
-DEPENDS_GROUP              : Final[str] = "depends_on"
+SETUP_GROUP        : Final[str]  = "setup"
+ACTION_GROUP       : Final[str]  = "actions"
+FAIL_GROUP         : Final[str]  = "on_fail"
+DEPENDS_GROUP      : Final[str]  = "depends_on"
 
 # Body:
 
 class _Predicates_m:
+
+    ##--| setup
+
+    def spec_missing(self, *, tracker:TaskTracker_p) -> bool:
+        """ cancels the task if the spec is not registered """
+        if self.spec is None or self.spec not in tracker._registry.specs:
+            return True
+        return False
+
+    def should_disable(self) -> bool:
+        """ cancels the task if the spec is disabled """
+        return self.spec.extra.on_fail(False).disabled()
+
+    ##--| prepare
+
+    def should_cancel(self) -> bool:
+        """ Cancel if you've waited too long """
+        return self.priority < 1
+
+    def should_wait(self, *, tracker:TaskTracker_p) -> bool:
+        """ if any dependencies have not run, delay this task  """
+
+        match tracker._network.incomplete_dependencies(self.spec.name):
+            case []:
+                return False
+            case [*xs]:
+                for x in xs:
+                    tracker.queue_entry(x)
+                self.priority -= 1
+                return True
+            case x:
+                raise TypeError(type(x))
+
+    ##--| run
 
     def should_skip(self) -> bool:
         """ run a task's depends_on group, coercing to a bool
         returns False if the runner should skip the rest of the task
         """
         match self._execute_action_group(group=DEPENDS_GROUP):
-            case None:
-                return True
             case _, ActRE.SKIP | ActRE.FAIL:
-                return False
-            case _:
                 return True
-
-    def spec_missing(self, tracker) -> bool:
-        # check the tracker for the spec,
-        # False if it isn't registered
-        pass
-
-    def should_disable(self) -> bool:
-        return self.spec.disabled
-
-    def should_wait(self, tracker) -> bool:
-        # check dependencies in depends_on,
-        deps = tracker.get_deps(self.spec.depends_on)
-        # queue them if necessary
-        return False
-
-    def should_cancel(self) -> bool:
-        # if waiting too long, time out
-        return False
-
-    def should_skip(self) -> bool:
-        # Run tests in depends_on
-        self._execute_action_group(group=DEPENDS_GROUP)
-        return False
+            case _:
+                return False
 
     def should_halt(self) -> bool:
         return False
@@ -118,34 +128,88 @@ class _Predicates_m:
     def should_fail(self) -> bool:
         return False
 
+class _Callbacks_m:
+
+    def on_enter_INIT(self, *, tracker):
+        """
+        initialise state,
+        possibly run injections?
+        """
+        self.state |= dict(self.spec.extra)
+        self.state[STATE_TASK_NAME_K]  = self.spec.name
+        self.state['_action_step']     = 0
+
+    def on_enter_RUNNING(self, step:int, tracker:TaskTracker_p) -> None:
+        logmod.debug("-- Executing Task %s: %s", step, self.spec.name[:])
+        match self._execute_action_group(group=SETUP_GROUP):
+            case int() as x, ActRE() as res:
+                # Can't queue extra actions from setup, so 2nd arg has to be []
+                pass
+            case x:
+                raise TypeError(type(x))
+
+        match self._execute_action_group(group=ACTION_GROUP):
+            case int() as x, ActRE() as res:
+                pass
+            case x:
+                raise TypeError(type(x))
+
+    def on_exit_RUNNING(self, step:int, tracker:TaskTracker_p) -> None:
+        # Report on the task's actions
+        pass
+
+    def on_enter_FAILED(self) -> None:
+        match self._execute_action_group(group=FAIL_GROUP):
+            case int() as x, ActRE() as res:
+                pass
+            case x:
+                raise TypeError(type(x))
+
+    def on_enter_HALTED(self) -> None:
+        pass
+
+    def on_enter_TEARDOWN(self, tracker:TaskTracker_p):
+        # queue cleanup task
+        match tracker._registry.concrete[self.spec.name.with_cleanup()]:
+            case [x, *xs]:
+                tracker.queue_entry(x, parent=self.spec.name)
+            case x:
+                raise TypeError(type(x))
+
+##--|
+
 @Proto(Task_i, API.TaskModel_p)
-@Mixin(_Predicates_m)
+@Mixin(_Predicates_m, _Callbacks_m)
 class FSMTask:
     """
-
+    The implementation of a task, as the domain model for a TaskTrackMachine
     """
-
-    step     : int
-    spec     : TaskSpec
-    status   : TaskStatus_e
-    priority : int
-    records  : list[Any]
-    state    : dict
+    _default_flags  : ClassVar[set] = set()
+    step            : int
+    spec            : TaskSpec
+    status          : TaskStatus_e
+    priority        : int
+    records         : list[Any]
+    state           : dict
 
     def __init__(self, spec:TaskSpec):
-        self.step                              = -1
-        self.spec                              = spec
-        self.priority                          = self.spec.priority
-        self.status                            = DootTask.INITIAL_STATE
-        self.state                             = {}
-        self.records                           = []
+        self.step        = -1
+        self.spec        = spec
+        self.priority    = self.spec.priority
+        self.status      = TaskStatus_e.NAMED
+        self.state       = {}
+        self.records     = []
+        assert(self.priority > 0)
+
+    @property
+    def name(self) -> TaskName:
+        return self.spec.name
+
+    ##--| dunders
 
     def __repr__(self) -> str:
-        cls = self.__class__.__qualname__
+        cls              = self.__class__.__qualname__
         return f"<{cls}: {self.spec.name[:]}>"
-
-    def __bool__(self) -> bool:
-        return False
 
     def __hash__(self) -> int:
         return hash(self.spec.name)
@@ -161,31 +225,31 @@ class FSMTask:
             case _:
                 return False
 
-    def _execute_action_group(self, *, group:str) -> tuple[int, list[TaskSpec]]:
+    ##--| internal
+
+    def _execute_action_group(self, *, group:str) -> tuple[int, ActRE]:
         """ Execute a group of actions, possibly queue any task specs they produced,
         and return a count of the actions run + the result
         """
-        actions = self.get_action_group(group)
+        actions         : list[ActionSpec]
+        group_result    : ActRE
+        executed_count  : int
 
-        if not bool(actions):
-            return 0, []
-
-        group_result              = ActRE.SUCCESS
-        to_queue : list[TaskSpec] = []
-        executed_count            = 0
+        ##--|
+        actions         = self._get_action_group(group)
+        group_result    = ActRE.SUCCESS
+        executed_count  = 0
 
         for action in actions:
             match action:
                 case ActionSpec():
                     pass
-                case _:
+                case _: # Ignore relationspecs
                     continue
 
             match self._execute_action(executed_count, action, group=group):
                 case True | None:
                     continue
-                case list() as result:
-                    to_queue += result
                 case False:
                     group_result = ActRE.FAIL
                     break
@@ -193,11 +257,15 @@ class FSMTask:
                     doot.report.line("Remaining Task Actions skipped by Action Result", char=".")
                     group_result = ActRE.SKIP
                     break
+                case list():
+                    logging.warning("Tried to queue tasks from a standard task")
+                case x:
+                    raise TypeError(type(x))
 
             executed_count += 1
 
-        else: # no break.
-            return executed_count, to_queue
+        ##--|
+        return executed_count, group_result
 
     def _execute_action(self, count:int, action:ActionSpec, group:Maybe[str]=None) -> ActRE|list[TaskSpec]:
         """ Run the given action of a specific task.
@@ -245,48 +313,68 @@ class FSMTask:
         logging.warning("Unknown Groupname: %s", group_name)
         return []
 
-    def on_enter_init(self):
-        """
-        initialise state,
-        possibly run injections
-        """
-        self.state |= dict(self.spec.extra)
-        self.state[STATE_TASK_NAME_K] = self.spec.name
-        self.state['_action_step']    = 0
+    ##--| public
 
-    def on_enter_running(self, step:int, tracker) -> None:
-        logmod.debug("-- Executing Task %s: %s", step, self.spec.name[:])
-        self._execute_action_group(group=SETUP_GROUP)
-        self._execute_action_group(group=ACTION_GROUP)
-
-    def on_exit_running(self, step:int, tracker) -> None:
-        # Report on the task's actions
+    def log(self, msg:str, level:int=logmod.DEBUG, prefix:Maybe[str]=None) -> None:
         pass
-
-    def on_enter_failed(self) -> None:
-        self._execute_action_group(group=FAIL_GROUP)
-
-    def on_enter_halted(self) -> None:
-        pass
-
-    def on_enter_teardown(self, tracker):
-        # queue cleanup task
-        tracker.queue(self.spec.name.with_cleanup())
-        # or Run cleanup actions
-        self._execute_action_group(task, group="cleanup")
 
 class FSMJob(FSMTask):
     """
-
+    Extends an FSMTask for running a job
     """
 
     def on_enter_running(self, step, tracker):
         logmod.debug("-- Expanding Job %s: %s", step, self.spec.name[:])
-        new_queue : list[TaskSpec] = []
         self._execute_action_group(group=SETUP_GROUP)
         match self._execute_action_group(group=ACTION_GROUP):
-            case int(), [*xs]:
+            case int() as x, ActRE() as res:
+                pass
+            case int() as x, [*xs]:
                 # Queue xs
                 pass
-            case _:
-                pass
+            case x:
+                raise TypeError(type(x))
+
+
+    def _execute_action_group(self, *, group:str) -> tuple[int, list[TaskSpec]]:
+        """ Execute a group of actions, possibly queue any task specs they produced,
+        and return a count of the actions run + the result
+        """
+        actions : list[ActionSpec]
+
+        ##--|
+        actions = self._get_action_group(group)
+
+        if not bool(actions):
+            return 0, []
+
+        group_result              = ActRE.SUCCESS
+        to_queue : list[TaskSpec] = []
+        executed_count            = 0
+
+        for action in actions:
+            match action:
+                case ActionSpec():
+                    pass
+                case _:
+                    continue
+
+            match self._execute_action(executed_count, action, group=group):
+                case True | None:
+                    continue
+                case list() as result:
+                    to_queue += result
+                case False:
+                    group_result = ActRE.FAIL
+                    break
+                case ActRE.SKIP:
+                    doot.report.line("Remaining Task Actions skipped by Action Result", char=".")
+                    group_result = ActRE.SKIP
+                    break
+
+            executed_count += 1
+
+        else: # no break.
+            return executed_count, to_queue
+
+        return 0, []

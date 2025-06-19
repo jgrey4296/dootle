@@ -79,8 +79,7 @@ class SimpleTaskModel:
     def should_fail(self) -> bool:
         return self.fail
 
-    @tm.TaskTrackMachine._.RUNNING.enter
-    def _run(self):
+    def on_enter_RUNNING(self):
         self.data['has_run'] = True
 
 ##-- end basic model
@@ -123,7 +122,6 @@ class TestTaskTrackMachine:
         """
         assert(fsm.current_state.value is TaskStatus_e.NAMED)
 
-
     def test_build_with_actual_task(self, task):
         """
         The FSM starts just named
@@ -132,6 +130,7 @@ class TestTaskTrackMachine:
         fsm = tm.TaskTrackMachine(task)
 
     ##--| setup
+
     def test_setup(self, fsm):
         """ Setting up takes the task from named to init """
         assert(fsm.current_state.value is TaskStatus_e.NAMED)
@@ -162,6 +161,7 @@ class TestTaskTrackMachine:
         assert(fsm.current_state_value is TaskStatus_e.DISABLED)
 
     ##--| run
+
     def test_run(self, fsm):
         """
         Normally a running task progresses to success
@@ -242,6 +242,7 @@ class TestTaskTrackMachine:
         assert(fsm.model.data['has_run'] is True)
 
     ##--| finish
+
     def test_finish(self, fsm):
         pass
 
