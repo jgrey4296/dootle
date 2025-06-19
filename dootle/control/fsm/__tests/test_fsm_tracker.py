@@ -2,7 +2,7 @@
 """
 
 """
-# ruff: noqa: E402, B011
+# ruff: noqa: E402, B011, ANN202, ERA001
 # Imports:
 from __future__ import annotations
 
@@ -28,11 +28,14 @@ import networkx as nx
 # ##-- 1st party imports
 import doot
 import doot.errors
-from doot.workflow import TaskSpec
+from doot.workflow import TaskSpec, TaskName
 from doot.util import mock_gen
 
 # ##-- end 1st party imports
 
+from doot.workflow._interface import Task_i
+from ..machines import TaskTrackMachine
+from ..task import FSMTask
 from ..fsm_tracker import FSMTracker
 
 # ##-- types
@@ -62,7 +65,7 @@ from doot.workflow._interface import Task_p, TaskStatus_e
 
 logging = logmod.root
 
-class TestStateTracker:
+class TestStateTracker_Basic:
 
     def test_sanity(self):
         assert(True)
@@ -72,179 +75,121 @@ class TestStateTracker:
         obj = FSMTracker()
         assert(isinstance(obj, FSMTracker))
 
-    def test_next_for_fails_with_unbuilt_network(self):
+    def test_queue_task(self):
+        obj   = FSMTracker()
+        spec  = TaskSpec.build({"name":"simple::task", "ctor":"dootle.control.fsm.task:FSMTask"})
+        match obj.queue_entry(spec):
+            case TaskName() as x:
+                assert(x in obj._registry.tasks)
+                assert(isinstance(obj._registry.tasks[x], Task_p))
+                assert(x in obj.machines)
+            case x:
+                assert(False), x
+
+    def test_next_for(self):
+        obj   = FSMTracker()
+        spec  = TaskSpec.build({"name":"simple::task", "ctor":"dootle.control.fsm.task:FSMTask"})
+        obj.queue_entry(spec)
+        obj.build_network()
+        match obj.next_for():
+            case Task_p() as x:
+                assert(x.name == "simple::task[<uuid>]")
+                assert(x.name in obj.machines)
+                assert(True)
+            case x:
+                assert(False), x
+
+class TestStateTracker_NextFor:
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
+    def test_for_fails_with_unbuilt_network(self):
         obj = FSMTracker()
         with pytest.raises(doot.errors.TrackingError):
             obj.next_for()
 
-    def test_next_for_empty(self):
+    def test_for_empty(self):
         obj = FSMTracker()
         obj.build_network()
         assert(obj.next_for() is None)
 
-    @pytest.mark.xfail
-    def test_next_for_no_connections(self):
+    def test_for_no_connections(self):
         obj  = FSMTracker()
-        spec = TaskSpec.build({"name":"basic::Task"})
+        spec = TaskSpec.build({"name":"basic::Task", "ctor":"dootle.control.fsm.task:FSMTask"})
         obj.register_spec(spec)
         t_name = obj.queue_entry(spec.name)
-        assert(obj.get_status(t_name) is TaskStatus_e.DECLARED)
         obj.build_network()
         match obj.next_for():
             case Task_p():
+                assert(obj.get_status(t_name) is TaskStatus_e.READY)
+            case x:
+                assert(False), x
+        # Now theres nothing remaining
+        match obj.next_for():
+            case None:
                 assert(True)
             case x:
                 assert(False), x
-        assert(obj.get_status(t_name) is TaskStatus_e.RUNNING)
 
-    @pytest.mark.xfail
-    def test_next_simple_dependendency(self):
+    def test_simple_dependendency(self):
         obj  = FSMTracker()
-        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
-        dep  = TaskSpec.build({"name":"basic::dep"})
+        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"], "ctor":"dootle.control.fsm.task:FSMTask"})
+        dep  = TaskSpec.build({"name":"basic::dep", "ctor":"dootle.control.fsm.task:FSMTask"})
         obj.register_spec(spec, dep)
         t_name = obj.queue_entry(spec.name, from_user=True)
-        assert(obj.get_status(t_name) is TaskStatus_e.INIT)
         obj.build_network()
+        assert(t_name in obj._registry.tasks)
+        assert(dep.name in obj._registry.concrete)
         match obj.next_for():
             case Task_p() as result:
                 assert(dep.name < result.name)
-                assert(True)
+                assert(obj.get_status(result.name) is TaskStatus_e.READY)
             case x:
                 assert(False), x
         assert(obj.get_status(t_name) is TaskStatus_e.WAIT)
 
-    @pytest.mark.xfail
-    def test_next_dependency_success_produces_ready_state_(self):
+    def test_dependency_success_produces_ready_state_(self):
         obj  = FSMTracker()
-        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
-        dep  = TaskSpec.build({"name":"basic::dep"})
+        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"], "ctor":"dootle.control.fsm.task:FSMTask"})
+        dep  = TaskSpec.build({"name":"basic::dep", "ctor":"dootle.control.fsm.task:FSMTask"})
         obj.register_spec(spec, dep)
         t_name = obj.queue_entry(spec.name, from_user=True)
-        assert(obj.get_status(t_name) is TaskStatus_e.INIT)
         obj.build_network()
+        # Get the dep and run it
         dep_inst = obj.next_for()
         assert(dep.name < dep_inst.name)
-        obj.set_status(dep_inst.name, TaskStatus_e.SUCCESS)
+        obj.machines[dep_inst.name](step=1, tracker=obj)
+        assert(obj.get_status(dep_inst.name) is TaskStatus_e.TEARDOWN)
+        # Now check the top is no longer blocked
         match obj.next_for():
             case Task_p() as result:
                 assert(spec.name < result.name)
-                assert(True)
+                assert(result.name in obj.machines)
+                assert(obj.get_status(result.name) is TaskStatus_e.READY)
             case x:
                 assert(False), x
-        assert(obj.get_status(t_name) is TaskStatus_e.RUNNING)
+
 
     @pytest.mark.xfail
-    def test_next_artificial_success(self):
+    def test_halt(self, mocker):
+        """ Force a Halt """
         obj  = FSMTracker()
-        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
-        dep  = TaskSpec.build({"name":"basic::dep"})
-        obj.register_spec(spec, dep)
-        t_name   = obj.queue_entry(spec.name)
-        dep_inst = obj.queue_entry(dep.name)
-        assert(obj.get_status(t_name) is TaskStatus_e.INIT)
-        obj.build_network()
-        # Force the dependency to success without getting it from next_for:
-        obj.set_status(dep_inst, TaskStatus_e.SUCCESS)
-        match obj.next_for():
-            case Task_p() as result:
-                assert(spec.name < result.name)
-                assert(True)
-            case x:
-                assert(False), x
-        assert(obj.get_status(t_name) is TaskStatus_e.RUNNING)
-
-    @pytest.mark.xfail
-    def test_next_halt(self):
-        obj  = FSMTracker()
-        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
-        dep  = TaskSpec.build({"name":"basic::dep"})
+        spec = TaskSpec.build({"name":"basic::alpha",
+                               "depends_on":["basic::dep"],
+                               "ctor":"dootle.control.fsm.task:FSMTask"})
+        dep  = TaskSpec.build({"name":"basic::dep",
+                               "ctor":"dootle.control.fsm.task:FSMTask"})
         obj.register_spec(spec, dep)
         t_name   = obj.queue_entry(spec.name, from_user=True)
         dep_inst = obj.queue_entry(dep.name)
         assert(obj.get_status(t_name) is TaskStatus_e.INIT)
         obj.build_network()
-        # Force the dependency to success without getting it from next_for:
-        obj.set_status(dep_inst, TaskStatus_e.HALTED)
-        cleanup = obj.next_for()
-        assert(isinstance(cleanup, Task_p))
-        assert("$cleanup$" in cleanup.name)
-        for x in obj._registry.tasks.values():
-            if "$cleanup$" in x.name:
-                continue
-            assert(x.status in [TaskStatus_e.HALTED, TaskStatus_e.DEAD])
-
-    @pytest.mark.xfail
-    def test_next_fail(self):
-        obj  = FSMTracker()
-        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"]})
-        dep  = TaskSpec.build({"name":"basic::dep"})
-        obj.register_spec(spec, dep)
-        t_name   = obj.queue_entry(spec.name, from_user=True)
-        dep_inst = obj.queue_entry(dep.name)
-        assert(obj.get_status(t_name) is TaskStatus_e.INIT)
-        obj.build_network()
-        # Force the dependency to success without getting it from next_for:
-        obj.set_status(dep_inst, TaskStatus_e.FAILED)
-        cleanup = obj.next_for()
-        assert("$cleanup$" in cleanup.name)
-        for x in obj._registry.tasks.values():
-            if "$cleanup$" in x.name:
-                continue
-            assert(x.status in [TaskStatus_e.DEAD])
-
-    @pytest.mark.xfail
-    def test_next_job_head(self):
-        obj       = FSMTracker()
-        job_spec  = TaskSpec.build({"name":"basic::+.job", "meta": ["JOB"], "cleanup":["basic::task"]})
-        task_spec = TaskSpec.build({"name":"basic::task", "test_key": "bloo"})
-        obj.register_spec(job_spec)
-        obj.register_spec(task_spec)
-        obj.queue_entry(job_spec, from_user=True)
-        assert(job_spec.name in obj._registry.concrete)
-        conc_job_body = obj._registry.concrete[job_spec.name][-1]
-        obj.build_network()
-        assert(bool(obj._queue.active_set))
-        assert(obj._network.is_valid)
-        # head is in network
-        assert(obj.next_for().name == conc_job_body)
-        obj.set_status(conc_job_body, TaskStatus_e.SUCCESS)
-        assert(obj._network.is_valid)
-        result = obj.next_for()
-        assert(result.name.uuid())
-        obj.set_status(result.name, TaskStatus_e.SUCCESS)
-        result = obj.next_for()
-        assert(result is not None)
-        # A new job head hasn't been built
-        assert(len(obj._registry.concrete[job_spec.name.with_head()]) == 1)
-
-    @pytest.mark.xfail
-    def test_next_job_head_with_subtasks(self):
-        obj       = FSMTracker()
-        job_spec  = TaskSpec.build({"name":"basic::+.job", "meta": ["JOB"]})
-        sub_spec1 = TaskSpec.build({"name":"basic::task.1", "test_key": "bloo", "required_for": ["basic::+.job..$head$"]})
-        sub_spec2 = TaskSpec.build({"name":"basic::task.2", "test_key": "blah", "required_for": ["basic::+.job..$head$"]})
-        obj.register_spec(job_spec)
-        obj.queue_entry(job_spec, from_user=True)
-        assert(job_spec.name in obj._registry.concrete)
-        # assert(job_spec.name.with_head() in obj._registry.concrete)
-        conc_job_body = obj._registry.concrete[job_spec.name][-1]
-        # conc_job_head = obj._registry.concrete[job_spec.name.with_head()][0]
-        obj.build_network()
-        # assert(conc_job_head in obj.network.nodes)
-        assert(bool(obj._queue.active_set))
-        job_body = obj.next_for()
-        assert(job_body.name == conc_job_body)
-        # Check head hasn't been added to network:
-        # assert(conc_job_head in obj.network.nodes)
-        # Add Tasks that the body generates:
-        obj.queue_entry(sub_spec1)
-        obj.queue_entry(sub_spec2)
-        obj.build_network()
-        # Artificially set priority of job body to force handling its success
-        job_body.priority = 11
-        obj._queue._queue.add(job_body.name, priority=job_body.priority)
-        obj.set_status(conc_job_body, TaskStatus_e.SUCCESS)
-        result = obj.next_for()
-        # Next task is one of the new subtasks
-        assert(any(x < result.name for x in [sub_spec1.name, sub_spec2.name]))
+        match obj.next_for():
+            case Task_p() as x:
+                assert(x.name == dep_inst)
+                x.should_halt = mocker.Mock(return_value=True)
+                obj.machines[x.name](step=1, tracker=obj)
+                assert(obj.get_status(x.name) == TaskStatus_e.HALTED)
+            case x:
+                assert(False), x

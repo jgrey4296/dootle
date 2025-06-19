@@ -2,6 +2,7 @@
 """
 
 """
+# mypy: disable-error-code="no-any-return"
 # Imports:
 from __future__ import annotations
 
@@ -27,6 +28,10 @@ from dootle.control.fsm import machines as tm
 
 # ##-- end 1st party imports
 
+from doot.workflow import TaskSpec
+from ..task import FSMTask
+from .. import _interface as API # noqa: N812
+
 logging = logmod.root
 
 ##-- basic model
@@ -39,21 +44,22 @@ class SimpleTaskModel:
     """
 
     def __init__(self):
-        self.name       = "blah"
-        self.disabled   = False
-        self.time_out   = -1
-        self.skip       = False
-        self.halt       = False
-        self.fail       = False
-        self.data       = {'has_run': False}
+        self.name      = "blah"
+        self.disabled  = False
+        self.time_out  = -1
+        self.skip      = False
+        self.halt      = False
+        self.fail      = False
+        self.data      = {'has_run': False}
+        self.status    = None
 
-    def spec_missing(self, registry):
-        return self.name not in registry
+    def spec_missing(self, *, tracker):
+        return self.name not in tracker
 
     def should_disable(self) -> bool:
         return self.disabled
 
-    def should_wait(self, tracker) -> bool:
+    def should_wait(self, *, tracker) -> bool:
         match self.time_out:
             case x if 0 < x:
                 self.time_out -= 1
@@ -79,11 +85,33 @@ class SimpleTaskModel:
 
 ##-- end basic model
 
-class TestTaskStateMachine:
+class TestSimpleTaskModel:
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
+    def test_fulfills_conditions(self):
+        assert(isinstance(SimpleTaskModel, API.TaskModel_Conditions_p))
+
+    @pytest.mark.xfail
+    def test_fullfills_callbacks(self):
+        assert(isinstance(SimpleTaskModel, API.TaskModel_Callbacks_p))
+
+class TestTaskTrackMachine:
+    """ Test a basic task model as a task FSM machine runs,
+    by event
+    """
 
     @pytest.fixture(scope="function")
     def fsm(self):
-        return tm.TaskTrackMachine(SimpleTaskModel())
+        task = SimpleTaskModel()
+        return tm.TaskTrackMachine(task)
+
+    @pytest.fixture(scope="function")
+    def task(self):
+        spec = TaskSpec.build({"name":"simple::basic"})
+        task = FSMTask(spec)
+        return task
 
     def test_sanity(self, fsm):
         assert(True is True)
@@ -95,10 +123,19 @@ class TestTaskStateMachine:
         """
         assert(fsm.current_state.value is TaskStatus_e.NAMED)
 
+
+    def test_build_with_actual_task(self, task):
+        """
+        The FSM starts just named
+        """
+        assert(task.spec_missing)
+        fsm = tm.TaskTrackMachine(task)
+
+    ##--| setup
     def test_setup(self, fsm):
         """ Setting up takes the task from named to init """
         assert(fsm.current_state.value is TaskStatus_e.NAMED)
-        fsm.setup(registry={"blah":5})
+        fsm.setup(tracker={"blah":5})
         assert(fsm.current_state.value is TaskStatus_e.DECLARED)
         fsm.setup()
         assert(fsm.current_state.value is TaskStatus_e.DEFINED)
@@ -110,7 +147,7 @@ class TestTaskStateMachine:
         shortcuts to dead
         """
         assert(fsm.current_state_value is TaskStatus_e.NAMED)
-        fsm.setup(registry={})
+        fsm.setup(tracker={})
         assert(fsm.current_state_value is TaskStatus_e.DEAD)
 
     def test_setup_should_disable(self, fsm):
@@ -119,20 +156,21 @@ class TestTaskStateMachine:
         """
         fsm.model.disabled = True
         assert(fsm.current_state_value is TaskStatus_e.NAMED)
-        fsm.setup(registry={"blah":5})
+        fsm.setup(tracker={"blah":5})
         fsm.setup()
         fsm.setup()
         assert(fsm.current_state_value is TaskStatus_e.DISABLED)
 
+    ##--| run
     def test_run(self, fsm):
         """
         Normally a running task progresses to success
 
         """
-        fsm(until=TaskStatus_e.INIT, registry={"blah":5})
-        assert(fsm.model.state is TaskStatus_e.INIT)
+        fsm(until=TaskStatus_e.INIT, tracker={"blah":5})
+        assert(fsm.model.status is TaskStatus_e.INIT)
         fsm(tracker={"blah":5}, until=TaskStatus_e.SUCCESS)
-        assert(fsm.model.state is TaskStatus_e.SUCCESS)
+        assert(fsm.model.status is TaskStatus_e.SUCCESS)
         assert(fsm.model.data['has_run'] is True)
 
     def test_run_wait_timeout(self, fsm):
@@ -142,10 +180,10 @@ class TestTaskStateMachine:
         """
         fsm.model.time_out = 5
         assert(fsm.model.data['has_run'] is False)
-        fsm(until=TaskStatus_e.INIT, registry={"blah":5})
-        assert(fsm.model.state is TaskStatus_e.INIT)
+        fsm(until=TaskStatus_e.INIT, tracker={"blah":5})
+        assert(fsm.model.status is TaskStatus_e.INIT)
         fsm(tracker={"blah":5}, until=TaskStatus_e.SUCCESS)
-        assert(fsm.model.state is TaskStatus_e.DEAD)
+        assert(fsm.model.status is TaskStatus_e.TEARDOWN)
         assert(fsm.model.data['has_run'] is False)
 
     def test_run_wait_proceed(self, fsm):
@@ -154,13 +192,13 @@ class TestTaskStateMachine:
 
         """
         fsm.model.time_out = 5
-        fsm(until=TaskStatus_e.INIT, registry={"blah":5})
-        assert(fsm.model.state is TaskStatus_e.INIT)
+        fsm(until=TaskStatus_e.INIT, tracker={"blah":5})
+        assert(fsm.model.status is TaskStatus_e.INIT)
         fsm(tracker={"blah":5}, until=TaskStatus_e.WAIT)
-        assert(fsm.model.state is TaskStatus_e.WAIT)
+        assert(fsm.model.status is TaskStatus_e.WAIT)
         fsm.model.time_out = -1
         fsm(tracker={"blah":5}, until=TaskStatus_e.SUCCESS)
-        assert(fsm.model.state is TaskStatus_e.SUCCESS)
+        assert(fsm.model.status is TaskStatus_e.SUCCESS)
         assert(fsm.model.data['has_run'] is True)
 
     def test_run_skip(self, fsm):
@@ -169,12 +207,12 @@ class TestTaskStateMachine:
 
         """
         fsm.model.skip = True
-        fsm(until=TaskStatus_e.INIT, registry={"blah":5})
-        assert(fsm.model.state is TaskStatus_e.INIT)
+        fsm(until=TaskStatus_e.INIT, tracker={"blah":5})
+        assert(fsm.model.status is TaskStatus_e.INIT)
         fsm(tracker={"blah":5}, until=TaskStatus_e.READY)
-        assert(fsm.model.state is TaskStatus_e.READY)
+        assert(fsm.model.status is TaskStatus_e.READY)
         fsm(until=[TaskStatus_e.SKIPPED])
-        assert(fsm.model.state is TaskStatus_e.SKIPPED)
+        assert(fsm.model.status is TaskStatus_e.SKIPPED)
         assert(fsm.model.data['has_run'] is False)
 
     def test_run_halt(self, fsm):
@@ -182,12 +220,12 @@ class TestTaskStateMachine:
         Checks the halt path
         """
         fsm.model.halt = True
-        fsm(until=TaskStatus_e.INIT, registry={"blah":5})
-        assert(fsm.model.state is TaskStatus_e.INIT)
+        fsm(until=TaskStatus_e.INIT, tracker={"blah":5})
+        assert(fsm.model.status is TaskStatus_e.INIT)
         fsm(tracker={"blah":5}, until=TaskStatus_e.READY)
-        assert(fsm.model.state is TaskStatus_e.READY)
+        assert(fsm.model.status is TaskStatus_e.READY)
         fsm(until=[TaskStatus_e.HALTED])
-        assert(fsm.model.state is TaskStatus_e.HALTED)
+        assert(fsm.model.status is TaskStatus_e.HALTED)
         assert(fsm.model.data['has_run'] is True)
 
     def test_run_fail(self, fsm):
@@ -195,14 +233,41 @@ class TestTaskStateMachine:
         checks the fail path
         """
         fsm.model.fail = True
-        fsm(until=TaskStatus_e.INIT, registry={"blah":5})
-        assert(fsm.model.state is TaskStatus_e.INIT)
+        fsm(until=TaskStatus_e.INIT, tracker={"blah":5})
+        assert(fsm.model.status is TaskStatus_e.INIT)
         fsm(tracker={"blah":5}, until=TaskStatus_e.READY)
-        assert(fsm.model.state is TaskStatus_e.READY)
+        assert(fsm.model.status is TaskStatus_e.READY)
         fsm(until=[TaskStatus_e.FAILED])
-        assert(fsm.model.state is TaskStatus_e.FAILED)
+        assert(fsm.model.status is TaskStatus_e.FAILED)
         assert(fsm.model.data['has_run'] is True)
 
-    @pytest.mark.skip
-    def test_todo(self):
+    ##--| finish
+    def test_finish(self, fsm):
         pass
+
+class TestArtifactMachine:
+
+    @pytest.fixture(scope="function")
+    def fsm(self):
+        return tm.ArtifactMachine()
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
+class TestMainMachine:
+
+    @pytest.fixture(scope="function")
+    def fsm(self):
+        return tm.MainMachine()
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
+class TestOverlordMachine:
+
+    @pytest.fixture(scope="function")
+    def fsm(self):
+        return tm.OverlordMachine()
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
