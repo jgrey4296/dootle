@@ -2,7 +2,7 @@
 """
 
 """
-# ruff: noqa: E402, B011, ANN202, ERA001
+# ruff: noqa: E402, B011, ANN202, ERA001, ANN001
 # Imports:
 from __future__ import annotations
 
@@ -34,8 +34,10 @@ from doot.util import mock_gen
 # ##-- end 1st party imports
 
 from doot.workflow._interface import Task_i
+from doot.workflow._interface import ActionResponse_e as ActRE
 from ..machines import TaskTrackMachine
 from ..task import FSMTask
+from ..errors import FSMSkip, FSMHalt
 from ..fsm_tracker import FSMTracker
 
 # ##-- types
@@ -64,6 +66,17 @@ from doot.workflow._interface import Task_p, TaskStatus_e
 # ##-- end types
 
 logging = logmod.root
+logmod.getLogger("jgdv").propagate = False
+
+##-- util actions
+
+def skip_action(*args, **kwargs) -> ActRE:
+    return ActRE.SKIP
+
+def fail_action(*args, **kwargs) -> ActRE:
+    return ActRE.FAIL
+
+##-- end util actions
 
 class TestStateTracker_Basic:
 
@@ -77,7 +90,7 @@ class TestStateTracker_Basic:
 
     def test_queue_task(self):
         obj   = FSMTracker()
-        spec  = TaskSpec.build({"name":"simple::task", "ctor":"dootle.control.fsm.task:FSMTask"})
+        spec  = TaskSpec.build({"name":"simple::task", "ctor":FSMTask})
         match obj.queue_entry(spec):
             case TaskName() as x:
                 assert(x in obj._registry.tasks)
@@ -88,7 +101,7 @@ class TestStateTracker_Basic:
 
     def test_next_for(self):
         obj   = FSMTracker()
-        spec  = TaskSpec.build({"name":"simple::task", "ctor":"dootle.control.fsm.task:FSMTask"})
+        spec  = TaskSpec.build({"name":"simple::task", "ctor": FSMTask})
         obj.queue_entry(spec)
         obj.build_network()
         match obj.next_for():
@@ -101,91 +114,199 @@ class TestStateTracker_Basic:
 
 class TestStateTracker_NextFor:
 
+    @pytest.fixture(scope="function")
+    def tracker(self):
+        return FSMTracker()
+
+    @pytest.fixture(scope="function")
+    def spec(self):
+        """ A Simple task spec """
+        return TaskSpec.build({
+            "name" : "basic::Task",
+            "ctor" : FSMTask,
+        })
+
+    @pytest.fixture(scope="function")
+    def specdep(self):
+        """ a spec with a dependency """
+        spec = TaskSpec.build({
+            "name"        : "basic::alpha",
+            "depends_on"  : ["basic::dep"],
+            "ctor"        : FSMTask,
+        })
+        dep  = TaskSpec.build({
+            "name" : "basic::dep",
+            "ctor" : FSMTask,
+        })
+        return spec, dep
+
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
 
-    def test_for_fails_with_unbuilt_network(self):
-        obj = FSMTracker()
+    def test_for_fails_with_unbuilt_network(self, tracker):
         with pytest.raises(doot.errors.TrackingError):
-            obj.next_for()
+            tracker.next_for()
 
-    def test_for_empty(self):
-        obj = FSMTracker()
-        obj.build_network()
-        assert(obj.next_for() is None)
+    def test_for_empty(self, tracker):
+        tracker.build_network()
+        assert(tracker.next_for() is None)
 
-    def test_for_no_connections(self):
-        obj  = FSMTracker()
-        spec = TaskSpec.build({"name":"basic::Task", "ctor":"dootle.control.fsm.task:FSMTask"})
-        obj.register_spec(spec)
-        t_name = obj.queue_entry(spec.name)
-        obj.build_network()
-        match obj.next_for():
+    def test_for_no_connections(self, tracker, spec):
+        tracker.register_spec(spec)
+        t_name = tracker.queue_entry(spec.name)
+        tracker.build_network()
+        match tracker.next_for():
             case Task_p():
-                assert(obj.get_status(t_name) is TaskStatus_e.READY)
+                assert(tracker.get_status(t_name) is TaskStatus_e.READY)
             case x:
                 assert(False), x
         # Now theres nothing remaining
-        match obj.next_for():
+        match tracker.next_for():
             case None:
                 assert(True)
             case x:
                 assert(False), x
 
-    def test_simple_dependendency(self):
-        obj  = FSMTracker()
-        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"], "ctor":"dootle.control.fsm.task:FSMTask"})
-        dep  = TaskSpec.build({"name":"basic::dep", "ctor":"dootle.control.fsm.task:FSMTask"})
-        obj.register_spec(spec, dep)
-        t_name = obj.queue_entry(spec.name, from_user=True)
-        obj.build_network()
-        assert(t_name in obj._registry.tasks)
-        assert(dep.name in obj._registry.concrete)
-        match obj.next_for():
+    def test_simple_dependendency(self, tracker, specdep):
+        spec, dep = specdep
+        tracker.register_spec(spec, dep)
+        t_name = tracker.queue_entry(spec.name, from_user=True)
+        tracker.build_network()
+        assert(t_name in tracker._registry.tasks)
+        assert(dep.name in tracker._registry.concrete)
+        match tracker.next_for():
             case Task_p() as result:
                 assert(dep.name < result.name)
-                assert(obj.get_status(result.name) is TaskStatus_e.READY)
+                assert(tracker.get_status(result.name) is TaskStatus_e.READY)
             case x:
                 assert(False), x
-        assert(obj.get_status(t_name) is TaskStatus_e.WAIT)
+        assert(tracker.get_status(t_name) is TaskStatus_e.WAIT)
 
-    def test_dependency_success_produces_ready_state(self):
-        obj  = FSMTracker()
-        spec = TaskSpec.build({"name":"basic::alpha", "depends_on":["basic::dep"], "ctor":"dootle.control.fsm.task:FSMTask"})
-        dep  = TaskSpec.build({"name":"basic::dep", "ctor":"dootle.control.fsm.task:FSMTask"})
-        obj.register_spec(spec, dep)
-        t_name = obj.queue_entry(spec.name, from_user=True)
-        obj.build_network()
+    def test_dependency_success_produces_ready_state(self, tracker, specdep):
+        spec, dep = specdep
+        tracker.register_spec(spec, dep)
+        t_name = tracker.queue_entry(spec.name, from_user=True)
+        tracker.build_network()
         # Get the dep and run it
-        dep_inst = obj.next_for()
+        dep_inst = tracker.next_for()
         assert(dep.name < dep_inst.name)
-        assert(isinstance(obj.machines[dep_inst.name].model, FSMTask))
-        obj.machines[dep_inst.name](step=1, tracker=obj)
-        assert(obj.get_status(dep_inst.name) is TaskStatus_e.TEARDOWN)
+        assert(isinstance(tracker.machines[dep_inst.name].model, FSMTask))
+        tracker.machines[dep_inst.name](step=1, tracker=tracker)
+        assert(tracker.get_status(dep_inst.name) is TaskStatus_e.TEARDOWN)
         # Now check the top is no longer blocked
-        assert(obj.get_status(t_name) is TaskStatus_e.WAIT)
-        obj.machines[t_name](step=1, tracker=obj, until=[TaskStatus_e.READY])
-        assert(obj.get_status(t_name) is TaskStatus_e.READY)
+        assert(tracker.get_status(t_name) is TaskStatus_e.WAIT)
+        tracker.machines[t_name](step=1, tracker=tracker, until=[TaskStatus_e.READY])
+        assert(tracker.get_status(t_name) is TaskStatus_e.READY)
+
+    def test_skip_in_action_group__single_step(self, tracker):
+        """
+        Running the task with a skip action raises FSMSkip
+        """
+        spec = TaskSpec.build({
+            "name" : "simple::basic",
+            "setup" : [{"do":skip_action}],
+            "ctor" : FSMTask,
+        })
+        t_inst  : TaskName  = tracker.queue_entry(spec)
+        tracker.build_network()
+        task    : Task_i    = tracker.next_for()
+        assert(task.spec.name == t_inst)
+        assert(task.status == TaskStatus_e.READY)
+        machine = tracker.machines[t_inst]
+
+        with pytest.raises(FSMSkip):
+            machine.run(step=1, tracker=tracker)
+
+    def test_skip_in_depends_on_group__single_step(self, tracker):
+        """
+        Running the task with a skip action raises FSMSkip
+        """
+        spec = TaskSpec.build({
+            "name"        : "simple::basic",
+            "depends_on"  : [{"do":skip_action}],
+            "ctor"        : FSMTask,
+        })
+        t_inst  : TaskName  = tracker.queue_entry(spec)
+        tracker.build_network()
+        task    : Task_i    = tracker.next_for()
+        assert(task.spec.name == t_inst)
+        assert(task.status == TaskStatus_e.READY)
+        machine = tracker.machines[t_inst]
+        machine.run(step=1, tracker=tracker)
+        match machine.current_state_value:
+            case TaskStatus_e.SKIPPED:
+                assert(True)
+            case x:
+                assert(False), x
+
+    def test_skip__full(self, tracker):
+        """
+        Calling the machine with a skip action jumps to teardown state
+        """
+        spec = TaskSpec.build({
+            "name" : "simple::basic",
+            "setup" : [{"do":skip_action}],
+            "ctor" : FSMTask,
+        })
+        t_inst  : TaskName  = tracker.queue_entry(spec)
+        tracker.build_network()
+        task    : Task_i    = tracker.next_for()
+        assert(task.spec.name == t_inst)
+        assert(task.status == TaskStatus_e.READY)
+        machine = tracker.machines[t_inst]
+
+        match machine(step=1, tracker=tracker):
+            case TaskStatus_e.TEARDOWN:
+                assert(True)
+            case x:
+                assert(False), x
 
     @pytest.mark.xfail
-    def test_halt(self, mocker):
+    def test_halt(self, mocker, tracker):
         """ Force a Halt """
-        obj  = FSMTracker()
         spec = TaskSpec.build({"name":"basic::alpha",
                                "depends_on":["basic::dep"],
                                "ctor":"dootle.control.fsm.task:FSMTask"})
         dep  = TaskSpec.build({"name":"basic::dep",
                                "ctor":"dootle.control.fsm.task:FSMTask"})
-        obj.register_spec(spec, dep)
-        t_name   = obj.queue_entry(spec.name, from_user=True)
-        dep_inst = obj.queue_entry(dep.name)
-        assert(obj.get_status(t_name) is TaskStatus_e.INIT)
-        obj.build_network()
-        match obj.next_for():
+        tracker.register_spec(spec, dep)
+        t_name   = tracker.queue_entry(spec.name, from_user=True)
+        dep_inst = tracker.queue_entry(dep.name)
+        assert(tracker.get_status(t_name) is TaskStatus_e.INIT)
+        tracker.build_network()
+        match tracker.next_for():
             case Task_p() as x:
                 assert(x.name == dep_inst)
                 x.should_halt = mocker.Mock(return_value=True)
-                obj.machines[x.name](step=1, tracker=obj)
-                assert(obj.get_status(x.name) == TaskStatus_e.HALTED)
+                tracker.machines[x.name](step=1, tracker=tracker)
+                assert(tracker.get_status(x.name) == TaskStatus_e.HALTED)
             case x:
                 assert(False), x
+
+    def test_fail(self, tracker):
+        """ An action that fails shunts to teardown """
+        spec = TaskSpec.build({
+            "name" : "simple::basic",
+            "actions" : [{"do":fail_action}],
+            "ctor" : FSMTask,
+        })
+        t_inst  : TaskName  = tracker.queue_entry(spec)
+        tracker.build_network()
+        task    : Task_i    = tracker.next_for()
+        assert(task.spec.name == t_inst)
+        assert(task.status == TaskStatus_e.READY)
+        machine = tracker.machines[t_inst]
+
+        match machine(step=1, tracker=tracker):
+            case TaskStatus_e.TEARDOWN:
+                assert(True)
+            case x:
+                assert(False), x
+
+    @pytest.mark.xfail
+    def test_success(self, tracker):
+        pass
+
+    @pytest.mark.xfail
+    def test_teardown(self, tracker):
+        pass

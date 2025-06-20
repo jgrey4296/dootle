@@ -20,7 +20,7 @@ from typing import (Any, Callable, ClassVar, Generic, Iterable, Iterator,
 import doot
 import pytest
 from doot.workflow._interface import TaskStatus_e
-
+from doot.workflow import TaskArtifact
 # ##-- end 3rd party imports
 
 # ##-- 1st party imports
@@ -82,6 +82,30 @@ class SimpleTaskModel:
     def on_enter_RUNNING(self):
         self.data['has_run'] = True
 
+class SimpleArtifactModel:
+
+    def __init__(self):
+        self.state   = None
+        self.stale   = False
+        self.clean   = False
+        self.exists  = False
+
+    def is_stale(self) -> bool:
+        return self.stale
+
+    def should_clean(self) -> bool:
+        return self.clean
+
+    def does_exist(self) -> bool:
+        return self.exists
+
+class SimpleMainModel:
+
+    def should_fail(self) -> bool:
+        return False
+
+class SimpleOverlordModel:
+    pass
 ##-- end basic model
 
 class TestSimpleTaskModel:
@@ -272,3 +296,48 @@ class TestOverlordMachine:
 
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
+
+@pytest.mark.skip
+class TestMachine_Dot:
+    """ Write out the dot graphs of the machines """
+
+    @pytest.fixture(scope="function")
+    def fsm(self):
+        task = SimpleTaskModel()
+        return tm.TaskTrackMachine(task)
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
+    def test_task_dot(self, fsm):
+        fsm_name = type(fsm).__name__
+        text    = fsm._graph().to_string()
+        target  = pl.Path(__file__).parent.parent  / f"_{fsm_name}.dot"
+        target.write_text(text)
+        assert(target.exists())
+
+    def test_artifact_dot(self):
+        loc       = SimpleArtifactModel()
+        fsm       = tm.ArtifactMachine(loc)
+        fsm_name  = type(fsm).__name__
+        text      = fsm._graph().to_string()
+        target    = pl.Path(__file__).parent.parent  / f"_{fsm_name}.dot"
+        target.write_text(text)
+        assert(target.exists())
+
+    def test_main_dot(self):
+        fsm       = tm.MainMachine(SimpleMainModel())
+        fsm_name  = type(fsm).__name__
+        text      = fsm._graph().to_string()
+        target    = pl.Path(__file__).parent.parent  / f"_{fsm_name}.dot"
+        target.write_text(text)
+        assert(target.exists())
+
+
+    def test_overlord_dot(self):
+        fsm       = tm.OverlordMachine(SimpleOverlordModel())
+        fsm_name  = type(fsm).__name__
+        text      = fsm._graph().to_string()
+        target    = pl.Path(__file__).parent.parent  / f"_{fsm_name}.dot"
+        target.write_text(text)
+        assert(target.exists())
