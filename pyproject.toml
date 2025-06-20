@@ -176,13 +176,17 @@ add_imports            = []
 ##-- mypy
 # https://mypy.readthedocs.io/en/stable/config_file.html
 [tool.mypy]
-python_version         = "3.12"
-follow_imports         = "skip"
-cache_dir              = ".temp/mypy_cache"
-warn_return_any        = true
-warn_unused_configs    = true
-ignore_missing_imports = true
-exclude                = [] 
+strict                  = false
+python_version          = "3.12"
+follow_imports          = "skip"
+cache_dir               = ".temp/mypy_cache"
+enable_error_code       = ["explicit-override", "ignore-without-code", "possibly-undefined", "unreachable", "type-arg"]
+disable_error_code      = []
+warn_return_any         = true
+warn_unused_configs     = true
+ignore_missing_imports  = true
+exclude                 = [] 
+
 ##-- end mypy
 
 ##-- uv
@@ -193,6 +197,7 @@ doot = { path = "../../", editable = true }
 [dependency-groups]
 dev = [
     "myst-parser>=4.0.1",
+    "pydot>=4.0.1",
     "pytest>=8.3.5",
     "pytest-cov>=6.1.1",
     "pytest-mock>=3.14.0",

@@ -44,6 +44,7 @@ from doot.workflow.actions import DootBaseAction
 
 # ##-- types
 # isort: off
+from typing import override
 if TYPE_CHECKING:
    from jgdv import Maybe
    from doot.workflow import ActionSpec
@@ -191,6 +192,7 @@ class MatchExpansionAction(JobExpandAction):
     registered as: job.match
     """
 
+    @override
     @DKeyed.taskname
     @DKeyed.references("prepfn")
     @DKeyed.types("mapping")
@@ -198,7 +200,7 @@ class MatchExpansionAction(JobExpandAction):
     @DKeyed.types("inject", check=dict|ChainGuard)
     @DKeyed.types("__expansion_count", fallback=0)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _basename, prepfn, mapping, _from, inject, _count, _update) -> dict:
+    def __call__(self, spec, state, _basename, prepfn, mapping, _from, inject, _count, _update) -> Maybe[dict]:
         result  : list[TaskSpec]  = []
         data                      = self._prep_data(_from)
         inject_spec               = InjectSpec.build(inject)
