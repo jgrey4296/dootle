@@ -198,6 +198,13 @@ class TestStateTracker_NextFor:
         tracker.machines[t_name](step=1, tracker=tracker, until=[TaskStatus_e.READY])
         assert(tracker.get_status(t_name) is TaskStatus_e.READY)
 
+        
+class TestStateTracker_Pathways:
+    
+    @pytest.fixture(scope="function")
+    def tracker(self):
+        return FSMTracker()
+
     def test_skip_in_action_group__single_step(self, tracker):
         """
         Running the task with a skip action raises FSMSkip
@@ -296,7 +303,6 @@ class TestStateTracker_NextFor:
         assert(task.spec.name == t_inst)
         assert(task.status == TaskStatus_e.READY)
         machine = tracker.machines[t_inst]
-
         match machine(step=1, tracker=tracker):
             case TaskStatus_e.TEARDOWN:
                 assert(True)
