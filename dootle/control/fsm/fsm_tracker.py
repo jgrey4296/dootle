@@ -80,10 +80,8 @@ if TYPE_CHECKING:
 logging    = logmod.getLogger(__name__)
 ##-- end logging
 
-SETUP_STATE_TARGETS : Final[list[TaskStatus_e]] = [TaskStatus_e.INIT]
-READY_STATE_TARGETS : Final[list[TaskStatus_e]] = [TaskStatus_e.READY, TaskStatus_e.WAIT, TaskStatus_e.TEARDOWN]
-
 ##--|
+
 @Proto(TaskTracker_p)
 class FSMTracker(Tracker_abs):
     """
@@ -95,10 +93,10 @@ class FSMTracker(Tracker_abs):
         super().__init__()
         self.machines = {}
 
-
     def get_status(self, name:TaskName) -> TaskStatus_e:
         return self.machines[name].current_state_value
-    def set_status(self, *args) -> None:
+
+    def set_status(self, *args:Any) -> None:
         pass
 
     def queue_entry(self, name:str|Concrete[TaskName|TaskSpec]|TaskArtifact, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, **kwargs:Any) -> Maybe[Concrete[TaskName|TaskArtifact]]:
@@ -109,12 +107,12 @@ class FSMTracker(Tracker_abs):
                 task = self._registry.tasks[queued]
                 fsm = TaskTrackMachine(task)
                 self.machines[queued] = fsm
-                fsm(until=SETUP_STATE_TARGETS, tracker=self)
+                fsm.run_until_init(self)
                 return queued
             case x:
                 return x
 
-    def next_for(self, target:Maybe[str|TaskName]=None) -> Maybe[TaskTrackMachine|TaskArtifact]:
+    def next_for(self, target:Maybe[str|TaskName]=None) -> Maybe[Task_p|TaskArtifact]:
         """ ask for the next task that can be performed
 
           Returns a Task or Artifact that needs to be executed or created
@@ -122,7 +120,7 @@ class FSMTracker(Tracker_abs):
           or if theres nothing left in the queue
 
         """
-        focus   : str|TaskName|TaskArtifact
+        focus   : TaskName|TaskArtifact
         count   : int
         result  : Maybe[TaskTrackMachine|Task_p|TaskArtifact]
         logging.info("[Next.For] (Active: %s)", len(self._queue.active_set))
@@ -143,11 +141,14 @@ class FSMTracker(Tracker_abs):
                     fsm   = self.machines[x]
                     match fsm.current_state_value:
                         case TaskStatus_e.READY | TaskStatus_e.TEARDOWN | TaskStatus_e.RUNNING:
+                            # Ready to be executed, pass to the runner
                             result = fsm.model
                         case TaskStatus_e.DEAD:
+                            # is dead, nothing to do
                             pass
                         case TaskStatus_e.WAIT | TaskStatus_e.INIT:
-                            fsm(until=READY_STATE_TARGETS, tracker=self)
+                            # not ready to execute yet
+                            fsm.run_until_ready(self)
                             self.queue_entry(x)
                         case x:
                             raise TypeError(type(x), x)

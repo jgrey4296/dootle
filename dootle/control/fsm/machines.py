@@ -31,6 +31,7 @@ from statemachine.states import States
 # ##-- end 3rd party imports
 
 from . import _interface as API # noqa: N812
+from .errors import FSMSkip, FSMHalt
 
 # ##-- types
 # isort: off
@@ -44,6 +45,7 @@ from typing import Protocol, runtime_checkable
 from typing import no_type_check, final, override, overload
 
 if TYPE_CHECKING:
+    from doot.control.tracker._interface import TaskTracker_p
     from jgdv import Maybe
     from typing import Final
     from typing import ClassVar, Any, LiteralString
@@ -63,11 +65,13 @@ logging = logmod.getLogger(__name__)
 
 BASE_BREAK_STATES : Final[list[TaskStatus_e]] = [TaskStatus_e.TEARDOWN, TaskStatus_e.DEAD]
 ##--|
+
 class TaskTrackMachine(StateMachine):
     """
       A Statemachine controlling the tracking of task states
     """
     # States
+    # TODO use taskstatus methods for initial and final
     _ = States.from_enum(TaskStatus_e,
                          initial=TaskStatus_e.NAMED,
                          final=TaskStatus_e.DEAD,
@@ -95,7 +99,7 @@ class TaskTrackMachine(StateMachine):
     run = (
         _.READY.to(_.SKIPPED, cond="should_skip")
         | _.READY.to(_.RUNNING)
-        # | _.RUNNING.to.itself(cond="still_running")
+        # TODO | _.RUNNING.to.itself(cond="still_running")
         | _.RUNNING.to(_.HALTED,  cond="should_halt")
         | _.RUNNING.to(_.FAILED,  cond="should_fail")
         | _.RUNNING.to(_.SUCCESS)
@@ -114,7 +118,7 @@ class TaskTrackMachine(StateMachine):
     fail     = _.FAILED.from_(_.READY, _.RUNNING, _.WAIT, _.INIT, _.DECLARED, _.DEFINED)
 
     # Composite Events
-    progress = (setup | prepare | run | disable | skip | halt | fail | finish)
+    progress = (setup | prepare | run | skip | halt | fail | finish)
 
     def __init__(self, task:API.TaskModel_p) -> None:
         if not isinstance(task, API.TaskModel_Conditions_p):
@@ -138,16 +142,33 @@ class TaskTrackMachine(StateMachine):
         while current not in base_states:
             try:
                 self.progress(**kwargs)
+            except FSMSkip:
+                self.skip(**kwargs)
+            except FSMHalt:
+                self.halt(**kwargs)
             except doot.errors.DootError as err:
-                self.fail()
+                self.fail(**kwargs)
             else:
                 current = self.current_state_value
         else:
             return self.current_state_value
 
-    def after_transition(self, source, event, state) -> None:
-        logging.info("%s -> %s -> %s", source, event, state)
+    def run_until_init(self, tracker:TaskTracker_p) -> None:
+        targets = [TaskStatus_e.INIT]
+        self(until=targets, tracker=tracker)
 
+    def run_until_ready(self, tracker:TaskTracker_p) -> None:
+        targets = [TaskStatus_e.READY,
+                   TaskStatus_e.WAIT,
+                   TaskStatus_e.TEARDOWN,
+                   ]
+        self(until=targets, tracker=tracker)
+
+    def run_until_dead(self, tracker:TaskTracker_p) -> None:
+        self(tracker=tracker)
+
+    def after_transition(self, source:Any, event:Any, state:Any) -> None:
+        logging.info("%s -> %s -> %s", source, event, state)
 
 class ArtifactMachine(StateMachine):
     """
@@ -164,7 +185,7 @@ class ArtifactMachine(StateMachine):
     progress     = (
         Declared.to(Stale, cond="is_stale")
         | Declared.to(ToClean, cond="should_clean")
-        | Declared.to(Exists, cond="does_exists")
+        | Declared.to(Exists, cond="does_exist")
         | Declared.to(Finished)
         | Stale.to(Removed)
         | ToClean.to(Removed)

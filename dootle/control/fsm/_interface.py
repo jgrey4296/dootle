@@ -59,7 +59,12 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 # Vars:
-MAX_LOOP  : Final[int]     = 100
+MAX_LOOP       : Final[int]  = 100
+SETUP_GROUP    : Final[str]  = "setup"
+ACTION_GROUP   : Final[str]  = "actions"
+FAIL_GROUP     : Final[str]  = "on_fail"
+DEPENDS_GROUP  : Final[str]  = "depends_on"
+CLEANUP_GROUP  : Final[str]  = "cleanup"
 # Body:
 
 @runtime_checkable
@@ -89,7 +94,7 @@ class TaskModel_Callbacks_p(Protocol):
     def on_enter_INIT(self) -> None: ...
     def on_enter_RUNNING(self, step:int) -> None: ...
 
-    def on_enter_FAILED(self) -> None: ...
+    def on_exit_FAILED(self) -> None: ...
 
     def on_enter_TEARDOWN(self) -> None: ...
 

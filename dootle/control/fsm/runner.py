@@ -102,6 +102,7 @@ class FSMRunner(DootRunner):
                     assert(fsm.current_state_value in RUN_STATES), fsm.current_state_value
                     fsm(step=self.step, tracker=self.tracker)
                     if fsm.current_state_value != TaskStatus_e.DEAD:
+                        # Re-queue the task till its dead
                         self.tracker.queue_entry(fsm.model.name)
                 case TaskArtifact():
                     self._notify_artifact(task)
@@ -120,3 +121,15 @@ class FSMRunner(DootRunner):
             self.handle_task_success(task)
             self.sleep_after(task)
             self.step += 1
+
+    def handle_task_success[T:Maybe[Task_p|TaskArtifact]](self, task:T) -> None:
+        # progress the teardown
+        pass
+
+    def handle_failure(self, failure:Exception) -> None:
+        # progress the failure state to teardown
+        # progress the teardown
+        pass
+
+    def notify_artifact(self, art:TaskArtifact) -> None:
+        pass
