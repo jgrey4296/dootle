@@ -104,7 +104,7 @@ class _Predicates_m:
                 return False
             case [*xs]:
                 for x in xs:
-                    tracker.queue_entry(x)
+                    tracker.queue(x)
                 self.priority -= 1
                 return True
             case x:
@@ -185,7 +185,7 @@ class _Callbacks_m:
         # queue cleanup task
         match tracker._registry.concrete[target]:
             case [x, *_]:
-                tracker.queue_entry(x, parent=self.spec.name)
+                tracker.queue(x, parent=self.spec.name)
             case x:
                 raise TypeError(type(x))
 
@@ -207,7 +207,7 @@ class _Callbacks_m:
 @Mixin(_Predicates_m, _Callbacks_m, _TaskActionPrep_m)
 class FSMTask:
     """
-    The implementation of a task, as the domain model for a TaskTrackMachine
+    The implementation of a task, as the domain model for a TaskMachine
     """
     _default_flags  : ClassVar[set]  = set()
     step            : int
@@ -386,7 +386,7 @@ class FSMJob(FSMTask):
         match self._execute_expansion_group(group=API.ACTION_GROUP):
             case int() as count, [*xs]: # Queue new subtasks
                 for x in xs:
-                    tracker.queue_entry(x, parent=self.spec.name)
+                    tracker.queue(x, parent=self.spec.name)
                 else:
                     tracker.build_network()
             case x:

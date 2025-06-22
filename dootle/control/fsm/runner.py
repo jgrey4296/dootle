@@ -103,7 +103,7 @@ class FSMRunner(DootRunner):
                     fsm(step=self.step, tracker=self.tracker)
                     if fsm.current_state_value != TaskStatus_e.DEAD:
                         # Re-queue the task till its dead
-                        self.tracker.queue_entry(fsm.model.name)
+                        self.tracker.queue(fsm.model.name)
                 case TaskArtifact():
                     self._notify_artifact(task)
                 case x:

@@ -23,7 +23,7 @@ import pytest
 from ..fsm_tracker import FSMTracker
 from ..runner import FSMRunner
 from ..task import FSMTask
-from ..machines import TaskTrackMachine
+from ..machines import TaskMachine
 from doot.workflow import TaskSpec
 from doot.workflow._interface import TaskStatus_e
 ##--|
@@ -76,8 +76,8 @@ class TestFSMRunner:
     def test_simple_run(self, mocker):
         spec                         = TaskSpec.build({"name":"simple::basic"})
         tracker                      = FSMTracker()
-        tracker.register_spec(spec)
-        tracker.build_network()
+        tracker.register(spec)
+        tracker.build()
         runner                       = FSMRunner(tracker=tracker)
         runner.run_next_task()
 

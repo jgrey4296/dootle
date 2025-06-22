@@ -1,5 +1,5 @@
 digraph list {
-label=TaskTrackMachine;
+label=TaskMachine;
 fontname=Arial;
 fontsize=10;
 rankdir=LR;

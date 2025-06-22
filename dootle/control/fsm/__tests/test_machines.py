@@ -120,7 +120,7 @@ class TestSimpleTaskModel:
     def test_fullfills_callbacks(self):
         assert(isinstance(SimpleTaskModel, API.TaskModel_Callbacks_p))
 
-class TestTaskTrackMachine:
+class TestTaskMachine:
     """ Test a basic task model as a task FSM machine runs,
     by event
     """
@@ -128,7 +128,7 @@ class TestTaskTrackMachine:
     @pytest.fixture(scope="function")
     def fsm(self):
         task = SimpleTaskModel()
-        return tm.TaskTrackMachine(task)
+        return tm.TaskMachine(task)
 
     @pytest.fixture(scope="function")
     def task(self):
@@ -151,7 +151,7 @@ class TestTaskTrackMachine:
         The FSM starts just named
         """
         assert(task.spec_missing)
-        fsm = tm.TaskTrackMachine(task)
+        fsm = tm.TaskMachine(task)
 
     ##--| setup
 
@@ -304,7 +304,7 @@ class TestMachine_Dot:
     @pytest.fixture(scope="function")
     def fsm(self):
         task = SimpleTaskModel()
-        return tm.TaskTrackMachine(task)
+        return tm.TaskMachine(task)
 
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133

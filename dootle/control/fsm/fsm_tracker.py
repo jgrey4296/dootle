@@ -44,8 +44,8 @@ from doot.control.tracker.registry import TrackRegistry
 from doot.control.tracker.network import TrackNetwork
 from doot.control.tracker.queue import TrackQueue
 from doot.workflow import TaskArtifact, TaskName
-from doot.workflow._interface import TaskStatus_e
-from .machines import TaskTrackMachine
+from doot.workflow._interface import TaskStatus_e, Task_p
+from .machines import TaskMachine
 
 # ##-- types
 # isort: off
@@ -86,26 +86,47 @@ logging    = logmod.getLogger(__name__)
 class FSMTracker(Tracker_abs):
     """
     Tracks tasks by their FSM state
+
+    TODO modify default ctor's of specs to be FSMTask on register
+
     """
-    machines : dict[TaskName, TaskTrackMachine]
+    machines : dict[TaskName, TaskMachine]
 
     def __init__(self):
         super().__init__()
         self.machines = {}
+        # Update the aliases so the default ctor for tasks is an FSMTask
+        doot.update_aliases(data=API.ALIASES_UPDATE)
+
+
+    def _get_priority(self, target:Concrete[TaskName|TaskArtifact]) -> int:
+        match self.tasks.get(target, None):
+            case None:
+                return self._declare_priority
+            case Task_p() as x:
+                return x.priority
+            case x:
+                raise TypeError(type(x))
 
     def get_status(self, name:TaskName) -> TaskStatus_e:
-        return self.machines[name].current_state_value
+        match self.machines.get(name, None):
+            case None if name in self.specs:
+                return TaskStatus_e.DECLARED
+            case TaskMachine() as x:
+                return x.current_state_value
+            case x:
+                raise TypeError(type(x))
 
     def set_status(self, *args:Any) -> None:
         pass
 
-    def queue_entry(self, name:str|Concrete[TaskName|TaskSpec]|TaskArtifact, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, **kwargs:Any) -> Maybe[Concrete[TaskName|TaskArtifact]]:
-        match super().queue_entry(name, from_user=from_user, status=status):
+    def queue(self, name:str|Concrete[TaskName|TaskSpec]|TaskArtifact, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, **kwargs:Any) -> Maybe[Concrete[TaskName|TaskArtifact]]:
+        match super().queue(name, from_user=from_user, status=status):
             case TaskName() as queued if queued not in self.machines:
                 # instantiate FSM task
-                self._registry._make_task(queued, parent=kwargs.pop("parent", None))
+                self._registry.make_task(queued, parent=kwargs.pop("parent", None))
                 task = self._registry.tasks[queued]
-                fsm = TaskTrackMachine(task)
+                fsm = TaskMachine(task)
                 self.machines[queued] = fsm
                 fsm.run_until_init(self)
                 return queued
@@ -122,13 +143,13 @@ class FSMTracker(Tracker_abs):
         """
         focus   : TaskName|TaskArtifact
         count   : int
-        result  : Maybe[TaskTrackMachine|Task_p|TaskArtifact]
+        result  : Maybe[TaskMachine|Task_p|TaskArtifact]
         logging.info("[Next.For] (Active: %s)", len(self._queue.active_set))
-        if not self._network.is_valid:
+        if not self.is_valid:
             raise doot.errors.TrackingError("Network is in an invalid state")
 
         if target and target not in self._queue.active_set:
-            self.queue_entry(target)
+            self.queue(target)
 
         count  = API.MAX_LOOP
         result = None
@@ -149,7 +170,7 @@ class FSMTracker(Tracker_abs):
                         case TaskStatus_e.WAIT | TaskStatus_e.INIT:
                             # not ready to execute yet
                             fsm.run_until_ready(self)
-                            self.queue_entry(x)
+                            self.queue(x)
                         case x:
                             raise TypeError(type(x), x)
                 case TaskArtifact() as x:

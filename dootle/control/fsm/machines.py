@@ -66,7 +66,7 @@ logging = logmod.getLogger(__name__)
 BASE_BREAK_STATES : Final[list[TaskStatus_e]] = [TaskStatus_e.TEARDOWN, TaskStatus_e.DEAD]
 ##--|
 
-class TaskTrackMachine(StateMachine):
+class TaskMachine(StateMachine):
     """
       A Statemachine controlling the tracking of task states
     """
@@ -122,7 +122,7 @@ class TaskTrackMachine(StateMachine):
 
     def __init__(self, task:API.TaskModel_p) -> None:
         if not isinstance(task, API.TaskModel_Conditions_p):
-            msg = "To run a TaskTrackMachine, it requires an underlying model which implements dootle.control.fms._interface.TaskModel_Conditions_p"
+            msg = "To run a TaskMachine, it requires an underlying model which implements dootle.control.fms._interface.TaskModel_Conditions_p"
             raise TypeError(msg, type(task))
         super().__init__(task, state_field="status")
 

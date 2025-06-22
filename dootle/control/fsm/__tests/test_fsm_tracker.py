@@ -35,7 +35,7 @@ from doot.util import mock_gen
 
 from doot.workflow._interface import Task_i
 from doot.workflow._interface import ActionResponse_e as ActRE
-from ..machines import TaskTrackMachine
+from ..machines import TaskMachine
 from ..task import FSMTask
 from ..errors import FSMSkip, FSMHalt
 from ..fsm_tracker import FSMTracker
@@ -90,8 +90,8 @@ class TestStateTracker_Basic:
 
     def test_queue_task(self):
         obj   = FSMTracker()
-        spec  = TaskSpec.build({"name":"simple::task", "ctor":FSMTask})
-        match obj.queue_entry(spec):
+        spec  = TaskSpec.build({"name":"simple::task"})
+        match obj.queue(spec):
             case TaskName() as x:
                 assert(x in obj._registry.tasks)
                 assert(isinstance(obj._registry.tasks[x], Task_p))
@@ -102,8 +102,8 @@ class TestStateTracker_Basic:
     def test_next_for(self):
         obj   = FSMTracker()
         spec  = TaskSpec.build({"name":"simple::task", "ctor": FSMTask})
-        obj.queue_entry(spec)
-        obj.build_network()
+        obj.queue(spec)
+        obj.build()
         match obj.next_for():
             case Task_p() as x:
                 assert(x.name == "simple::task[<uuid>]")
@@ -148,13 +148,13 @@ class TestStateTracker_NextFor:
             tracker.next_for()
 
     def test_for_empty(self, tracker):
-        tracker.build_network()
+        tracker.build()
         assert(tracker.next_for() is None)
 
     def test_for_no_connections(self, tracker, spec):
-        tracker.register_spec(spec)
-        t_name = tracker.queue_entry(spec.name)
-        tracker.build_network()
+        tracker.register(spec)
+        t_name = tracker.queue(spec.name)
+        tracker.build()
         match tracker.next_for():
             case Task_p():
                 assert(tracker.get_status(t_name) is TaskStatus_e.READY)
@@ -169,9 +169,9 @@ class TestStateTracker_NextFor:
 
     def test_simple_dependendency(self, tracker, specdep):
         spec, dep = specdep
-        tracker.register_spec(spec, dep)
-        t_name = tracker.queue_entry(spec.name, from_user=True)
-        tracker.build_network()
+        tracker.register(spec, dep)
+        t_name = tracker.queue(spec.name, from_user=True)
+        tracker.build()
         assert(t_name in tracker._registry.tasks)
         assert(dep.name in tracker._registry.concrete)
         match tracker.next_for():
@@ -184,9 +184,9 @@ class TestStateTracker_NextFor:
 
     def test_dependency_success_produces_ready_state(self, tracker, specdep):
         spec, dep = specdep
-        tracker.register_spec(spec, dep)
-        t_name = tracker.queue_entry(spec.name, from_user=True)
-        tracker.build_network()
+        tracker.register(spec, dep)
+        t_name = tracker.queue(spec.name, from_user=True)
+        tracker.build()
         # Get the dep and run it
         dep_inst = tracker.next_for()
         assert(dep.name < dep_inst.name)
@@ -214,8 +214,8 @@ class TestStateTracker_Pathways:
             "setup" : [{"do":skip_action}],
             "ctor" : FSMTask,
         })
-        t_inst  : TaskName  = tracker.queue_entry(spec)
-        tracker.build_network()
+        t_inst  : TaskName  = tracker.queue(spec)
+        tracker.build()
         task    : Task_i    = tracker.next_for()
         assert(task.spec.name == t_inst)
         assert(task.status == TaskStatus_e.READY)
@@ -233,8 +233,8 @@ class TestStateTracker_Pathways:
             "depends_on"  : [{"do":skip_action}],
             "ctor"        : FSMTask,
         })
-        t_inst  : TaskName  = tracker.queue_entry(spec)
-        tracker.build_network()
+        t_inst  : TaskName  = tracker.queue(spec)
+        tracker.build()
         task    : Task_i    = tracker.next_for()
         assert(task.spec.name == t_inst)
         assert(task.status == TaskStatus_e.READY)
@@ -255,8 +255,8 @@ class TestStateTracker_Pathways:
             "setup" : [{"do":skip_action}],
             "ctor" : FSMTask,
         })
-        t_inst  : TaskName  = tracker.queue_entry(spec)
-        tracker.build_network()
+        t_inst  : TaskName  = tracker.queue(spec)
+        tracker.build()
         task    : Task_i    = tracker.next_for()
         assert(task.spec.name == t_inst)
         assert(task.status == TaskStatus_e.READY)
@@ -276,11 +276,11 @@ class TestStateTracker_Pathways:
                                "ctor":"dootle.control.fsm.task:FSMTask"})
         dep  = TaskSpec.build({"name":"basic::dep",
                                "ctor":"dootle.control.fsm.task:FSMTask"})
-        tracker.register_spec(spec, dep)
-        t_name   = tracker.queue_entry(spec.name, from_user=True)
-        dep_inst = tracker.queue_entry(dep.name)
+        tracker.register(spec, dep)
+        t_name   = tracker.queue(spec.name, from_user=True)
+        dep_inst = tracker.queue(dep.name)
         assert(tracker.get_status(t_name) is TaskStatus_e.INIT)
-        tracker.build_network()
+        tracker.build()
         match tracker.next_for():
             case Task_p() as x:
                 assert(x.name == dep_inst)
@@ -297,8 +297,8 @@ class TestStateTracker_Pathways:
             "actions" : [{"do":fail_action}],
             "ctor" : FSMTask,
         })
-        t_inst  : TaskName  = tracker.queue_entry(spec)
-        tracker.build_network()
+        t_inst  : TaskName  = tracker.queue(spec)
+        tracker.build()
         task    : Task_i    = tracker.next_for()
         assert(task.spec.name == t_inst)
         assert(task.status == TaskStatus_e.READY)

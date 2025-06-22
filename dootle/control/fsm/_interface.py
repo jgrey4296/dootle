@@ -27,6 +27,8 @@ import atexit # for @atexit.register
 import faulthandler
 # ##-- end stdlib imports
 
+from importlib.metadata import EntryPoint
+
 # ##-- types
 # isort: off
 import abc
@@ -59,12 +61,17 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 # Vars:
-MAX_LOOP       : Final[int]  = 100
-SETUP_GROUP    : Final[str]  = "setup"
-ACTION_GROUP   : Final[str]  = "actions"
-FAIL_GROUP     : Final[str]  = "on_fail"
-DEPENDS_GROUP  : Final[str]  = "depends_on"
-CLEANUP_GROUP  : Final[str]  = "cleanup"
+MAX_LOOP        : Final[int]         = 100
+SETUP_GROUP     : Final[str]         = "setup"
+ACTION_GROUP    : Final[str]         = "actions"
+FAIL_GROUP      : Final[str]         = "on_fail"
+DEPENDS_GROUP   : Final[str]         = "depends_on"
+CLEANUP_GROUP   : Final[str]         = "cleanup"
+
+TASK_EP         : Final[EntryPoint]  = EntryPoint("task", group="doot.aliases.task", value="dootle.control.fsm.task:FSMTask")
+ALIASES_UPDATE  : Final[dict]        = {
+    "task" : [TASK_EP]
+}
 # Body:
 
 @runtime_checkable
