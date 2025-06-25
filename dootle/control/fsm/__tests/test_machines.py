@@ -306,38 +306,42 @@ class TestMachine_Dot:
         task = SimpleTaskModel()
         return tm.TaskMachine(task)
 
+    @pytest.fixture(scope="function")
+    def target(self):
+        return pl.Path(__file__).parent.parent  / "_graphs"
+
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
 
-    def test_task_dot(self, fsm):
-        fsm_name = type(fsm).__name__
-        text    = fsm._graph().to_string()
-        target  = pl.Path(__file__).parent.parent  / f"_{fsm_name}.dot"
-        target.write_text(text)
-        assert(target.exists())
+    def test_task_dot(self, fsm, target):
+        fsm_name  = type(fsm).__name__
+        text      = fsm._graph().to_string()
+        tfile     = target / f"_{fsm_name}.dot"
+        tfile.write_text(text)
+        assert(tfile.exists())
 
-    def test_artifact_dot(self):
+    def test_artifact_dot(self, target):
         loc       = SimpleArtifactModel()
         fsm       = tm.ArtifactMachine(loc)
         fsm_name  = type(fsm).__name__
         text      = fsm._graph().to_string()
-        target    = pl.Path(__file__).parent.parent  / f"_{fsm_name}.dot"
-        target.write_text(text)
-        assert(target.exists())
+        tfile     = target / f"_{fsm_name}.dot"
+        tfile.write_text(text)
+        assert(tfile.exists())
 
-    def test_main_dot(self):
+    def test_main_dot(self, target):
         fsm       = tm.MainMachine(SimpleMainModel())
         fsm_name  = type(fsm).__name__
         text      = fsm._graph().to_string()
-        target    = pl.Path(__file__).parent.parent  / f"_{fsm_name}.dot"
-        target.write_text(text)
-        assert(target.exists())
+        tfile     = target / f"_{fsm_name}.dot"
+        tfile.write_text(text)
+        assert(tfile.exists())
 
 
-    def test_overlord_dot(self):
+    def test_overlord_dot(self, target):
         fsm       = tm.OverlordMachine(SimpleOverlordModel())
         fsm_name  = type(fsm).__name__
         text      = fsm._graph().to_string()
-        target    = pl.Path(__file__).parent.parent  / f"_{fsm_name}.dot"
-        target.write_text(text)
-        assert(target.exists())
+        tfile     = target /  f"_{fsm_name}.dot"
+        tfile.write_text(text)
+        assert(tfile.exists())
