@@ -24,6 +24,7 @@ from ..fsm_tracker import FSMTracker
 from ..runner import FSMRunner
 from ..task import FSMTask
 from ..machines import TaskMachine
+from doot.util.factory import TaskFactory
 from doot.workflow import TaskSpec
 from doot.workflow._interface import TaskStatus_e
 ##--|
@@ -57,7 +58,7 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 # Vars:
-
+factory = TaskFactory()
 # Body:
 class TestFSMRunner:
 
@@ -74,7 +75,7 @@ class TestFSMRunner:
 
 
     def test_simple_run(self, mocker):
-        spec                         = TaskSpec.build({"name":"simple::basic"})
+        spec                         = factory.build({"name":"simple::basic"})
         tracker                      = FSMTracker()
         tracker.register(spec)
         tracker.build()

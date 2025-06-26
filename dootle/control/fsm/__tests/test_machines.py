@@ -28,11 +28,14 @@ from dootle.control.fsm import machines as tm
 
 # ##-- end 1st party imports
 
+from doot.util.factory import TaskFactory
 from doot.workflow import TaskSpec
 from ..task import FSMTask
 from .. import _interface as API # noqa: N812
+from statemachine import State
 
 logging = logmod.root
+factory = TaskFactory()
 
 ##-- basic model
 
@@ -56,10 +59,11 @@ class SimpleTaskModel:
     def spec_missing(self, *, tracker):
         return self.name not in tracker
 
-    def should_disable(self) -> bool:
+    def should_disable(self, source:State) -> bool:
         return self.disabled
 
     def should_wait(self, *, tracker) -> bool:
+        logging.debug("Task Model Waiting: %s", self.time_out)
         match self.time_out:
             case x if 0 < x:
                 self.time_out -= 1
@@ -67,7 +71,8 @@ class SimpleTaskModel:
             case _:
                 return False
 
-    def should_cancel(self) -> bool:
+    def should_timeout(self) -> bool:
+        logging.debug("Task Model should timeout? %s", self.time_out)
         return 0 <= self.time_out < 1
 
     def should_skip(self) -> bool:
@@ -79,6 +84,8 @@ class SimpleTaskModel:
     def should_fail(self) -> bool:
         return self.fail
 
+    def state_is_needed(self, *, tracker) -> bool:
+        return False
     def on_enter_RUNNING(self):
         self.data['has_run'] = True
 
@@ -132,7 +139,7 @@ class TestTaskMachine:
 
     @pytest.fixture(scope="function")
     def task(self):
-        spec = TaskSpec.build({"name":"simple::basic"})
+        spec = factory.build({"name":"simple::basic"})
         task = FSMTask(spec)
         return task
 
@@ -180,8 +187,7 @@ class TestTaskMachine:
         fsm.model.disabled = True
         assert(fsm.current_state_value is TaskStatus_e.NAMED)
         fsm.setup(tracker={"blah":5})
-        fsm.setup()
-        fsm.setup()
+        fsm.setup(tracker={"blah":5})
         assert(fsm.current_state_value is TaskStatus_e.DISABLED)
 
     ##--| run
@@ -297,7 +303,7 @@ class TestOverlordMachine:
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
 
-@pytest.mark.skip
+# @pytest.mark.skip
 class TestMachine_Dot:
     """ Write out the dot graphs of the machines """
 

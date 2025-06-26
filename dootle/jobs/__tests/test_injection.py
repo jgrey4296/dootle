@@ -2,6 +2,7 @@
 """
 
 """
+# ruff: noqa: ANN202, B011, ANN001
 # Imports:
 from __future__ import annotations
 
@@ -28,19 +29,62 @@ import pytest
 
 # ##-- end 3rd party imports
 
-# ##-- 3rd party imports
 import doot.errors
 from doot.workflow import ActionSpec, TaskName
-from doot.util.dkey import DKey
-
-# ##-- end 3rd party imports
-
-# ##-- 1st party imports
-import dootle.jobs.injection as JI
-
-# ##-- end 1st party imports
+from doot.util import DelayedSpec
+import dootle.jobs.injection as JI  # noqa: N812
 
 logging = logmod.root
+logmod.getLogger("jgdv").propagate = False
+
+class TestJobInjector:
+
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
+    def test_basic(self):
+        obj = JI.JobInjector()
+        assert(isinstance(obj, JI.JobInjector))
+
+    def test_no_op(self):
+        obj = JI.JobInjector()
+        spec = ActionSpec.build({"do":"job.injector", "onto_":"specs",
+                                 "inject": {"from_state":[]},
+                                 })
+        state = {"specs":[]}
+        match obj(spec, state):
+            case None:
+                assert(True)
+            case x:
+                assert(False), x
+
+
+    def test_simple_inject(self):
+        obj = JI.JobInjector()
+        inject = {"from_state" : ["val"]}
+        spec = ActionSpec.build({"do":"job.injector", "onto_":"specs",
+                                 "inject": inject,
+                                 })
+        delayed = [DelayedSpec(base="some::task",
+                               target="some::target",
+                               overrides={}),
+                   DelayedSpec(base="some::other",
+                               target="another::target",
+                               overrides={}),
+                   ]
+        state = {"specs":delayed,
+                 "val" : "blah",
+                 }
+        for x in delayed:
+            assert("val" not in x.applied)
+        obj(spec, state)
+        for x in delayed:
+            assert("val" in x.applied)
+
+
+
+
 
 @pytest.mark.skip
 class TestPathInjection:

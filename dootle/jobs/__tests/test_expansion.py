@@ -29,16 +29,17 @@ import doot.errors
 import pytest
 from doot.util.dkey import DKey
 from doot.workflow import ActionSpec, TaskName, TaskSpec, InjectSpec
+from doot.util.factory import TaskFactory, DelayedSpec
 from jgdv.structs.strang import CodeReference
 
 # ##-- end 3rd party imports
 
-# ##-- 1st party imports
-from dootle.jobs.expansion import JobExpandAction, MatchExpansionAction
-
-# ##-- end 1st party imports
+from dootle.jobs.expansion import JobExpandAction, MatchExpansionAction, JobQueueAction
+from doot.workflow._interface import TaskName_p
 
 logging = logmod.root
+logmod.getLogger("jgdv").propagate = False
+factory = TaskFactory()
 
 def static_mapping(_) -> TaskName:
     return TaskName("example::other.task")
@@ -72,7 +73,7 @@ class TestJobExpansion:
     @pytest.mark.parametrize("count", [1,11,2,5,20])
     def test_count_expansion(self, spec, state, count, mocker):
         """ generate a certain number of subtasks """
-        mocker.patch("doot.loaded_tasks", {"example::basic": TaskSpec.build({"name":"example::basic"})})
+        mocker.patch("doot.loaded_tasks", {"example::basic": factory.build({"name":"example::basic"})})
         state['from']      = count
         state['template']  = "example::basic"
         obj                = JobExpandAction()
@@ -82,7 +83,7 @@ class TestJobExpansion:
         assert(len(result['specs']) == count)
 
     def test_list_expansion(self, spec, state, mocker):
-        mocker.patch("doot.loaded_tasks", {"example::basic": TaskSpec.build({"name":"example::basic"})})
+        mocker.patch("doot.loaded_tasks", {"example::basic": factory.build({"name":"example::basic"})})
         args               = ["a", "b", "c"]
         state['inject']    = {"literal": ['target']}
         state['from']      = args
@@ -93,10 +94,11 @@ class TestJobExpansion:
         assert(isinstance(result[spec.kwargs['update_']], list))
         assert(len(result['specs']) == 3)
         for rspec, expect in zip(result['specs'], args, strict=True):
-            assert(rspec.target == expect)
+            assert(rspec.base == "example::basic")
+            assert(rspec.applied['target'] == expect)
 
     def test_taskname_template(self, spec, state, mocker):
-        mocker.patch("doot.loaded_tasks", {"example::basic": TaskSpec.build({"name":"example::basic"})})
+        mocker.patch("doot.loaded_tasks", {"example::basic": factory.build({"name":"example::basic"})})
         state['template'] = "example::basic"
         state['from']     = [1,2,3]
         obj               = JobExpandAction()
@@ -105,7 +107,7 @@ class TestJobExpansion:
         assert(isinstance(result[spec.kwargs['update_']], list))
 
     def test_basic_expander(self, spec, state, mocker):
-        mocker.patch("doot.loaded_tasks", {"example::basic": TaskSpec.build({"name":"example::basic"})})
+        mocker.patch("doot.loaded_tasks", {"example::basic": factory.build({"name":"example::basic"})})
         state.update(dict(
             _task_name=TaskName("agroup::basic"),
             inject={"literal":["aKey"]},
@@ -117,12 +119,13 @@ class TestJobExpansion:
         result = jqa(spec, state)
         assert(isinstance(result, dict))
         assert("specs" in result)
-        assert(all(isinstance(x, TaskSpec) for x in result['specs']))
-        assert(all(x.extra['aKey'] in ["first", "second", "third"] for x in result['specs']))
         assert(len(result['specs']) == 3)
+        for x in result['specs']:
+            assert(isinstance(x, DelayedSpec))
+            assert(x.applied['aKey'] in ["first", "second", "third"])
 
     def test_expander_with_dict_injection(self, spec, state, mocker):
-        mocker.patch("doot.loaded_tasks", {"example::basic": TaskSpec.build({"name":"example::basic"})})
+        mocker.patch("doot.loaded_tasks", {"example::basic": factory.build({"name":"example::basic"})})
         state.update(dict(
             _task_name=TaskName("agroup::basic"),
             inject={"literal": ["aKey"], "from_state":{"other":"{blah}"}},
@@ -133,16 +136,25 @@ class TestJobExpansion:
         result = jqa(spec, state)
         assert(isinstance(result, dict))
         assert("specs" in result)
-        assert(all(isinstance(x, TaskSpec) for x in result['specs']))
-        assert(all(x.extra['aKey'] in ["first", "second", "third"] for x in result['specs']))
-        assert(all('other' in x.extra for x in result['specs']))
         assert(len(result['specs']) == 3)
+        for x in result['specs']:
+            assert(isinstance(x, DelayedSpec))
+            assert(x.applied['aKey'] in ["first", "second", "third"])
+            assert('other' in x.applied)
 
 class TestMatchExpansionAction:
 
     @pytest.fixture(scope="function")
     def spec(self):
         return ActionSpec.build({"do": "dootle.jobs.expansion:MatchExpansionAction"})
+
+    @pytest.fixture(scope="function")
+    def task_map(self):
+        return {
+            ".bib" : "example::bib.task",
+            ".txt" : "example::txt.task",
+            "_"    : "example::other.task",
+        }
 
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
@@ -155,19 +167,15 @@ class TestMatchExpansionAction:
         obj = MatchExpansionAction()
         assert(obj(spec, {"_task_name":TaskName("agroup::basic")}) is None)
 
-    def test_match_call(self, spec, mocker):
-        tasks = [TaskSpec.build({"name":x}) for x in ["example::bib.task", "example::txt.task", "example::other.task"]]
+    def test_match_call(self, spec, mocker, task_map):
+        tasks = [factory.build({"name":x}) for x in ["example::bib.task", "example::txt.task", "example::other.task"]]
         mocker.patch("doot.loaded_tasks", {x.name:x for x in tasks})
         state = {
-            "mapping" : {
-                ".bib" : "example::bib.task",
-                ".txt" : "example::txt.task",
-                "_"    : "example::other.task",
-            },
-            "_task_name": TaskName("agroup::basic"),
-            "inject" : {"literal":["val"]},
-            "update_" : "specs",
-            "from" : [pl.Path(x) for x in ["blah.bib", "blah.txt", "other"]],
+            "mapping"     : task_map,
+            "_task_name"  : TaskName("agroup::basic"),
+            "inject"      : {"literal":["val"]},
+            "update_"     : "specs",
+            "from"        : [pl.Path(x) for x in ["blah.bib", "blah.txt", "other"]],
         }
 
         obj     = MatchExpansionAction()
@@ -176,30 +184,27 @@ class TestMatchExpansionAction:
         assert('specs' in result)
         for x in result['specs']:
             match x:
-                case TaskSpec(name=TaskName() as name, sources=sources) as spec:
-                    assert("matched" in name)
-                    suff = spec.val.suffix
-                    mapped = state['mapping'].get(suff, None) or state['mapping']['_']
-                    assert(mapped in sources)
+                case DelayedSpec() as spec:
+                    assert("matched" in spec.target)
+                    suff = spec.applied['val'].suffix
+                    mapped = task_map.get(suff, None) or task_map['_']
+                    assert(mapped == spec.base)
                 case x:
                     assert(False), x
 
-    def test_custom_prepfn(self, spec, mocker):
+    def test_custom_prepfn(self, spec, mocker, task_map):
         """
         a custom prepfn that always maps to "example::other.task"
         """
-        tasks = [TaskSpec.build({"name":x}) for x in ["example::bib.task", "example::txt.task", "example::other.task"]]
+        expectation  = static_mapping("")
+        tasks        = [factory.build({"name":x}) for x in ["example::bib.task", "example::txt.task", "example::other.task"]]
         mocker.patch("doot.loaded_tasks", {x.name:x for x in tasks})
         state = {
-            "mapping" : {
-                ".bib" : "example::bib.task",
-                ".txt" : "example::txt.task",
-                "_"    : "example::other.task",
-            },
-            "_task_name": TaskName("agroup::basic"),
-            "inject" : {"literal":["val"]},
-            "update_" : "specs",
-            "from" : [pl.Path(x) for x in ["blah.bib", "blah.txt", "other"]],
+            "mapping"     : task_map,
+            "_task_name"  : TaskName("agroup::basic"),
+            "inject"      : {"literal":["val"]},
+            "update_"     : "specs",
+            "from"        : [pl.Path(x) for x in ["blah.bib", "blah.txt", "other"]],
         }
 
         state['prepfn']  = "fn::dootle.jobs.__tests.test_expansion:static_mapping"
@@ -210,7 +215,90 @@ class TestMatchExpansionAction:
         # Now they are all targeted to example::other.task
         for x in result['specs']:
             match x:
-                case TaskSpec(sources=xs):
-                    assert("example::other.task" in xs)
+                case DelayedSpec() as spec:
+                    assert(spec.base == expectation)
                 case x:
                     assert(False), x
+
+class TestJobQueue:
+
+    @pytest.fixture(scope="function")
+    def act(self, mocker):
+        return JobQueueAction()
+
+    @pytest.fixture(scope="function")
+    def spec(self):
+        return ActionSpec.build({"do": "dootle.jobs.expand:JobQueueAction",
+                                 "args":[],
+                                 })
+
+    def test_sanity(self):
+        assert(True is not False) # noqa: PLR0133
+
+    def test_basic(self):
+        obj = JobQueueAction()
+        assert(isinstance(obj, JobQueueAction))
+
+    def test_empty_queue(self, act, spec):
+        match act(spec, {}):
+            case None:
+                assert(True)
+            case x:
+                assert(False), x
+
+    def test_simple_args(self, act, spec):
+        spec.args = ["simple::a.b.c", "simple::d.e.f"]
+        match act(spec, {}):
+            case [*xs]:
+                assert(len(xs) == 2)
+                assert(all(isinstance(x, TaskName_p) for x in xs))
+            case x:
+                assert(False), x
+
+    def test_with_specs(self, act):
+        spec = ActionSpec.build({
+            "do": "dootle.jobs.expand:JobQueueAction",
+            "from_" : "specs",
+        })
+        state = {
+            "specs" : [
+                DelayedSpec(base="simple::base",
+                            target="actual::task..1",
+                            overrides={}),
+                DelayedSpec(base="simple::base",
+                            target="actual::task..2",
+                            overrides={}),
+            ]
+        }
+
+        match act(spec, state):
+            case [*xs]:
+                assert(len(xs) == 2)
+                assert(all(isinstance(x, DelayedSpec) for x in xs))
+            case x:
+                assert(False), x
+
+
+    def test_with_args_and_specs(self, act):
+        spec = ActionSpec.build({
+            "do"     : "dootle.jobs.expand:JobQueueAction",
+            "args"   : ["blah::a", "bloo::b", "aweg::c"],
+            "from_"  : "specs",
+        })
+        state = {
+            "specs" : [
+                DelayedSpec(base="simple::base",
+                            target="actual::task..1",
+                            overrides={}),
+                DelayedSpec(base="simple::base",
+                            target="actual::task..2",
+                            overrides={}),
+            ]
+        }
+
+        match act(spec, state):
+            case [*xs]:
+                assert(len(xs) == 5)
+                assert(all(isinstance(x, TaskName_p|DelayedSpec) for x in xs))
+            case x:
+                assert(False), x

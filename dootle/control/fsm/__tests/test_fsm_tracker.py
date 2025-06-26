@@ -90,7 +90,7 @@ class TestStateTracker_Basic:
 
     def test_queue_task(self):
         obj   = FSMTracker()
-        spec  = TaskSpec.build({"name":"simple::task"})
+        spec  = obj._factory.build({"name":"simple::task"})
         match obj.queue(spec):
             case TaskName() as x:
                 assert(x in obj._registry.tasks)
@@ -101,7 +101,7 @@ class TestStateTracker_Basic:
 
     def test_next_for(self):
         obj   = FSMTracker()
-        spec  = TaskSpec.build({"name":"simple::task", "ctor": FSMTask})
+        spec  = obj._factory.build({"name":"simple::task", "ctor": FSMTask})
         obj.queue(spec)
         obj.build()
         match obj.next_for():
@@ -119,22 +119,22 @@ class TestStateTracker_NextFor:
         return FSMTracker()
 
     @pytest.fixture(scope="function")
-    def spec(self):
+    def spec(self, tracker):
         """ A Simple task spec """
-        return TaskSpec.build({
+        return tracker._factory.build({
             "name" : "basic::Task",
             "ctor" : FSMTask,
         })
 
     @pytest.fixture(scope="function")
-    def specdep(self):
+    def specdep(self, tracker):
         """ a spec with a dependency """
-        spec = TaskSpec.build({
+        spec = tracker._factory.build({
             "name"        : "basic::alpha",
             "depends_on"  : ["basic::dep"],
             "ctor"        : FSMTask,
         })
-        dep  = TaskSpec.build({
+        dep  = tracker._factory.build({
             "name" : "basic::dep",
             "ctor" : FSMTask,
         })
@@ -157,7 +157,7 @@ class TestStateTracker_NextFor:
         tracker.build()
         match tracker.next_for():
             case Task_p():
-                assert(tracker.get_status(t_name) is TaskStatus_e.READY)
+                assert(tracker.get_status(target=t_name) is TaskStatus_e.READY)
             case x:
                 assert(False), x
         # Now theres nothing remaining
@@ -177,10 +177,10 @@ class TestStateTracker_NextFor:
         match tracker.next_for():
             case Task_p() as result:
                 assert(dep.name < result.name)
-                assert(tracker.get_status(result.name) is TaskStatus_e.READY)
+                assert(tracker.get_status(target=result.name) is TaskStatus_e.READY)
             case x:
                 assert(False), x
-        assert(tracker.get_status(t_name) is TaskStatus_e.WAIT)
+        assert(tracker.get_status(target=t_name) is TaskStatus_e.WAIT)
 
     def test_dependency_success_produces_ready_state(self, tracker, specdep):
         spec, dep = specdep
@@ -192,11 +192,11 @@ class TestStateTracker_NextFor:
         assert(dep.name < dep_inst.name)
         assert(isinstance(tracker.machines[dep_inst.name].model, FSMTask))
         tracker.machines[dep_inst.name](step=1, tracker=tracker)
-        assert(tracker.get_status(dep_inst.name) is TaskStatus_e.TEARDOWN)
+        assert(tracker.get_status(target=dep_inst.name) is TaskStatus_e.TEARDOWN)
         # Now check the top is no longer blocked
-        assert(tracker.get_status(t_name) is TaskStatus_e.WAIT)
+        assert(tracker.get_status(target=t_name) is TaskStatus_e.WAIT)
         tracker.machines[t_name](step=1, tracker=tracker, until=[TaskStatus_e.READY])
-        assert(tracker.get_status(t_name) is TaskStatus_e.READY)
+        assert(tracker.get_status(target=t_name) is TaskStatus_e.READY)
 
         
 class TestStateTracker_Pathways:
@@ -209,7 +209,7 @@ class TestStateTracker_Pathways:
         """
         Running the task with a skip action raises FSMSkip
         """
-        spec = TaskSpec.build({
+        spec = tracker._factory.build({
             "name" : "simple::basic",
             "setup" : [{"do":skip_action}],
             "ctor" : FSMTask,
@@ -221,14 +221,14 @@ class TestStateTracker_Pathways:
         assert(task.status == TaskStatus_e.READY)
         machine = tracker.machines[t_inst]
 
-        with pytest.raises(FSMSkip):
-            machine.run(step=1, tracker=tracker)
+        machine(step=1, tracker=tracker)
+        assert(machine.current_state_value == TaskStatus_e.TEARDOWN)
 
     def test_skip_in_depends_on_group__single_step(self, tracker):
         """
         Running the task with a skip action raises FSMSkip
         """
-        spec = TaskSpec.build({
+        spec = tracker._factory.build({
             "name"        : "simple::basic",
             "depends_on"  : [{"do":skip_action}],
             "ctor"        : FSMTask,
@@ -250,7 +250,7 @@ class TestStateTracker_Pathways:
         """
         Calling the machine with a skip action jumps to teardown state
         """
-        spec = TaskSpec.build({
+        spec = tracker._factory.build({
             "name" : "simple::basic",
             "setup" : [{"do":skip_action}],
             "ctor" : FSMTask,
@@ -271,28 +271,28 @@ class TestStateTracker_Pathways:
     @pytest.mark.xfail
     def test_halt(self, mocker, tracker):
         """ Force a Halt """
-        spec = TaskSpec.build({"name":"basic::alpha",
+        spec = tracker._factory.build({"name":"basic::alpha",
                                "depends_on":["basic::dep"],
                                "ctor":"dootle.control.fsm.task:FSMTask"})
-        dep  = TaskSpec.build({"name":"basic::dep",
+        dep  = tracker._factory.build({"name":"basic::dep",
                                "ctor":"dootle.control.fsm.task:FSMTask"})
         tracker.register(spec, dep)
         t_name   = tracker.queue(spec.name, from_user=True)
         dep_inst = tracker.queue(dep.name)
-        assert(tracker.get_status(t_name) is TaskStatus_e.INIT)
+        assert(tracker.get_status(target=t_name) is TaskStatus_e.INIT)
         tracker.build()
         match tracker.next_for():
             case Task_p() as x:
                 assert(x.name == dep_inst)
                 x.should_halt = mocker.Mock(return_value=True)
                 tracker.machines[x.name](step=1, tracker=tracker)
-                assert(tracker.get_status(x.name) == TaskStatus_e.HALTED)
+                assert(tracker.get_status(target=x.name) == TaskStatus_e.HALTED)
             case x:
                 assert(False), x
 
     def test_fail(self, tracker):
         """ An action that fails shunts to teardown """
-        spec = TaskSpec.build({
+        spec = tracker._factory.build({
             "name" : "simple::basic",
             "actions" : [{"do":fail_action}],
             "ctor" : FSMTask,

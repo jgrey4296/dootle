@@ -21,7 +21,9 @@ import pytest
 
 ##--|
 from ..task import FSMTask
+from ..factory import FSMFactory
 from doot.workflow import TaskSpec
+from doot.workflow._interface import Task_p, Task_i
 ##--|
 
 # ##-- types
@@ -59,7 +61,7 @@ logging = logmod.getLogger(__name__)
 ##-- end logging
 
 # Vars:
-
+factory = FSMFactory()
 # Body:
 class TestFSMTask:
 
@@ -67,10 +69,10 @@ class TestFSMTask:
         assert(True is not False) # noqa: PLR0133
 
     def test_basic(self):
-        spec = TaskSpec.build({"name":"basic::simple"})
+        spec = factory.build({"name":"basic::simple"})
         match FSMTask(spec):
-            case FSMTask():
-                assert(True)
+            case FSMTask() as task:
+                assert(isinstance(task, Task_p))
             case x:
                 assert(False), x
 
