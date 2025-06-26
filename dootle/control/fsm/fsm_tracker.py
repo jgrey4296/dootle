@@ -29,23 +29,24 @@ from uuid import UUID, uuid1
 # ##-- 3rd party imports
 import doot
 import doot.errors
-from doot.workflow import RelationSpec, DootTask, ActionSpec
-from doot.workflow._interface import (ArtifactStatus_e, QueueMeta_e, RelationMeta_e, TaskMeta_e)
-from doot.control.tracker._interface import EdgeType_e
+from doot.control.tracker import Tracker_abs
+from doot.control.tracker._interface import EdgeType_e, TaskTracker_p
+from doot.control.tracker.network import TrackNetwork
+from doot.control.tracker.queue import TrackQueue
+from doot.control.tracker.registry import TrackRegistry
+from doot.workflow import (ActionSpec, DootTask, RelationSpec, TaskArtifact,
+                           TaskName)
+from doot.workflow._interface import (ArtifactStatus_e, QueueMeta_e,
+                                      RelationMeta_e, Task_p, TaskMeta_e,
+                                      TaskStatus_e)
 from jgdv import Proto
 from jgdv.structs.locator._interface import LocationMeta_e
 
 # ##-- end 3rd party imports
 
 from . import _interface as API  # noqa: N812
-from doot.control.tracker import Tracker_abs
-from doot.control.tracker._interface import TaskTracker_p
-from doot.control.tracker.registry import TrackRegistry
-from doot.control.tracker.network import TrackNetwork
-from doot.control.tracker.queue import TrackQueue
-from doot.workflow import TaskArtifact, TaskName
-from doot.workflow._interface import TaskStatus_e, Task_p
 from .machines import TaskMachine
+from .factory import FSMFactory
 
 # ##-- types
 # isort: off
@@ -58,8 +59,8 @@ from typing import Protocol, runtime_checkable
 from typing import no_type_check, final, override, overload
 
 if TYPE_CHECKING:
-   from doot.workflow._interface import Task_p
-   from doot.workflow import TaskSpec
+   from doot.workflow._interface import TaskSpec_i, TaskName_p, Artifact_i
+   from doot.util._interface import DelayedSpec
    from jgdv import Maybe
    from typing import Final
    from typing import ClassVar, Any, LiteralString
@@ -92,14 +93,17 @@ class FSMTracker(Tracker_abs):
     """
     machines : dict[TaskName, TaskMachine]
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs:Any) -> None:
+        kwargs.setdefault("factory", FSMFactory)
+        super().__init__(**kwargs)
         self.machines = {}
         # Update the aliases so the default ctor for tasks is an FSMTask
         doot.update_aliases(data=API.ALIASES_UPDATE)
 
+    def get_priority(self, *, target:Maybe[Concrete[TaskName_p|Artifact_i]]=None, default:bool=False) -> int:
+        if target is None and default:
+            return self._declare_priority
 
-    def _get_priority(self, target:Concrete[TaskName|TaskArtifact]) -> int:
         match self.tasks.get(target, None):
             case None:
                 return self._declare_priority
@@ -108,9 +112,12 @@ class FSMTracker(Tracker_abs):
             case x:
                 raise TypeError(type(x))
 
-    def get_status(self, name:TaskName) -> TaskStatus_e:
-        match self.machines.get(name, None):
-            case None if name in self.specs:
+    def get_status(self, *, target:Maybe[TaskName_p]=None, default:bool=False) -> TaskStatus_e:
+        if target is None and default:
+            return TaskStatus_e.NAMED
+
+        match self.machines.get(target, None):
+            case None if target in self.specs:
                 return TaskStatus_e.DECLARED
             case TaskMachine() as x:
                 return x.current_state_value
@@ -118,20 +125,36 @@ class FSMTracker(Tracker_abs):
                 raise TypeError(type(x))
 
     def set_status(self, *args:Any) -> None:
+        """ No-op as the FSM's control status """
         pass
 
-    def queue(self, name:str|Concrete[TaskName|TaskSpec]|TaskArtifact, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, **kwargs:Any) -> Maybe[Concrete[TaskName|TaskArtifact]]:
+    @override
+    def queue(self, name:str|TaskName_p|TaskSpec_i|Artifact_i, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, **kwargs:Any) -> Maybe[Concrete[TaskName_p|Artifact_i]]:
         match super().queue(name, from_user=from_user, status=status):
             case TaskName() as queued if queued not in self.machines:
+                logging.debug("Queue run")
                 # instantiate FSM task
-                self._registry.make_task(queued, parent=kwargs.pop("parent", None))
-                task = self._registry.tasks[queued]
-                fsm = TaskMachine(task)
-                self.machines[queued] = fsm
-                fsm.run_until_init(self)
+                self._instantiate(queued, task=True)
                 return queued
             case x:
                 return x
+
+    @override
+    def _instantiate(self, target:TaskName_p|RelationSpec_i, *args:Any, task:bool=False, **kwargs:Any) -> Maybe[TaskName_p]:
+        """ extends base instantiation to add late injection for tasks """
+        parent : TaskName_p
+        result : Maybe[TaskName_p]
+        ##--|
+        parent  = kwargs.pop("parent", None)
+        result  = super()._instantiate(target, *args, task=task, **kwargs)
+        if task and result and result not in self.machines:
+            logging.info("instantiate run")
+            task_inst              = self._registry.tasks[result]
+            fsm                    = TaskMachine(task_inst)
+            self.machines[result]  = fsm
+            fsm.run_until_init(self)
+        ##--|
+        return result
 
     def next_for(self, target:Maybe[str|TaskName]=None) -> Maybe[Task_p|TaskArtifact]:
         """ ask for the next task that can be performed

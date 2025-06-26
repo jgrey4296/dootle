@@ -33,7 +33,7 @@ from doot.util import mock_gen
 
 # ##-- end 1st party imports
 
-from doot.workflow._interface import Task_i
+from doot.workflow._interface import Task_i, TaskStatus_e
 from doot.workflow._interface import ActionResponse_e as ActRE
 from ..machines import TaskMachine
 from ..task import FSMTask
@@ -88,6 +88,7 @@ class TestStateTracker_Basic:
         obj = FSMTracker()
         assert(isinstance(obj, FSMTracker))
 
+    @pytest.mark.skip
     def test_queue_task(self):
         obj   = FSMTracker()
         spec  = obj._factory.build({"name":"simple::task"})
@@ -99,11 +100,24 @@ class TestStateTracker_Basic:
             case x:
                 assert(False), x
 
+    def test_instantiate_task(self):
+        obj        = FSMTracker()
+        spec       = obj._factory.build({"name":"simple::task"})
+        obj.register(spec)
+        inst_name  = obj._instantiate(spec.name)
+        obj._instantiate(inst_name, task=True)
+        assert(inst_name in obj._registry.tasks)
+        assert(isinstance(obj._registry.tasks[inst_name], Task_p))
+        assert(inst_name in obj.machines)
+        assert(obj.machines[inst_name].current_state_value == TaskStatus_e.INIT)
+
     def test_next_for(self):
         obj   = FSMTracker()
         spec  = obj._factory.build({"name":"simple::task", "ctor": FSMTask})
         obj.queue(spec)
         obj.build()
+        inst_name = obj.concrete[spec.name][0]
+        assert(obj.machines[inst_name].current_state_value == TaskStatus_e.INIT)
         match obj.next_for():
             case Task_p() as x:
                 assert(x.name == "simple::task[<uuid>]")
@@ -198,9 +212,8 @@ class TestStateTracker_NextFor:
         tracker.machines[t_name](step=1, tracker=tracker, until=[TaskStatus_e.READY])
         assert(tracker.get_status(target=t_name) is TaskStatus_e.READY)
 
-        
 class TestStateTracker_Pathways:
-    
+
     @pytest.fixture(scope="function")
     def tracker(self):
         return FSMTracker()

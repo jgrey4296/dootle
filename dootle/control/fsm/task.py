@@ -7,34 +7,43 @@ An FSM b acked Task and job
 from __future__ import annotations
 
 # ##-- stdlib imports
+import atexit#  for @atexit.register
+import collections
+import contextlib
 import datetime
 import enum
+import faulthandler
 import functools as ftz
+import hashlib
 import itertools as itz
 import logging as logmod
 import pathlib as pl
 import re
 import time
 import types
-import collections
-import contextlib
-import hashlib
+from collections import ChainMap
 from copy import deepcopy
 from uuid import UUID, uuid1
 from weakref import ref
-import atexit # for @atexit.register
-import faulthandler
+
 # ##-- end stdlib imports
 
-from collections import ChainMap
-from jgdv import Proto, Mixin, Maybe
+# ##-- 3rd party imports
 import doot
-from doot.workflow import TaskSpec, ActionSpec, RelationSpec, TaskName, DootTask
-from doot.workflow.task import _TaskActionPrep_m
-from doot.workflow._interface import Task_i, Job_p, TaskMeta_e, TaskStatus_e, Task_p
+from doot.util._interface import DelayedSpec
+from doot.workflow import (ActionSpec, DootTask, InjectSpec, RelationSpec,
+                           TaskName, TaskSpec)
+from doot.workflow._interface import MUST_INJECT_K
 from doot.workflow._interface import ActionResponse_e as ActRE
+from doot.workflow._interface import (Job_p, Task_i, Task_p, TaskMeta_e,
+                                      TaskStatus_e, TaskName_p, TaskSpec_i)
+from doot.workflow.task import _TaskActionPrep_m
+from jgdv import Maybe, Mixin, Proto
+
+# ##-- end 3rd party imports
+
 from . import _interface as API  # noqa: N812
-from .errors import FSMSkip, FSMHalt
+from .errors import FSMHalt, FSMSkip
 
 # ##-- types
 # isort: off
@@ -57,6 +66,7 @@ if TYPE_CHECKING:
     from typing import TypeGuard
     from collections.abc import Iterable, Iterator, Callable, Generator
     from collections.abc import Sequence, Mapping, MutableMapping, Hashable
+    from statemachine import State
 
 ##--|
 
@@ -85,14 +95,20 @@ class _Predicates_m:
             return True
         return False
 
-    def should_disable(self) -> bool:
+    def should_disable(self, source:State, *, tracker:TaskTracker_p) -> bool:
         """ cancels the task if the spec is disabled """
-        result : bool = self.spec.extra.on_fail(False).disabled()  # noqa: FBT003
-        return result
+        spec_disabled : bool = self.spec.extra.on_fail(False).disabled()  # noqa: FBT003
+        match source.value:
+            case TaskStatus_e.DECLARED:
+                is_uniq      = self.spec.name.uuid()
+                task_exists  = self.spec.name in tracker.tasks
+                return spec_disabled or not (is_uniq and task_exists)
+            case _:
+                return spec_disabled
 
     ##--| prepare
 
-    def should_cancel(self) -> bool:
+    def should_timeout(self) -> bool:
         """ Cancel if you've waited too long """
         return self.priority < 1
 
@@ -112,7 +128,7 @@ class _Predicates_m:
 
     ##--| run
 
-    def should_skip(self) -> bool:
+    def should_skip(self, source:State) -> bool:
         """ run a task's depends_on group, coercing to a bool
         returns False if the runner should skip the rest of the task
         """
@@ -128,11 +144,17 @@ class _Predicates_m:
     def should_fail(self) -> bool:
         return False
 
+    def state_is_needed(self) -> bool:
+        # TODO Check for the task in injections
+        return False
+
 class _Callbacks_m:
     state  : dict
     spec   : TaskSpec
 
-    def on_enter_INIT(self) -> None:  # noqa: N802
+    ##--| Standard Callbacks
+
+    def on_enter_INIT(self, *, tracker:TaskTracker_p, parent:Maybe[TaskName_p]=None) -> None:  # noqa: N802
         """
         initialise state,
         possibly run injections?
@@ -142,6 +164,51 @@ class _Callbacks_m:
             STATE_TASK_NAME_K  : self.spec.name,
             ACTION_STEP_K      : 0,
         }
+        ##--| apply parent data
+        match parent:
+            case None:
+                pass
+            case TaskName_p() as x if x in tracker.tasks:
+                self.state.update(tracker.tasks[x].state)
+        ##--| Apply cli params
+        assert(hasattr(self, "param_specs"))
+        match self.param_specs():
+            case []:
+                pass
+            case [*xs]:
+                # Apply CLI passed params, but only as the default
+                # So if override values have been injected, they are preferred
+                target     = self.spec.name.pop(top=True)[:,:]
+                task_args  = doot.args.on_fail({}).sub[target]()
+                for cli in xs:
+                    self.state.setdefault(cli.name, task_args.get(cli.name, cli.default))
+
+                if API.CLI_K in self.state:
+                    del self.state[API.CLI_K]
+
+        ##--| Apply injections
+        match tracker._registry.late_injections.get(self.spec.name, None):
+            case None:
+                pass
+            case InjectSpec() as inj, TaskName() as control:
+                control_task = tracker.tasks[control]
+                self.state |= inj.apply_from_spec(control_task.spec)
+                self.state |= inj.apply_from_state(control_task)
+                if not inj.validate(control_task, self):
+                    raise doot.errors.TrackingError("Late Injection Failed")
+
+                # TODO remove the injection from the registry
+            case _:
+                pass
+
+        ##--| validate
+        match self.spec.extra.get(MUST_INJECT_K, None):
+            case None:
+                pass
+            case [*xs] if bool(missing:=[x for x in xs if x not in self.state]):
+                raise doot.errors.TrackingError("Task did not receive required injections", self.spec.name, xs, self.state.keys())
+
+        ##--| build late actions
         self.prepare_actions() # type: ignore[attr-defined]
 
     def on_enter_RUNNING(self, *, step:int, tracker:TaskTracker_p) -> None:  # noqa: N802
@@ -164,32 +231,10 @@ class _Callbacks_m:
                 raise TypeError(type(x))
 
     def on_exit_RUNNING(self, *, step:int, tracker:TaskTracker_p) -> None:  # noqa: N802
-        # Report on the task's actions
+        # TODO Report on the task's actions
         pass
 
-    def on_exit_FAILED(self, *, tracker:TaskTracker_p) -> None:  # noqa: N802
-        count : int
-        # Perform fail actions
-        match self._execute_action_group(group=API.FAIL_GROUP): # type: ignore[attr-defined]
-            case int() as count, ActRE() as res:
-                pass
-            case x:
-                raise TypeError(type(x))
-
-    def on_enter_HALTED(self) -> None:  # noqa: N802
-        raise FSMHalt()
-
-    def on_enter_TEARDOWN(self, *, tracker:TaskTracker_p) -> None:  # noqa: N802
-        x       : TaskName
-        target  : TaskName  = self.spec.name.with_cleanup()
-        # queue cleanup task
-        match tracker._registry.concrete[target]:
-            case [x, *_]:
-                tracker.queue(x, parent=self.spec.name)
-            case x:
-                raise TypeError(type(x))
-
-    def on_enter_TEARDOWN_alt(self, *, source:Any, tracker:TaskTracker_p) -> None:  # noqa: N802
+    def on_exit_TEARDOWN(self, *, source:Any, tracker:TaskTracker_p) -> None:  # noqa: N802
         # source : the state the teardown was triggered from
         logmod.debug("-- Tearing Down Task : %s", self.spec.name[:])
         match self._execute_action_group(group=API.CLEANUP_GROUP): # type: ignore[attr-defined]
@@ -200,6 +245,28 @@ class _Callbacks_m:
 
         # Task is torn down, clear the state to remove its memory footprint
         self.state.clear()
+
+    ##--| Branched callbacks
+
+    def on_enter_SUCCESS(self, tracker:TaskTracker_p) -> None:  # noqa: N802
+        pass
+
+    def on_enter_FAILED(self, *, tracker:TaskTracker_p) -> None:  # noqa: N802
+        # Propagate failure to upstream tasks (as HALTs?)
+        count : int
+        # Perform fail actions
+        match self._execute_action_group(group=API.FAIL_GROUP): # type: ignore[attr-defined]
+            case int() as count, ActRE() as res:
+                pass
+            case x:
+                raise TypeError(type(x))
+
+    def on_enter_HALTED(self, *, tracker:TaskTracker_p) -> None:  # noqa: N802
+        # Propagate halt to other upstream tasks
+        pass
+
+    def on_enter_SKIPPED(self) -> None:  # noqa: N802
+        pass
 
 ##--|
 
@@ -264,6 +331,7 @@ class FSMTask:
         """ Execute a group of actions, possibly queue any task specs they produced,
         and return a count of the actions run + the result
         """
+        x               : Any
         actions         : list[ActionSpec]
         group_result    : ActRE = ActRE.SUCCESS
         executed_count  : int = 0
@@ -293,8 +361,6 @@ class FSMTask:
                     doot.report.line("Remaining Task Actions skipped by Action Result", char=".")
                     group_result = ActRE.SKIP
                     break
-                case list():
-                    logging.warning("Tried to queue tasks from a standard task")
                 case x:
                     raise TypeError(type(x))
 
@@ -303,7 +369,7 @@ class FSMTask:
         ##--|
         return executed_count, group_result
 
-    def _execute_action(self, count:int, action:ActionSpec, *, group:Maybe[str]=None, lock_state:bool=False) -> ActRE|list[TaskSpec]:
+    def _execute_action(self, count:int, action:ActionSpec, *, group:Maybe[str]=None, lock_state:bool=False) -> ActRE|bool|list[TaskSpec]:
         """ Run the given action of a specific task.
 
           returns either a list of specs to (potentially) queue,
@@ -330,11 +396,10 @@ class FSMTask:
             case ActRE.SKIP:
                 # result will be returned, and expand_job/execute_task will handle it
                 doot.report.result(["Skip"])
-                pass
             case dict(): # update the task's state
                 state.update({str(k):v for k,v in result.items()})
                 result = ActRE.SUCCESS
-            case list() if all(isinstance(x, TaskName|TaskSpec) for x in result):
+            case list() if all(isinstance(x, TaskName_p|TaskSpec_i|DelayedSpec) for x in result):
                 pass
             case _:
                 raise doot.errors.TaskError("Task %s: Action %s Failed: Returned an unplanned for value: %s", self.spec.name[:], action.do, result, task=self.spec)
@@ -357,6 +422,9 @@ class FSMTask:
         return []
 
     ##--| public
+
+    def param_specs(self) -> list:
+        return []
 
     def log(self, msg:str, level:int=logmod.DEBUG, prefix:Maybe[str]=None) -> None:
         pass

@@ -80,45 +80,43 @@ class TaskMachine(StateMachine):
     # Events
     # Setup, run when a task is queued.
     setup = (
-        _.NAMED.to(_.DEAD, cond='spec_missing')
+        _.DEAD.from_(_.NAMED, cond='spec_missing')
+        | _.DISABLED.from_(_.DECLARED, _.DEFINED, _.INIT, cond="should_disable")
         | _.NAMED.to(_.DECLARED)
         | _.DECLARED.to(_.DEFINED)
-        | _.DEFINED.to(_.DISABLED, cond="should_disable")
         | _.DEFINED.to(_.INIT)
         )
 
     # Prepare: in tracker, before being sent to runner
     prepare = (
-        _.INIT.to(_.WAIT)
-        | _.WAIT.to(_.FAILED, cond="should_cancel")
-        | _.WAIT.to.itself(cond="should_wait")
+         _.INIT.to(_.WAIT)
+        | _.WAIT.to(_.HALTED, cond="should_timeout")
+        | _.WAIT.to.itself(cond="should_wait", internal=True)
         | _.WAIT.to(_.READY)
     )
 
     # Run: for use in runner
     run = (
-        _.READY.to(_.SKIPPED, cond="should_skip")
+        _.READY.to(_.SKIPPED,    cond="should_skip")
         | _.READY.to(_.RUNNING)
-        # TODO | _.RUNNING.to.itself(cond="still_running")
-        | _.RUNNING.to(_.HALTED,  cond="should_halt")
-        | _.RUNNING.to(_.FAILED,  cond="should_fail")
+        | _.RUNNING.to(_.FAILED, cond="should_fail")
+        | _.RUNNING.to(_.HALTED, cond="should_halt")
         | _.RUNNING.to(_.SUCCESS)
         )
 
     # Finish: cleanup
     finish   = (
-        _.TEARDOWN.from_(_.SUCCESS, _.FAILED, _.HALTED, _.SKIPPED, _.DISABLED)
-        | _.TEARDOWN.to(_.DEAD)
+         _.TEARDOWN.to.itself(cond="state_is_needed", internal=True)
+        | _.TEARDOWN.from_(_.SUCCESS, _.FAILED, _.HALTED, _.SKIPPED)
+        | _.DEAD.from_(_.TEARDOWN, _.DISABLED)
         )
 
-    # Utility events
-    disable  = _.DISABLED.from_(_.READY, _.WAIT, _.INIT, _.DECLARED, _.DEFINED, _.NAMED)
-    skip     = _.SKIPPED.from_(_.READY, _.RUNNING, _.WAIT, _.INIT, _.DECLARED, _.DEFINED)
-    halt     = _.HALTED.from_(_.READY, _.RUNNING, _.WAIT, _.INIT, _.DECLARED, _.DEFINED)
-    fail     = _.FAILED.from_(_.READY, _.RUNNING, _.WAIT, _.INIT, _.DECLARED, _.DEFINED)
+    skip = _.RUNNING.to(_.SKIPPED)
+    halt = _.RUNNING.to(_.HALTED)
+    fail = _.RUNNING.to(_.FAILED)
 
     # Composite Events
-    progress = (setup | prepare | run | skip | halt | fail | finish)
+    progress = (setup | prepare | run | finish)
 
     def __init__(self, task:API.TaskModel_p) -> None:
         if not isinstance(task, API.TaskModel_Conditions_p):
@@ -128,6 +126,7 @@ class TaskMachine(StateMachine):
 
     def __call__(self, *, until:Maybe[TaskStatus_e|Iterable[TaskStatus_e]]=None, **kwargs:Any) -> Any:
         """ A unified method for running a task to completion """
+        logging.info("Calling util: %s", until)
         base_states = BASE_BREAK_STATES[:]
         match until:
             case None | []:
@@ -146,29 +145,29 @@ class TaskMachine(StateMachine):
                 self.skip(**kwargs)
             except FSMHalt:
                 self.halt(**kwargs)
-            except doot.errors.DootError as err:
+            except doot.errors.DootError:
                 self.fail(**kwargs)
-            else:
-                current = self.current_state_value
+
+            current = self.current_state_value
         else:
             return self.current_state_value
 
-    def run_until_init(self, tracker:TaskTracker_p) -> None:
+    def run_until_init(self, tracker:TaskTracker_p, **kwargs) -> None:
         targets = [TaskStatus_e.INIT]
-        self(until=targets, tracker=tracker)
+        self(until=targets, tracker=tracker, **kwargs)
 
-    def run_until_ready(self, tracker:TaskTracker_p) -> None:
+    def run_until_ready(self, tracker:TaskTracker_p, **kwargs) -> None:
         targets = [TaskStatus_e.READY,
                    TaskStatus_e.WAIT,
                    TaskStatus_e.TEARDOWN,
                    ]
-        self(until=targets, tracker=tracker)
+        self(until=targets, tracker=tracker, **kwargs)
 
-    def run_until_dead(self, tracker:TaskTracker_p) -> None:
-        self(tracker=tracker)
+    def run_until_dead(self, tracker:TaskTracker_p, **kwargs) -> None:
+        self(tracker=tracker, **kwargs)
 
-    def after_transition(self, source:Any, event:Any, state:Any) -> None:
-        logging.info("%s -> %s -> %s", source, event, state)
+    def before_transition(self, source:Any, event:Any, target:Any) -> None:
+        logging.info("Before: %s -> %s -> %s", source, event, target)
 
 class ArtifactMachine(StateMachine):
     """

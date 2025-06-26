@@ -51,6 +51,9 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Callable, Generator
     from collections.abc import Sequence, Mapping, MutableMapping, Hashable
 
+    from doot.control.tracker._interface import TaskTracker_p
+    from statemachine import State
+
 ##--|
 
 # isort: on
@@ -70,7 +73,7 @@ CLEANUP_GROUP   : Final[str]         = "cleanup"
 
 TASK_EP         : Final[EntryPoint]  = EntryPoint("task", group="doot.aliases.task", value="dootle.control.fsm.task:FSMTask")
 ALIASES_UPDATE  : Final[dict]        = {
-    "task" : [TASK_EP]
+    "task" : [TASK_EP],
 }
 # Body:
 
@@ -78,13 +81,13 @@ ALIASES_UPDATE  : Final[dict]        = {
 class TaskModel_Conditions_p(Protocol):
     """ The conditions a TaskTrackFSM calls """
 
-    def spec_missing(self, *, tracker) -> bool: ...
+    def spec_missing(self, *, tracker:TaskTracker_p) -> bool: ...
 
-    def should_disable(self) -> bool: ...
+    def should_disable(self, source:State, *, tracker:TaskTracker_p) -> bool: ...
 
-    def should_wait(self, *, tracker) -> bool: ...
+    def should_wait(self, *, tracker:TaskTracker_p) -> bool: ...
 
-    def should_cancel(self) -> bool: ...
+    def should_timeout(self) -> bool: ...
 
     def should_skip(self) -> bool: ...
 
@@ -92,24 +95,30 @@ class TaskModel_Conditions_p(Protocol):
 
     def should_fail(self) -> bool: ...
 
+    def state_is_needed(self, *, tracker:TaskTracker_p) -> bool: ...
+
 @runtime_checkable
 class TaskModel_Callbacks_p(Protocol):
     """
     Describes the callbacks for the FSM of a task
     """
 
-    def on_enter_INIT(self) -> None: ...
-    def on_enter_RUNNING(self, step:int) -> None: ...
+    def on_enter_INIT(self, *, tracker:TaskTracker_p) -> None: ...  # noqa: N802
 
-    def on_exit_FAILED(self) -> None: ...
+    def on_enter_RUNNING(self, *, step:int, tracker:TaskTracker_p) -> None: ...  # noqa: N802
 
-    def on_enter_TEARDOWN(self) -> None: ...
+    def on_enter_HALTED(self, *, tracker:TaskTracker_p) -> None: ...  # noqa: N802
+
+    def on_enter_FAILED(self, *, tracker:TaskTracker_p) -> None: ...  # noqa: N802
+
+    def on_exit_TEARDOWN(self) -> None: ...  # noqa: N802
 
 class TaskModel_p(TaskModel_Callbacks_p, TaskModel_Conditions_p, Protocol):
     """
     Combines the TaskModel Conditions and Callbacks protocols
     """
     pass
+
 @runtime_checkable
 class ArtifactModel_p(Protocol):
     """ Describes the callbacks for an FSM of a task """
