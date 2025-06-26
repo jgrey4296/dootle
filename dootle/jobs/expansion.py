@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 """
+Actions for turning data into delayed specs,
+for then queuing
+
+For Example, with state(blah=['a','b','c']):
+{do='job.expand', from_='blah', template='simple::task', inject={literal=['val']}, update_='specs'}
+Or:
+{do='job.match', from_='blah', mapping={...}, inject={literal=['val']}, update_='specs'}
+then:
+{do="job.queue", from_="specs"}
 
 """
 # ruff: noqa: ANN001
@@ -29,15 +38,16 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto
-from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.structs.chainguard import ChainGuard
-from jgdv.structs.strang import CodeReference
+from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.structs.locator import Location
+from jgdv.structs.strang import CodeReference
 import doot
 import doot.errors
-from doot.workflow._interface import Action_p
+from doot.util.factory import DelayedSpec, TaskFactory
+from doot.workflow import InjectSpec, TaskName, TaskSpec
+from doot.workflow._interface import Action_p, InjectSpec_i, TaskName_p, TaskSpec_i
 from doot.workflow._interface import ActionResponse_e as ActRE
-from doot.workflow import TaskName, TaskSpec, InjectSpec
 from doot.workflow.actions import DootBaseAction
 
 # ##-- end 3rd party imports
@@ -47,7 +57,7 @@ from doot.workflow.actions import DootBaseAction
 from typing import override
 if TYPE_CHECKING:
    from jgdv import Maybe
-   from doot.workflow import ActionSpec
+   from doot.workflow._interface import ActionSpec_i, Task_p
 
 # isort: on
 # ##-- end types
@@ -59,31 +69,34 @@ logging = logmod.getLogger(__name__)
 FALLBACK_KEY      : Final[str] = "_"
 FALLBACK_MISSING  : Final[str] = f"Data->Source Mapping lacks a fallback value '{FALLBACK_KEY}'"
 MAPPING_TYPE_FAIL : Final[str] = "Mapping is not a dict"
+factory = TaskFactory()
 
 @Proto(Action_p)
 class JobExpandAction(DootBaseAction):
     """
-    Expand data into a number of subtask specs.
+    Expand data into a number of delayed specs.
+    Does *not* queue the tasks, thats for job.queue
 
-    takes data `from` somewhere,
-    and `inject`s data onto a `template`.
+    `from`      : source data to inject
+    `inject`    : how to map the data as literals
+    `template`  : taskname of the base spec to use
 
     registered as: job.expand
+    TODO change job subtask naming scheme
     """
 
     @DKeyed.taskname
     @DKeyed.formats("prefix", check=str)
-    @DKeyed.types("template", check=str|list)
+    @DKeyed.types("template", check=str)
     @DKeyed.types("from", check=int|list|str|pl.Path)
     @DKeyed.types("inject", check=dict|ChainGuard)
     @DKeyed.types("__expansion_count", fallback=0)
     @DKeyed.redirects("update_")
-    def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update) -> Maybe[dict]:
-        result       : list[TaskSpec]
-        inject_spec  : Maybe[InjectSpec]
-        base_head    : TaskName
+    def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update) -> Maybe[dict]:  # noqa: ARG002
+        result       : list[DelayedSpec]
+        inject_spec  : Maybe[InjectSpec_i]
+        base_head    : TaskName_p
         build_queue  : list
-        target_name  : TaskName
         ##--|
         build_queue   = self._prep_data(_from)
         inject_spec   = InjectSpec.build(inject)
@@ -97,21 +110,21 @@ class JobExpandAction(DootBaseAction):
         ##--|
         logging.info("Generating %s SubTasks of: %s from %s", len(build_queue), template, _basename)
         for arg in build_queue:
-            _count     += 1
-            # TODO change job subtask naming scheme
-            target_name = base_subtask.push(prefix, _count)
-            result.append(self._build_spec(name=target_name,
-                                           data=arg,
-                                           template=template,
-                                           base_req=base_head,
-                                           inject=inject_spec,
-                                           spec=spec,
-                                           state=state))
+            _count  += 1
+            delayed  = self._delay_spec(target=base_subtask.push(prefix, _count),
+                                        literal=arg,
+                                        template=template,
+                                        inject=inject_spec,
+                                        state=state,
+                                        overrides={"required_for"  : [base_head]},
+                                        )
+            result.append(delayed)
         else:
             return { _update : result , "__expansion_count":  _count }
 
-    def _prep_data(self, data:list) -> list:
-        result = []
+    def _prep_data(self, data:Maybe[int|str|pl.Path|list]) -> list:
+        """ ensure the data for subtasks is correct """
+        result : list = []
         match data:
             case int():
                 result += range(data)
@@ -128,59 +141,28 @@ class JobExpandAction(DootBaseAction):
 
         return result
 
-    def _prep_template(self, template:TaskName|list[ActionSpec]) -> tuple[list, TaskName|None]:
-        """
-          template can be the literal name of a task (template="group::task") to build off,
-          or an indirect key to a list of actions (base_="sub_actions")
-
-          This handles those possibilities and returns a list of actions and maybe a task name
-
-        """
-        match template:
-            case list():
-                assert(all(isinstance(x, dict|ChainGuard) for x in template))
-                actions  = template
-                sources  = [None]
-            case TaskName():
-                actions = []
-                sources = [template]
-            case str():
-                actions = []
-                sources = [TaskName(template)]
-            case None:
-                actions = []
-                sources = [None]
+    def _delay_spec(self, *, target:TaskName_p, template:TaskName_p, literal:Any, inject:Maybe[InjectSpec_i], state:dict, overrides:dict) -> DelayedSpec:  # noqa: PLR0913
+        applied : Maybe[dict]
+        match inject:
+            case InjectSpec_i():
+                applied = (inject.apply_from_state(state) | inject.apply_literal(literal))
             case _:
-                raise doot.errors.ActionError("Unrecognized template type", template)
+                applied = None
 
-        return actions, sources
-
-    def _build_spec(self, *, name:TaskName, data:Any, template:TaskName, base_req:TaskName, inject:InjectSpec, spec:ActionSpec, state:dict) -> TaskSpec:  # noqa: PLR0913
-        actions, sources  = self._prep_template(template)
-        match sources:
-            case [*_, x] if x in doot.loaded_tasks:
-                source_task = doot.loaded_tasks[x]
-            case x:
-                raise doot.errors.TrackingError("Unknown source task", x)
-
-        base_dict = dict(name=name,
-                         sources=sources,
-                         actions = actions or [],
-                         required_for=[base_req],
-                         )
-        if inject is not None:
-            base_dict |= (inject.apply_from_spec(spec)
-                          | inject.apply_from_state(state)
-                          | inject.apply_literal(data)
-                          )
-
-        new_spec  = source_task.under(base_dict)
-        return new_spec
+        delayed = factory.delay(base=template,
+                                target=target,
+                                inject=inject,
+                                applied=applied,
+                                overrides=overrides,
+                                )
+        return delayed
 
 @Proto(Action_p)
 class MatchExpansionAction(JobExpandAction):
-    """ Take a mapping of {pattern -> task} and a list,
-    and build a list of new subtasks
+    """ Create subtasks, but with context specific mapping
+
+    Take a mapping of {pattern -> task} and a list of data,
+    and build a list of delayed specs
 
     use `prepfn` to get a value from a taskspec to match on.
 
@@ -201,10 +183,11 @@ class MatchExpansionAction(JobExpandAction):
     @DKeyed.types("__expansion_count", fallback=0)
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, _basename, prepfn, mapping, _from, inject, _count, _update) -> Maybe[dict]:
-        result  : list[TaskSpec]  = []
-        data                      = self._prep_data(_from)
-        inject_spec               = InjectSpec.build(inject)
-        base_head                 = _basename.with_head()
+        fn      : Callable
+        result  : list[DelayedSpec]  = []
+        data                         = self._prep_data(_from)
+        inject_spec                  = InjectSpec.build(inject)
+        base_head                    = _basename.with_head()
         if not bool(_from):
             return None
 
@@ -228,14 +211,15 @@ class MatchExpansionAction(JobExpandAction):
                     template = x
                 case _:
                     template = mapping[FALLBACK_KEY]
+            ##--|
             target_name  = TaskName(template).push("matched", _count)
-            result.append(self._build_spec(name=target_name,
-                                           data=val,
-                                           template=template,
-                                           base_req=base_head,
-                                           inject=inject_spec,
-                                           spec=spec,
-                                           state=state))
+            delayed      = self._delay_spec(template=template,
+                                            target=target_name,
+                                            literal=val,
+                                            inject=inject_spec,
+                                            state=state,
+                                            ##
+                                            overrides={"required_for" : [base_head]})
         else:
             return { _update : result , "__expansion_count":  _count }
 
@@ -248,3 +232,41 @@ class MatchExpansionAction(JobExpandAction):
                 return x.suffix
             case _:
                 return None
+
+
+@Proto(Action_p)
+class JobQueueAction:
+    """
+      An action that returns a list of tasks to queue, instead of a dict,
+    which signals the doot backend to queue the items of the list
+
+
+      1) Queue Named Tasks: {do='job.queue', args=['group::task'] }
+      2) Queue Expanded TaskSpecs: {do='job.queue', from_='state_key' }
+
+      tasks can be specified by name in `args`
+      and from prior expansion state vars with `from_` (accepts a list)
+
+      `after` can be used to specify additional `depends_on` entries.
+      (the job head is specified using `$head$`)
+
+    registered as: job.queue
+    """
+
+    @DKeyed.args
+    @DKeyed.redirects("from_", fallback=None)
+    @DKeyed.taskname
+    def __call__(self, spec, state, _args, _from, _basename) -> Maybe[list]:
+        result  : list[TaskName_p|TaskSpec_i|DelayedSpec]
+        match _from(spec, state), _args:
+            case DKey() | [], []: # Nothing to do
+                return None
+            case DKey(), [*xs]: # simple args provided
+                assert(all(isinstance(x, str) for x in xs))
+                return [TaskName(x) for x in xs]
+            case [*xs], [*ys]:
+                result = [*xs]
+                result += [TaskName(y) for y in ys]
+
+        assert(all(isinstance(x, TaskName_p|DelayedSpec|TaskSpec_i) for x in result))
+        return result

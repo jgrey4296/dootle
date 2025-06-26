@@ -22,7 +22,4 @@ The order of operations you'll use here is:
 3. Shadow/Namer (maybe)
 4. Limit (maybe)
 5. Queue.
-
-
-
 """

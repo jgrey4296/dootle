@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-  Injection adds to a task spec.
-  allowing initial state, extra actions, etc.
+Injection actions to modify delayed specs *after* creation with job.expand or job.match
+
+eg:
+{do='job.injector', onto_='specs', inject={from_spec={}, from_state={}, from_target={}, literal={}}}
 
 """
 
@@ -46,6 +48,7 @@ from doot.mixins.path_manip import PathManip_m
 # isort: off
 if TYPE_CHECKING:
    from jgdv import Maybe
+   from doot.util._interface import DelayedSpec
 
 # isort: on
 # ##-- end types
@@ -56,36 +59,30 @@ logging = logmod.getLogger(__name__)
 
 @Proto(Action_p)
 class JobInjector:
-    """ Inject data into task specs. ::
-
-        inject={copy=[Xs], expand={Yks : Yvs}, replace=[Zs]}
-
-    ::
-
-        'copy'    : redirects, and copies without further expansion : [a_,x] -> {a:2, x:{q}}
-        'expand'  : redirects, expands, then copies                 : [a_,x] -> {a:2, x:5}
-        'replace' : sets keys to whatever replace value is passed in (for job.expand)
-
-    X,Y can be lists or dicts, for simple setting, or remapping
-    Z is just a straight list
+    """ Inject data into delay specs.
+    updates the dspec.applied
 
     registered as: job.injector
     """
 
     @DKeyed.types("onto", "inject")
-    def __call__(self, spec, state, onto, inject):
+    def __call__(self, spec:Any, state:dict, onto:list[DelayedSpec]|DelayedSpec, inject:dict) -> None:
+        inj : InjectSpec
         match InjectSpec.build(inject):
-            case None:
-                inject_d = {}
+            case InjectSpec() as inj:
+                inject_d = inj.apply_from_state(state)
             case x:
-                inject_d = x.apply_from_spec(spec) | x.apply_from_state(state)
+                raise TypeError(type(x))
 
         match onto:
             case list():
-                for x in onto:
-                    x.model_extra.update(dict(**x.extra, **inject_d))
-            case TaskSpec():
-                onto.model_extra.update(dict(**x.extra, **inject_d))
+                pass
+            case x:
+                onto = [x]
+
+        for x in onto:
+            x.applied |= inject_d
+            x.inject.append(inj)
 
 @Proto(Action_p)
 class JobPrependActions:
