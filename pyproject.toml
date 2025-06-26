@@ -47,22 +47,27 @@ changelog     = "https://github.com//dootle/blob/master/CHANGELOG.md"
 [project.entry-points."doot.plugins.action"]
 say                 = "dootle.actions.say:SayAction"
 "mamba.env"         = "dootle.python.mamba:MambaEnv"
+# Random
 rng_fresh           = "dootle.actions.random:rng_fresh"
 rng_spawn           = "dootle.actions.random:rng_spawn"
 rng_ints            = "dootle.actions.random:rng_ints"
 rng_draw            = "dootle.actions.random:rng_draw"
+# Postbox
 "post.put"          = "dootle.actions.postbox:PutPostAction"
 "post.get"          = "dootle.actions.postbox:GetPostAction"
 "post.clear"        = "dootle.actions.postbox:ClearPostAction"
+# Shell Actions
 "shell!"            = "dootle.actions.shell:ShellAction"
 "bake!"             = "dootle.actions.shell:ShellBake"
 "run-bake!"         = "dootle.actions.shell:ShelBakedRun"
-"job.walk"          = "dootle.jobs.walker:JobWalkAction"
-"job.inject.shadow" = "dootle.jobs.shadow:InjectShadowAction"
-"job.limit"         = "dootle.jobs.limit:JobLimitAction"
-"job.expand"        = "dootle.jobs.expansion:JobExpandAction"
-"job.queue"         = "dootle.jobs.queue:JobQueueAction"
-"job.inject.path.elements" = "dootle.jobs.injection:JobInjectPathParts"
+# Job Actions
+"job.walk"                  = "dootle.jobs.walker:JobWalkAction"
+"job.inject.shadow"         = "dootle.jobs.shadow:InjectShadowAction"
+"job.limit"                 = "dootle.jobs.limit:JobLimitAction"
+"job.expand"                = "dootle.jobs.expansion:JobExpandAction"
+"job.queue"                 = "dootle.jobs.expansion:JobQueueAction"
+"job.match"                 = "dootle.jobs.expansion:JobMatchAction"
+"job.inject.path.elements"  = "dootle.jobs.injection:JobInjectPathParts"
 
 ##-- end entry-points
 
