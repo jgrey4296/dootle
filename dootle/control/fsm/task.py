@@ -42,6 +42,7 @@ from jgdv import Maybe, Mixin, Proto
 
 # ##-- end 3rd party imports
 
+from doot.control.tracker import _interface as TrAPI # noqa: N812
 from . import _interface as API  # noqa: N812
 from .errors import FSMHalt, FSMSkip
 
@@ -84,14 +85,15 @@ ACTION_STEP_K      : Final[str]  = "_action_step"
 # Body:
 
 class _Predicates_m:
-    spec : TaskSpec
-    priority : int
+    spec      : TaskSpec
+    name      : TaskName_p
+    priority  : int
 
     ##--| setup
 
     def spec_missing(self, *, tracker:TaskTracker_p) -> bool:
         """ cancels the task if the spec is not registered """
-        if self.spec is None or self.spec not in tracker._registry.specs:
+        if self.spec is None or self.spec not in tracker.specs:
             return True
         return False
 
@@ -101,7 +103,7 @@ class _Predicates_m:
         match source.value:
             case TaskStatus_e.DECLARED:
                 is_uniq      = self.spec.name.uuid()
-                task_exists  = self.spec.name in tracker.tasks
+                task_exists  = self.spec.name in tracker.specs
                 return spec_disabled or not (is_uniq and task_exists)
             case _:
                 return spec_disabled
@@ -114,21 +116,22 @@ class _Predicates_m:
 
     def should_wait(self, *, tracker:TaskTracker_p) -> bool:
         """ if any dependencies have not run, delay this task  """
-
-        match tracker._network.incomplete_dependencies(self.spec.name):
-            case []:
-                return False
-            case [*xs]:
-                for x in xs:
-                    tracker.queue(x)
-                self.priority -= 1
-                return True
-            case x:
-                raise TypeError(type(x))
+        should_wait : bool = False
+        deps = tracker._dependency_states_of(self.spec.name)
+        for dep, dep_state in deps:
+            match dep_state:
+                case x if x in TrAPI.SUCCESS_STATUSES:
+                    pass
+                case _:
+                    tracker.queue(dep)
+                    should_wait = True
+        else:
+            self.priority -= 1
+            return should_wait
 
     ##--| run
 
-    def should_skip(self, source:State) -> bool:
+    def should_skip(self, source:State) -> bool:  # noqa: ARG002
         """ run a task's depends_on group, coercing to a bool
         returns False if the runner should skip the rest of the task
         """
@@ -138,19 +141,39 @@ class _Predicates_m:
             case _:
                 return False
 
-    def should_halt(self) -> bool:
-        return False
+    def should_halt(self, *, tracker:TaskTracker_p) -> bool:
+        # check for failed and halted tasks
+        deps = tracker._dependency_states_of(self.spec.name)
+        for _, dep_state in deps:
+            match dep_state:
+                case TaskStatus_e.HALTED | TaskStatus_e.FAILED:
+                    return True
+                case _:
+                    pass
+        else:
+            return False
 
     def should_fail(self) -> bool:
         return False
 
-    def state_is_needed(self) -> bool:
-        # TODO Check for the task in injections
-        return False
+    def state_is_needed(self, *, tracker:TaskTracker_p) -> bool:
+        """ delays exit from teardown state until it is safe to do so """
+        injs : set
+        match tracker.specs[self.name]:
+            case TrAPI.SpecMeta_d(injection_targets=set() as injs) if bool(injs):
+                return True
+            case _:
+                return False
 
 class _Callbacks_m:
-    state  : dict
-    spec   : TaskSpec
+    state           : dict
+    name            : TaskName_p
+    spec            : TaskSpec
+    _state_history  : list
+
+    def on_exit_state(self, *, source:Any) -> None:
+        """ Keep track of the progression of the task """
+        self._state_history.append(source.value)
 
     ##--| Standard Callbacks
 
@@ -159,23 +182,27 @@ class _Callbacks_m:
         initialise state,
         possibly run injections?
         """
+        _task : Task_p
+        assert(hasattr(self, "param_specs"))
+        ##--|
         self.state |= dict(self.spec.extra)
         self.state |= {
             STATE_TASK_NAME_K  : self.spec.name,
             ACTION_STEP_K      : 0,
         }
         ##--| apply parent data
-        match parent:
-            case None:
+        match tracker.specs.get(parent, None):
+            case TrAPI.SpecMeta_d(task=Task_p() as _task):
+                logging.info("Applying Parent State")
+                self.state.update(_task.state)
+            case _:
                 pass
-            case TaskName_p() as x if x in tracker.tasks:
-                self.state.update(tracker.tasks[x].state)
         ##--| Apply cli params
-        assert(hasattr(self, "param_specs"))
         match self.param_specs():
             case []:
                 pass
             case [*xs]:
+                logging.info("Applying CLI Args")
                 # Apply CLI passed params, but only as the default
                 # So if override values have been injected, they are preferred
                 target     = self.spec.name.pop(top=True)[:,:]
@@ -187,17 +214,16 @@ class _Callbacks_m:
                     del self.state[API.CLI_K]
 
         ##--| Apply injections
-        match tracker._registry.late_injections.get(self.spec.name, None):
-            case None:
-                pass
-            case InjectSpec() as inj, TaskName() as control:
-                control_task = tracker.tasks[control]
-                self.state |= inj.apply_from_spec(control_task.spec)
+        match tracker.specs[self.spec.name]:
+            case TaskName_p() as control, InjectSpec() as inj:
+                logging.info("Applying Late Injections")
+                control_task = tracker.specs[control].task
                 self.state |= inj.apply_from_state(control_task)
                 if not inj.validate(control_task, self):
                     raise doot.errors.TrackingError("Late Injection Failed")
 
-                # TODO remove the injection from the registry
+                # remove the injection from the registry
+                tracker.specs[control].injection_targets.remove(self.spec.name)
             case _:
                 pass
 
@@ -248,12 +274,12 @@ class _Callbacks_m:
 
     ##--| Branched callbacks
 
-    def on_enter_SUCCESS(self, tracker:TaskTracker_p) -> None:  # noqa: N802
+    def on_enter_SUCCESS(self, *, tracker:TaskTracker_p) -> None:  # noqa: N802
         pass
 
     def on_enter_FAILED(self, *, tracker:TaskTracker_p) -> None:  # noqa: N802
         # Propagate failure to upstream tasks (as HALTs?)
-        count : int
+        ##--|
         # Perform fail actions
         match self._execute_action_group(group=API.FAIL_GROUP): # type: ignore[attr-defined]
             case int() as count, ActRE() as res:
@@ -263,7 +289,10 @@ class _Callbacks_m:
 
     def on_enter_HALTED(self, *, tracker:TaskTracker_p) -> None:  # noqa: N802
         # Propagate halt to other upstream tasks
-        pass
+        for _, _ in tracker._successor_states_of(self.name):
+            pass
+        else:
+            pass
 
     def on_enter_SKIPPED(self) -> None:  # noqa: N802
         pass
@@ -283,15 +312,17 @@ class FSMTask:
     priority        : int
     records         : list[Any]
     state           : dict
+    _state_history  : list[TaskStatus_e]
 
     def __init__(self, spec:TaskSpec):
         self.step        = -1
         self.spec        = spec
         self.priority    = self.spec.priority
         # TODO use taskstatus method for initial
-        self.status      = TaskStatus_e.NAMED
-        self.state       = {}
-        self.records     = []
+        self.status          = TaskStatus_e.NAMED
+        self.state           = {}
+        self._state_history  = []
+        self.records         = []
         assert(self.priority > 0)
 
     @property

@@ -39,7 +39,7 @@ import doot.errors
 # ##-- end 3rd party imports
 
 from doot.util._interface import TaskFactory_p, SubTaskFactory_p
-from doot.util.factory import TaskFactory
+from doot.util.factory import TaskFactory, SubTaskFactory
 from doot.workflow import _interface as API
 from doot.workflow._interface import TaskSpec_i, Task_p, Job_p, Task_i, TaskMeta_e, RelationMeta_e, TaskName_p
 from doot.workflow import ActionSpec, InjectSpec, TaskArtifact, RelationSpec, TaskName, TaskSpec, DootTask, DootJob
@@ -99,104 +99,6 @@ class FSMFactory(TaskFactory):
 
 
 @Proto(SubTaskFactory_p)
-class SubTaskFactory:
+class FSMSubFactory(SubTaskFactory):
     """Additional utilities mixin for job based task specs"""
-
-    def generate_names(self, obj:TaskSpec_i) -> list[TaskName]:
-        return list(obj.generated_names)
-
-    def generate_specs(self, obj:TaskSpec_i) -> list[dict]:
-        logging.debug("[Generate] : %s (%s)", obj.name, len(obj.generated_names))
-        result : list[dict] = []
-        if not obj.name.uuid():
-            # Non-instanced specs don't generate subspecs
-            return result
-
-        needs_job_head = TaskMeta_e.JOB in obj.meta and not obj.name.is_head()
-        if needs_job_head:
-            # Jobs generate their head
-            result += self._gen_job_head(obj)
-
-        if not (needs_job_head or obj.name.is_cleanup()):
-            # Normal tasks generate their cleanup
-            # TODO shift to just executing the cleanup?
-            result += self._gen_cleanup_task(obj)
-
-        obj.generated_names.update([x['name']  for x in result])
-        return result
-
-    def _gen_job_head(self,  obj:TaskSpec_i) -> list[dict]:
-        """
-          Generate a top spec for a job, taking the jobs cleanup actions
-          and using them as the head's main action.
-          Cleanup relations are turning into the head's dependencies
-          Depends on the job, and its reactively queued.
-
-          Equivalent to:
-          await job.depends_on()
-          await job.setup()
-          subtasks = job.actions()
-          await subtasks
-          job.head()
-          await job.cleanup()
-        """
-        job_head           = obj.name.de_uniq().with_head().to_uniq()
-        tasks              = []
-        head_section       = self._raw_data_to_specs(obj.extra.on_fail([], list).head_actions(), relation=RelationMeta_e.needs)
-        head_dependencies  = [x for x in head_section if isinstance(x, RelationSpec) and x.target != job_head]
-        head_actions       = [x for x in head_section if not isinstance(x, RelationSpec)]
-        ctor               = obj.extra.on_fail(None).sub_ctor()
-
-        # build $head$
-        head : dict        = {
-            "name"             : job_head,
-            "ctor"             : ctor,
-            "sources"          : obj.sources[:] + [obj.name, None],
-            "queue_behaviour"  : API.QueueMeta_e.reactive,
-            "depends_on"       : [obj.name, *head_dependencies],
-            "required_for"     : obj.required_for[:],
-            "cleanup"          : obj.cleanup[:],
-            "meta"             : (obj.meta | {TaskMeta_e.JOB_HEAD}) - {TaskMeta_e.JOB},
-            "actions"          : head_actions,
-            **obj.extra,
-            }
-        assert(TaskMeta_e.JOB not in head['meta'])
-        tasks.append(head)
-        return tasks
-
-    def _gen_cleanup_task(self, obj:TaskSpec_i) -> list[dict]:
-        """ Generate a cleanup task, shifting the 'cleanup' actions and dependencies
-          to 'depends_on' and 'actions'
-        """
-        cleanup_name       = obj.name.de_uniq().with_cleanup().to_uniq()
-        base_deps          = [obj.name] + [x for x in obj.cleanup if isinstance(x, RelationSpec) and x.target != cleanup_name]
-        actions            = [x for x in obj.cleanup if isinstance(x, ActionSpec)]
-        sources            = [obj.name]
-
-        cleanup : dict = {
-            "name"             : cleanup_name,
-            "ctor"             : obj.ctor,
-            "sources"          : sources,
-            "queue_behaviour"  : API.QueueMeta_e.reactive,
-            "depends_on"       : base_deps,
-            "actions"          : actions,
-            "cleanup"          : [],
-            "meta"             : (obj.meta | {TaskMeta_e.TASK}) - {TaskMeta_e.JOB},
-            }
-        assert(not bool(cleanup['cleanup']))
-        return [cleanup]
-
-    def _raw_data_to_specs(self, deps:list[str|dict], *, relation:RelationMeta_e=DEFAULT_RELATION) -> list[ActionSpec|RelationSpec]:
-        """ Convert toml provided raw data (str's, dicts) of specs into ActionSpec and RelationSpec object"""
-        results = []
-        for x in deps:
-            match x:
-                case ActionSpec() | RelationSpec():
-                    results.append(x)
-                case { "do": action  } as d:
-                    assert(isinstance(d, dict))
-                    results.append(ActionSpec.build(d))
-                case _:
-                    results.append(RelationSpec.build(x, relation=relation))
-
-        return results
+    pass

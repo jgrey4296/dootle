@@ -30,7 +30,7 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 from doot.control.tracker import Tracker_abs
-from doot.control.tracker._interface import EdgeType_e, TaskTracker_p
+from doot.control.tracker._interface import EdgeType_e, TaskTracker_p, Registry_d
 from doot.control.tracker.network import TrackNetwork
 from doot.control.tracker.queue import TrackQueue
 from doot.control.tracker.registry import TrackRegistry
@@ -38,7 +38,7 @@ from doot.workflow import (ActionSpec, DootTask, RelationSpec, TaskArtifact,
                            TaskName)
 from doot.workflow._interface import (ArtifactStatus_e, QueueMeta_e,
                                       RelationMeta_e, Task_p, TaskMeta_e,
-                                      TaskStatus_e)
+                                      TaskStatus_e, RelationSpec_i, InjectSpec_i, TaskName_p)
 from jgdv import Proto
 from jgdv.structs.locator._interface import LocationMeta_e
 
@@ -59,7 +59,7 @@ from typing import Protocol, runtime_checkable
 from typing import no_type_check, final, override, overload
 
 if TYPE_CHECKING:
-   from doot.workflow._interface import TaskSpec_i, TaskName_p, Artifact_i
+   from doot.workflow._interface import TaskSpec_i, Artifact_i
    from doot.util._interface import DelayedSpec
    from jgdv import Maybe
    from typing import Final
@@ -100,72 +100,19 @@ class FSMTracker(Tracker_abs):
         # Update the aliases so the default ctor for tasks is an FSMTask
         doot.update_aliases(data=API.ALIASES_UPDATE)
 
-    def get_priority(self, *, target:Maybe[Concrete[TaskName_p|Artifact_i]]=None, default:bool=False) -> int:
-        if target is None and default:
-            return self._declare_priority
-
-        match self.tasks.get(target, None):
-            case None:
-                return self._declare_priority
-            case Task_p() as x:
-                return x.priority
-            case x:
-                raise TypeError(type(x))
-
-    def get_status(self, *, target:Maybe[TaskName_p]=None, default:bool=False) -> TaskStatus_e:
-        if target is None and default:
-            return TaskStatus_e.NAMED
-
-        match self.machines.get(target, None):
-            case None if target in self.specs:
-                return TaskStatus_e.DECLARED
-            case TaskMachine() as x:
-                return x.current_state_value
-            case x:
-                raise TypeError(type(x))
-
-    def set_status(self, *args:Any) -> None:
-        """ No-op as the FSM's control status """
-        pass
-
-    @override
-    def queue(self, name:str|TaskName_p|TaskSpec_i|Artifact_i, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, **kwargs:Any) -> Maybe[Concrete[TaskName_p|Artifact_i]]:
-        match super().queue(name, from_user=from_user, status=status):
-            case TaskName() as queued if queued not in self.machines:
-                logging.debug("Queue run")
-                # instantiate FSM task
-                self._instantiate(queued, task=True)
-                return queued
-            case x:
-                return x
-
-    @override
-    def _instantiate(self, target:TaskName_p|RelationSpec_i, *args:Any, task:bool=False, **kwargs:Any) -> Maybe[TaskName_p]:
-        """ extends base instantiation to add late injection for tasks """
-        parent : TaskName_p
-        result : Maybe[TaskName_p]
-        ##--|
-        parent  = kwargs.pop("parent", None)
-        result  = super()._instantiate(target, *args, task=task, **kwargs)
-        if task and result and result not in self.machines:
-            logging.info("instantiate run")
-            task_inst              = self._registry.tasks[result]
-            fsm                    = TaskMachine(task_inst)
-            self.machines[result]  = fsm
-            fsm.run_until_init(self)
-        ##--|
-        return result
+    ##--| main logic
 
     def next_for(self, target:Maybe[str|TaskName]=None) -> Maybe[Task_p|TaskArtifact]:
         """ ask for the next task that can be performed
 
-          Returns a Task or Artifact that needs to be executed or created
-          Returns None if it loops too many times trying to find a target,
-          or if theres nothing left in the queue
+            Returns a Task or Artifact that needs to be executed or created
+            Returns None if it loops too many times trying to find a target,
+            or if theres nothing left in the queue
 
         """
         focus   : TaskName|TaskArtifact
         count   : int
+        idx     : int
         result  : Maybe[TaskMachine|Task_p|TaskArtifact]
         logging.info("[Next.For] (Active: %s)", len(self._queue.active_set))
         if not self.is_valid:
@@ -174,13 +121,13 @@ class FSMTracker(Tracker_abs):
         if target and target not in self._queue.active_set:
             self.queue(target)
 
-        count  = API.MAX_LOOP
+        idx, count  = 0, API.MAX_LOOP
         result = None
-        while (result is None) and bool(self._queue) and 0 < (count:=count-1):
+        while (result is None) and bool(self._queue) and 0 < (count:=count-1) and (idx:=idx+1):
             focus  = self._queue.deque_entry()
-            logging.debug("[Next.For.Head]: %s", focus)
+            logging.debug("[Next.For.%-3s]: %s", idx, focus)
             match focus:
-                case TaskName() as x if x in self._registry.tasks:
+                case TaskName_p() as x if x in self._registry.specs:
                     # get and run the machine
                     fsm   = self.machines[x]
                     match fsm.current_state_value:
@@ -204,3 +151,57 @@ class FSMTracker(Tracker_abs):
             logging.info("[Next.For] <- %s", result)
             # wrap the result in an execution FSM
             return result
+
+    @override
+    def queue(self, name:str|TaskName_p|TaskSpec_i|Artifact_i, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, **kwargs:Any) -> Maybe[Concrete[TaskName_p|Artifact_i]]:
+        match super().queue(name, from_user=from_user, status=status):
+            case TaskName() as queued if queued not in self.machines:
+                logging.debug("[Next.For] Queue run")
+                # instantiate FSM task
+                self._instantiate(queued, task=True)
+                return queued
+            case x:
+                return x
+
+    @override
+    def _instantiate(self, target:TaskName_p|RelationSpec_i, *args:Any, task:bool=False, **kwargs:Any) -> Maybe[TaskName_p]:
+        """ when a task is created, create a state machine for it as well """
+        parent : TaskName_p
+        result : Maybe[TaskName_p]
+        ##--|
+        parent  = kwargs.pop("parent", None)
+        match super()._instantiate(target, *args, task=task, **kwargs):
+            case TaskName_p() as result if task and result not in self.machines:
+                task_inst              = self._registry.specs[result].task
+                fsm                    = TaskMachine(task_inst)
+                self.machines[result]  = fsm
+                fsm.run_until_init(self)
+            case TaskName_p() as result:
+                return result
+            case None:
+                return None
+            case x:
+                raise TypeError(type(x))
+
+    ##--| utils
+
+    def get_status(self, *, target:Maybe[TaskName_p]=None) -> tuple[TaskStatus_e, int]:
+        match self.machines.get(target, None):
+            case None if target == self._root_node:
+                return TaskStatus_e.NAMED, self._declare_priority
+            case None if target in self.specs:
+                return TaskStatus_e.DECLARED, self._declare_priority
+            case TaskMachine() as x:
+                return x.current_state_value, x.model.priority
+            case x:
+                raise TypeError(type(x))
+
+    def set_status(self, *args:Any) -> None:
+        """ No-op as the FSM's control status """
+        pass
+
+    def _dependency_states_of(self, focus:TaskName_p) -> list[tuple]:
+        return [(x, self.get_status(target=x)[0]) for x in self._network.pred[focus] if x != self._root_node]
+
+    def _successor_states_of(self, focus:TaskName_p) -> list[tuple]:
+        return [(x, self.get_status(target=x)[0]) for x in self._network.succ[focus] if x != self._root_node]

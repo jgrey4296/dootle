@@ -115,7 +115,7 @@ class FSMRunner(DootRunner):
             self.handle_failure(err)
         except Exception as err:
             doot.report.fail()
-            self.tracker.clear_queue()
+            self.tracker.clear()
             raise
         else:
             self.handle_task_success(task)

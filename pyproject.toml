@@ -185,7 +185,10 @@ strict                  = false
 python_version          = "3.12"
 follow_imports          = "skip"
 cache_dir               = ".temp/mypy_cache"
-enable_error_code       = ["explicit-override", "ignore-without-code", "possibly-undefined", "unreachable", "type-arg"]
+enable_error_code       = [
+                        "explicit-override", "ignore-without-code",
+                        "possibly-undefined", "unreachable", "type-arg"
+                        ]
 disable_error_code      = []
 warn_return_any         = true
 warn_unused_configs     = true

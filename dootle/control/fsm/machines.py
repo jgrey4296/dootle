@@ -106,8 +106,8 @@ class TaskMachine(StateMachine):
 
     # Finish: cleanup
     finish   = (
-         _.TEARDOWN.to.itself(cond="state_is_needed", internal=True)
-        | _.TEARDOWN.from_(_.SUCCESS, _.FAILED, _.HALTED, _.SKIPPED)
+         _.TEARDOWN.from_(_.SUCCESS, _.FAILED, _.HALTED, _.SKIPPED)
+        | _.TEARDOWN.to.itself(cond="state_is_needed", internal=True)
         | _.DEAD.from_(_.TEARDOWN, _.DISABLED)
         )
 
@@ -167,7 +167,7 @@ class TaskMachine(StateMachine):
         self(tracker=tracker, **kwargs)
 
     def before_transition(self, source:Any, event:Any, target:Any) -> None:
-        logging.info("Before: %s -> %s -> %s", source, event, target)
+        logging.info("[FSM.Task]: %s -> %s -> %s", source, event, target)
 
 class ArtifactMachine(StateMachine):
     """

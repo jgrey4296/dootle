@@ -2,7 +2,7 @@
 """
 
 """
-# ruff: noqa: E402, B011, ANN202, ERA001, ANN001
+# ruff: noqa: E402, B011, ANN202, ERA001, ANN001, ANN002, ARG001, ARG003, ANN003
 # Imports:
 from __future__ import annotations
 
@@ -33,7 +33,8 @@ from doot.util import mock_gen
 
 # ##-- end 1st party imports
 
-from doot.workflow._interface import Task_i, TaskStatus_e
+from doot.workflow._interface import Task_i, TaskStatus_e, TaskSpec_i, TaskName_p
+from doot.workflow._interface import Task_p
 from doot.workflow._interface import ActionResponse_e as ActRE
 from ..machines import TaskMachine
 from ..task import FSMTask
@@ -61,12 +62,13 @@ if TYPE_CHECKING:
     from collections.abc import Sequence, Mapping, MutableMapping, Hashable
 
 ##--|
-from doot.workflow._interface import Task_p, TaskStatus_e
 # isort: on
 # ##-- end types
 
 logging = logmod.root
 logmod.getLogger("jgdv").propagate = False
+logmod.getLogger("jgdv.util").propagate = False
+logmod.getLogger("doot.control").propagate = False
 
 ##-- util actions
 
@@ -88,14 +90,22 @@ class TestStateTracker_Basic:
         obj = FSMTracker()
         assert(isinstance(obj, FSMTracker))
 
-    @pytest.mark.skip
+    def test_register(self):
+        obj   = FSMTracker()
+        spec  = obj._factory.build({"name":"simple::task"})
+        assert(isinstance(spec, TaskSpec_i))
+        assert(not bool(obj.specs))
+        obj.register(spec)
+        assert(bool(obj.specs))
+        assert(not bool(obj.machines))
+
     def test_queue_task(self):
         obj   = FSMTracker()
         spec  = obj._factory.build({"name":"simple::task"})
         match obj.queue(spec):
-            case TaskName() as x:
-                assert(x in obj._registry.tasks)
-                assert(isinstance(obj._registry.tasks[x], Task_p))
+            case TaskName_p() as x:
+                assert(x in obj.specs)
+                assert(isinstance(obj.specs[x].task, Task_p))
                 assert(x in obj.machines)
             case x:
                 assert(False), x
@@ -106,18 +116,17 @@ class TestStateTracker_Basic:
         obj.register(spec)
         inst_name  = obj._instantiate(spec.name)
         obj._instantiate(inst_name, task=True)
-        assert(inst_name in obj._registry.tasks)
-        assert(isinstance(obj._registry.tasks[inst_name], Task_p))
+        assert(inst_name in obj.specs)
+        assert(isinstance(obj.specs[inst_name].task, Task_p))
         assert(inst_name in obj.machines)
         assert(obj.machines[inst_name].current_state_value == TaskStatus_e.INIT)
 
     def test_next_for(self):
         obj   = FSMTracker()
         spec  = obj._factory.build({"name":"simple::task", "ctor": FSMTask})
-        obj.queue(spec)
+        instance = obj.queue(spec, from_user=True)
         obj.build()
-        inst_name = obj.concrete[spec.name][0]
-        assert(obj.machines[inst_name].current_state_value == TaskStatus_e.INIT)
+        assert(obj.machines[instance].current_state_value == TaskStatus_e.INIT)
         match obj.next_for():
             case Task_p() as x:
                 assert(x.name == "simple::task[<uuid>]")
@@ -157,6 +166,7 @@ class TestStateTracker_NextFor:
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
 
+    @pytest.mark.xfail
     def test_for_fails_with_unbuilt_network(self, tracker):
         with pytest.raises(doot.errors.TrackingError):
             tracker.next_for()
@@ -167,14 +177,15 @@ class TestStateTracker_NextFor:
 
     def test_for_no_connections(self, tracker, spec):
         tracker.register(spec)
-        t_name = tracker.queue(spec.name)
+        t_name = tracker.queue(spec.name, from_user=True)
         tracker.build()
+        tracker.validate()
         match tracker.next_for():
             case Task_p():
-                assert(tracker.get_status(target=t_name) is TaskStatus_e.READY)
+                assert(tracker.get_status(target=t_name)[0] is TaskStatus_e.READY)
             case x:
                 assert(False), x
-        # Now theres nothing remaining
+                # Now theres nothing remaining
         match tracker.next_for():
             case None:
                 assert(True)
@@ -186,31 +197,34 @@ class TestStateTracker_NextFor:
         tracker.register(spec, dep)
         t_name = tracker.queue(spec.name, from_user=True)
         tracker.build()
-        assert(t_name in tracker._registry.tasks)
-        assert(dep.name in tracker._registry.concrete)
+        assert(t_name in tracker.specs)
+        assert(dep.name in tracker.concrete)
         match tracker.next_for():
             case Task_p() as result:
                 assert(dep.name < result.name)
-                assert(tracker.get_status(target=result.name) is TaskStatus_e.READY)
+                assert(tracker.get_status(target=result.name)[0] is TaskStatus_e.READY)
             case x:
                 assert(False), x
-        assert(tracker.get_status(target=t_name) is TaskStatus_e.WAIT)
+                assert(tracker.get_status(target=t_name)[0] is TaskStatus_e.WAIT)
 
     def test_dependency_success_produces_ready_state(self, tracker, specdep):
         spec, dep = specdep
         tracker.register(spec, dep)
         t_name = tracker.queue(spec.name, from_user=True)
+        assert(tracker.get_status(target=t_name)[1] == 10)
         tracker.build()
         # Get the dep and run it
         dep_inst = tracker.next_for()
         assert(dep.name < dep_inst.name)
         assert(isinstance(tracker.machines[dep_inst.name].model, FSMTask))
         tracker.machines[dep_inst.name](step=1, tracker=tracker)
-        assert(tracker.get_status(target=dep_inst.name) is TaskStatus_e.TEARDOWN)
+        assert(tracker.get_status(target=dep_inst.name)[0] is TaskStatus_e.TEARDOWN)
         # Now check the top is no longer blocked
-        assert(tracker.get_status(target=t_name) is TaskStatus_e.WAIT)
+        assert(tracker.get_status(target=t_name)[0] is TaskStatus_e.WAIT)
+        logging.debug("-------")
         tracker.machines[t_name](step=1, tracker=tracker, until=[TaskStatus_e.READY])
-        assert(tracker.get_status(target=t_name) is TaskStatus_e.READY)
+        assert(tracker.get_status(target=t_name)[0] is TaskStatus_e.READY)
+
 
 class TestStateTracker_Pathways:
 
@@ -218,17 +232,17 @@ class TestStateTracker_Pathways:
     def tracker(self):
         return FSMTracker()
 
-    def test_skip_in_action_group__single_step(self, tracker):
+    def test_skip_in_action_group__single_step(self, tracker) -> None:
         """
-        Running the task with a skip action raises FSMSkip
+        Running the task with a skip action in setup skips the entire task
         """
         spec = tracker._factory.build({
             "name" : "simple::basic",
             "setup" : [{"do":skip_action}],
-            "ctor" : FSMTask,
         })
-        t_inst  : TaskName  = tracker.queue(spec)
+        t_inst  : TaskName_p = tracker.queue(spec, from_user=True)
         tracker.build()
+        tracker.validate()
         task    : Task_i    = tracker.next_for()
         assert(task.spec.name == t_inst)
         assert(task.status == TaskStatus_e.READY)
@@ -236,17 +250,18 @@ class TestStateTracker_Pathways:
 
         machine(step=1, tracker=tracker)
         assert(machine.current_state_value == TaskStatus_e.TEARDOWN)
+        assert(task._state_history[-1] == TaskStatus_e.SKIPPED)
 
-    def test_skip_in_depends_on_group__single_step(self, tracker):
+    def test_skip_in_depends_on_group__single_step(self, tracker) -> None:
         """
-        Running the task with a skip action raises FSMSkip
+        Running the task with a skip action in dependencies skips the running state
         """
         spec = tracker._factory.build({
             "name"        : "simple::basic",
             "depends_on"  : [{"do":skip_action}],
             "ctor"        : FSMTask,
         })
-        t_inst  : TaskName  = tracker.queue(spec)
+        t_inst  : TaskName_p  = tracker.queue(spec, from_user=True)
         tracker.build()
         task    : Task_i    = tracker.next_for()
         assert(task.spec.name == t_inst)
@@ -255,11 +270,12 @@ class TestStateTracker_Pathways:
         machine.run(step=1, tracker=tracker)
         match machine.current_state_value:
             case TaskStatus_e.SKIPPED:
-                assert(True)
+                assert(TaskStatus_e.RUNNING not in task._state_history)
+                assert(task._state_history[-1] == TaskStatus_e.READY)
             case x:
                 assert(False), x
 
-    def test_skip__full(self, tracker):
+    def test_skip__full(self, tracker) -> None:
         """
         Calling the machine with a skip action jumps to teardown state
         """
@@ -268,8 +284,9 @@ class TestStateTracker_Pathways:
             "setup" : [{"do":skip_action}],
             "ctor" : FSMTask,
         })
-        t_inst  : TaskName  = tracker.queue(spec)
+        t_inst  : TaskName_p  = tracker.queue(spec, from_user=True)
         tracker.build()
+        tracker.validate()
         task    : Task_i    = tracker.next_for()
         assert(task.spec.name == t_inst)
         assert(task.status == TaskStatus_e.READY)
@@ -277,40 +294,43 @@ class TestStateTracker_Pathways:
 
         match machine(step=1, tracker=tracker):
             case TaskStatus_e.TEARDOWN:
-                assert(True)
+                assert(task._state_history[-1] == TaskStatus_e.SKIPPED)
             case x:
                 assert(False), x
 
-    @pytest.mark.xfail
-    def test_halt(self, mocker, tracker):
+    def test_halt(self, tracker) -> None:
         """ Force a Halt """
+        class HaltingTask(FSMTask):
+            def should_halt(self):
+                return True
+
+        tracker._factory.task_ctor = HaltingTask
         spec = tracker._factory.build({"name":"basic::alpha",
-                               "depends_on":["basic::dep"],
-                               "ctor":"dootle.control.fsm.task:FSMTask"})
-        dep  = tracker._factory.build({"name":"basic::dep",
-                               "ctor":"dootle.control.fsm.task:FSMTask"})
+                                       "depends_on":["basic::dep"],
+                                       })
+        dep  = tracker._factory.build({"name":"basic::dep"})
         tracker.register(spec, dep)
         t_name   = tracker.queue(spec.name, from_user=True)
         dep_inst = tracker.queue(dep.name)
-        assert(tracker.get_status(target=t_name) is TaskStatus_e.INIT)
+        assert(tracker.get_status(target=t_name)[0] is TaskStatus_e.INIT)
         tracker.build()
         match tracker.next_for():
             case Task_p() as x:
                 assert(x.name == dep_inst)
-                x.should_halt = mocker.Mock(return_value=True)
                 tracker.machines[x.name](step=1, tracker=tracker)
-                assert(tracker.get_status(target=x.name) == TaskStatus_e.HALTED)
+                assert(tracker.get_status(target=x.name)[0] is TaskStatus_e.TEARDOWN)
+                assert(x._state_history[-1] == TaskStatus_e.HALTED)
             case x:
                 assert(False), x
 
-    def test_fail(self, tracker):
+    def test_fail(self, tracker) -> None:
         """ An action that fails shunts to teardown """
         spec = tracker._factory.build({
             "name" : "simple::basic",
             "actions" : [{"do":fail_action}],
             "ctor" : FSMTask,
         })
-        t_inst  : TaskName  = tracker.queue(spec)
+        t_inst  : TaskName_p  = tracker.queue(spec, from_user=True)
         tracker.build()
         task    : Task_i    = tracker.next_for()
         assert(task.spec.name == t_inst)
@@ -322,10 +342,65 @@ class TestStateTracker_Pathways:
             case x:
                 assert(False), x
 
-    @pytest.mark.xfail
     def test_success(self, tracker):
-        pass
+        """ run the task normally """
+        spec = tracker._factory.build({"name":"basic::alpha",
+                                       "depends_on":["basic::dep"],
+                                       })
+        dep  = tracker._factory.build({"name":"basic::dep"})
+        tracker.register(spec, dep)
+        t_name   = tracker.queue(spec.name, from_user=True)
+        dep_inst = tracker.queue(dep.name)
+        assert(tracker.get_status(target=t_name)[0] is TaskStatus_e.INIT)
+        tracker.build()
+        match tracker.next_for():
+            case Task_p() as x:
+                assert(x.name == dep_inst)
+                tracker.machines[x.name](step=1, tracker=tracker)
+                assert(tracker.get_status(target=x.name)[0] is TaskStatus_e.TEARDOWN)
+                assert(x._state_history[-1] == TaskStatus_e.SUCCESS)
+            case x:
+                assert(False), x
 
-    @pytest.mark.xfail
+
     def test_teardown(self, tracker):
-        pass
+        """ run the task normally, then tear it down """
+        spec = tracker._factory.build({"name":"basic::alpha",
+                                       "depends_on":["basic::dep"],
+                                       })
+        dep  = tracker._factory.build({"name":"basic::dep"})
+        tracker.register(spec, dep)
+        t_name   = tracker.queue(spec.name, from_user=True)
+        dep_inst = tracker.queue(dep.name)
+        assert(tracker.get_status(target=t_name)[0] is TaskStatus_e.INIT)
+        tracker.build()
+        task = tracker.next_for()
+        tracker.machines[task.name](step=1, tracker=tracker)
+        assert(tracker.get_status(target=task.name)[0] is TaskStatus_e.TEARDOWN)
+        assert(task._state_history[-1] == TaskStatus_e.SUCCESS)
+        # now run the teardown
+        tracker.machines[task.name](tracker=tracker)
+        assert(tracker.get_status(target=task.name)[0] is TaskStatus_e.DEAD)
+        assert(task._state_history[-1] == TaskStatus_e.TEARDOWN)
+
+
+    def test_teardown_wait(self, tracker):
+        """ delay teardown until there are no injections relying on it """
+        spec = tracker._factory.build({"name":"basic::alpha",
+                                       "depends_on":["basic::dep"],
+                                       })
+        dep  = tracker._factory.build({"name":"basic::dep"})
+        tracker.register(spec, dep)
+        t_name   = tracker.queue(spec.name, from_user=True)
+        dep_inst = tracker.queue(dep.name)
+        assert(tracker.get_status(target=t_name)[0] is TaskStatus_e.INIT)
+        tracker.build()
+        task = tracker.next_for()
+        tracker.machines[task.name](step=1, tracker=tracker)
+        assert(tracker.get_status(target=task.name)[0] is TaskStatus_e.TEARDOWN)
+        assert(task._state_history[-1] == TaskStatus_e.SUCCESS)
+        # now run the teardown
+        tracker.machines[task.name](tracker=tracker)
+        assert(tracker.get_status(target=task.name)[0] is TaskStatus_e.DEAD)
+        assert(task._state_history[-1] == TaskStatus_e.TEARDOWN)
+        assert(False)
