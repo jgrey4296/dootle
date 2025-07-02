@@ -254,7 +254,7 @@ class TestStateTracker_Pathways:
 
     def test_skip_in_depends_on_group__single_step(self, tracker) -> None:
         """
-        Running the task with a skip action in dependencies skips the running state
+        Running the task with a skip action in dependencies skips the running internal_state
         """
         spec = tracker._factory.build({
             "name"        : "simple::basic",
@@ -277,7 +277,7 @@ class TestStateTracker_Pathways:
 
     def test_skip__full(self, tracker) -> None:
         """
-        Calling the machine with a skip action jumps to teardown state
+        Calling the machine with a skip action jumps to teardown internal_state
         """
         spec = tracker._factory.build({
             "name" : "simple::basic",
@@ -391,16 +391,24 @@ class TestStateTracker_Pathways:
                                        })
         dep  = tracker._factory.build({"name":"basic::dep"})
         tracker.register(spec, dep)
-        t_name   = tracker.queue(spec.name, from_user=True)
-        dep_inst = tracker.queue(dep.name)
-        assert(tracker.get_status(target=t_name)[0] is TaskStatus_e.INIT)
+        instance  = tracker.queue(spec.name, from_user=True)
+        dep_inst  = tracker.queue(dep.name)
+        assert(tracker.get_status(target=instance)[0] is TaskStatus_e.INIT)
         tracker.build()
-        task = tracker.next_for()
-        tracker.machines[task.name](step=1, tracker=tracker)
-        assert(tracker.get_status(target=task.name)[0] is TaskStatus_e.TEARDOWN)
-        assert(task._state_history[-1] == TaskStatus_e.SUCCESS)
-        # now run the teardown
-        tracker.machines[task.name](tracker=tracker)
-        assert(tracker.get_status(target=task.name)[0] is TaskStatus_e.DEAD)
-        assert(task._state_history[-1] == TaskStatus_e.TEARDOWN)
-        assert(False)
+        # artificially set instance to inject into dep_inst
+        tracker.specs[instance].injection_targets.add(dep_inst)
+        # now run the instance
+        tracker.machines[instance](step=2, tracker=tracker)
+        assert(tracker.get_status(target=instance)[0] is TaskStatus_e.TEARDOWN)
+        # Does not progress past teardown
+        for x in range(5):
+            tracker.machines[instance](tracker=tracker)
+            assert(tracker.get_status(target=instance)[0] is TaskStatus_e.TEARDOWN)
+        else:
+            # until dep_inst is removed
+            tracker.specs[instance].injection_targets.remove(dep_inst)
+            tracker.machines[instance](tracker=tracker)
+            assert(tracker.get_status(target=instance)[0] is TaskStatus_e.DEAD)
+            assert(tracker.machines[instance].model._state_history[-1] is TaskStatus_e.TEARDOWN)
+            # The task internal internal_state is cleaned up
+            assert(not bool(tracker.machines[instance].model.internal_state))

@@ -157,7 +157,7 @@ class _Predicates_m:
         return False
 
     def state_is_needed(self, *, tracker:TaskTracker_p) -> bool:
-        """ delays exit from teardown state until it is safe to do so """
+        """ delays exit from teardown _internal_state until it is safe to do so """
         injs : set
         match tracker.specs[self.name]:
             case TrAPI.SpecMeta_d(injection_targets=set() as injs) if bool(injs):
@@ -166,7 +166,7 @@ class _Predicates_m:
                 return False
 
 class _Callbacks_m:
-    state           : dict
+    _internal_state           : dict
     name            : TaskName_p
     spec            : TaskSpec
     _state_history  : list
@@ -179,60 +179,26 @@ class _Callbacks_m:
 
     def on_enter_INIT(self, *, tracker:TaskTracker_p, parent:Maybe[TaskName_p]=None) -> None:  # noqa: N802
         """
-        initialise state,
+        initialise _internal_state,
         possibly run injections?
         """
         _task : Task_p
         assert(hasattr(self, "param_specs"))
         ##--|
-        self.state |= dict(self.spec.extra)
-        self.state |= {
+        self._internal_state |= dict(self.spec.extra)
+        self._internal_state |= {
             STATE_TASK_NAME_K  : self.spec.name,
             ACTION_STEP_K      : 0,
         }
-        ##--| apply parent data
-        match tracker.specs.get(parent, None):
-            case TrAPI.SpecMeta_d(task=Task_p() as _task):
-                logging.info("Applying Parent State")
-                self.state.update(_task.state)
-            case _:
-                pass
-        ##--| Apply cli params
-        match self.param_specs():
-            case []:
-                pass
-            case [*xs]:
-                logging.info("Applying CLI Args")
-                # Apply CLI passed params, but only as the default
-                # So if override values have been injected, they are preferred
-                target     = self.spec.name.pop(top=True)[:,:]
-                task_args  = doot.args.on_fail({}).sub[target]()
-                for cli in xs:
-                    self.state.setdefault(cli.name, task_args.get(cli.name, cli.default))
-
-                if API.CLI_K in self.state:
-                    del self.state[API.CLI_K]
-
-        ##--| Apply injections
-        match tracker.specs[self.spec.name]:
-            case TaskName_p() as control, InjectSpec() as inj:
-                logging.info("Applying Late Injections")
-                control_task = tracker.specs[control].task
-                self.state |= inj.apply_from_state(control_task)
-                if not inj.validate(control_task, self):
-                    raise doot.errors.TrackingError("Late Injection Failed")
-
-                # remove the injection from the registry
-                tracker.specs[control].injection_targets.remove(self.spec.name)
-            case _:
-                pass
-
+        self._apply_parent_state(tracker, parent)
+        self._apply_cli_args(tracker)
+        self._apply_injections(tracker)
         ##--| validate
         match self.spec.extra.get(MUST_INJECT_K, None):
             case None:
                 pass
-            case [*xs] if bool(missing:=[x for x in xs if x not in self.state]):
-                raise doot.errors.TrackingError("Task did not receive required injections", self.spec.name, xs, self.state.keys())
+            case [*xs] if bool(missing:=[x for x in xs if x not in self._internal_state]):
+                raise doot.errors.TrackingError("Task did not receive required injections", self.spec.name, xs, self._internal_state.keys())
 
         ##--| build late actions
         self.prepare_actions() # type: ignore[attr-defined]
@@ -261,7 +227,7 @@ class _Callbacks_m:
         pass
 
     def on_exit_TEARDOWN(self, *, source:Any, tracker:TaskTracker_p) -> None:  # noqa: N802
-        # source : the state the teardown was triggered from
+        # source : the _internal_state the teardown was triggered from
         logmod.debug("-- Tearing Down Task : %s", self.spec.name[:])
         match self._execute_action_group(group=API.CLEANUP_GROUP): # type: ignore[attr-defined]
             case int() as count, ActRE():
@@ -269,8 +235,8 @@ class _Callbacks_m:
             case x:
                 raise TypeError(type(x))
 
-        # Task is torn down, clear the state to remove its memory footprint
-        self.state.clear()
+        # Task is torn down, clear the _internal_state to remove its memory footprint
+        self._internal_state.clear()
 
     ##--| Branched callbacks
 
@@ -297,6 +263,47 @@ class _Callbacks_m:
     def on_enter_SKIPPED(self) -> None:  # noqa: N802
         pass
 
+
+    ##--| internal
+    def _apply_parent_state(self, tracker:TaskTracker_p, parent:Maybe[TaskName_p]) -> None:
+        ##--| apply parent data
+        match tracker.specs.get(parent, None):
+            case TrAPI.SpecMeta_d(task=Task_p() as _task):
+                logging.info("Applying Parent State")
+                self._internal_state.update(_task._internal_state)
+            case _:
+                pass
+
+    def _apply_cli_args(self, tracker:TaskTracker_p) -> None:
+        match self.param_specs():
+            case []:
+                pass
+            case [*xs]:
+                logging.info("Applying CLI Args")
+                # Apply CLI passed params, but only as the default
+                # So if override values have been injected, they are preferred
+                target     = self.spec.name.pop(top=True)[:,:]
+                task_args  = doot.args.on_fail({}).sub[target]()
+                for cli in xs:
+                    self._internal_state.setdefault(cli.name, task_args.get(cli.name, cli.default))
+
+                if API.CLI_K in self._internal_state:
+                    del self._internal_state[API.CLI_K]
+
+    def _apply_injections(self, tracker:TaskTracker_p) -> None:
+        match tracker.specs[self.spec.name]:
+            case TaskName_p() as control, InjectSpec() as inj:
+                logging.info("Applying Late Injections")
+                control_task = tracker.specs[control].task
+                self._internal_state |= inj.apply_from_state(control_task)
+                if not inj.validate(control_task, self):
+                    raise doot.errors.TrackingError("Late Injection Failed")
+
+                # remove the injection from the registry
+                tracker.specs[control].injection_targets.remove(self.spec.name)
+            case _:
+                pass
+
 ##--|
 
 @Proto(Task_i, API.TaskModel_p)
@@ -305,14 +312,14 @@ class FSMTask:
     """
     The implementation of a task, as the domain model for a TaskMachine
     """
-    _default_flags  : ClassVar[set]  = set()
-    step            : int
-    spec            : TaskSpec
-    status          : TaskStatus_e
-    priority        : int
-    records         : list[Any]
-    state           : dict
-    _state_history  : list[TaskStatus_e]
+    _default_flags   : ClassVar[set]  = set()
+    step             : int
+    spec             : TaskSpec
+    status           : TaskStatus_e
+    priority         : int
+    records          : list[Any]
+    _internal_state  : dict
+    _state_history   : list[TaskStatus_e]
 
     def __init__(self, spec:TaskSpec):
         self.step        = -1
@@ -320,7 +327,7 @@ class FSMTask:
         self.priority    = self.spec.priority
         # TODO use taskstatus method for initial
         self.status          = TaskStatus_e.NAMED
-        self.state           = {}
+        self._internal_state           = {}
         self._state_history  = []
         self.records         = []
         assert(self.priority > 0)
@@ -329,6 +336,10 @@ class FSMTask:
     def name(self) -> TaskName:
         return self.spec.name
 
+
+    @property
+    def internal_state(self) -> dict:
+        return self._internal_state
     ##--| dunders
 
     @override
@@ -408,9 +419,9 @@ class FSMTask:
 
         """
         result  : Maybe[bool|ActRE|dict|list]
-        state   : ChainMap
+        _internal_state   : ChainMap
         assert(callable(action))
-        state = ChainMap({ACTION_STEP_K : count}, self.state)
+        _internal_state = ChainMap({ACTION_STEP_K : count}, self._internal_state)
         match group:
             case str():
                 doot.report.act(f"Action: {self.step}.{group}.{count}", action.do)
@@ -418,8 +429,8 @@ class FSMTask:
                 doot.report.act(f"Action: {self.step}.{count}", action.do)
 
         logging.debug("Action Executing for Task: %s", self.spec.name[:])
-        logging.debug("Action State: %s.%s: args=%s kwargs=%s. state(size)=%s", self.step, count, action.args, dict(action.kwargs), len(self.state.keys()))
-        match (result:=action(state)):
+        logging.debug("Action State: %s.%s: args=%s kwargs=%s. _internal_state(size)=%s", self.step, count, action.args, dict(action.kwargs), len(self._internal_state.keys()))
+        match (result:=action(_internal_state)):
             case None | True:
                 result = ActRE.SUCCESS
             case False | ActRE.FAIL:
@@ -427,8 +438,8 @@ class FSMTask:
             case ActRE.SKIP:
                 # result will be returned, and expand_job/execute_task will handle it
                 doot.report.result(["Skip"])
-            case dict(): # update the task's state
-                state.update({str(k):v for k,v in result.items()})
+            case dict(): # update the task's _internal_state
+                _internal_state.update({str(k):v for k,v in result.items()})
                 result = ActRE.SUCCESS
             case list() if all(isinstance(x, TaskName_p|TaskSpec_i|DelayedSpec) for x in result):
                 pass
@@ -439,7 +450,7 @@ class FSMTask:
             case True:
                 pass
             case False:
-                self.state |= state
+                self._internal_state |= _internal_state
 
         return result
 
