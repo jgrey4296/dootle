@@ -56,7 +56,7 @@ class TestJobExpansion:
 
     @pytest.fixture(scope="function")
     def state(self):
-        return {"_task_name": TaskName("agroup::basic")}
+        return {"_task_name": TaskName("agroup::basic").to_uniq()}
 
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
@@ -109,7 +109,7 @@ class TestJobExpansion:
     def test_basic_expander(self, spec, state, mocker):
         mocker.patch("doot.loaded_tasks", {"example::basic": factory.build({"name":"example::basic"})})
         state.update(dict(
-            _task_name=TaskName("agroup::basic"),
+            _task_name=TaskName("agroup::basic").to_uniq(),
             inject={"literal":["aKey"]},
             template="example::basic"
         ))
@@ -127,7 +127,7 @@ class TestJobExpansion:
     def test_expander_with_dict_injection(self, spec, state, mocker):
         mocker.patch("doot.loaded_tasks", {"example::basic": factory.build({"name":"example::basic"})})
         state.update(dict(
-            _task_name=TaskName("agroup::basic"),
+            _task_name=TaskName("agroup::basic").to_uniq(),
             inject={"literal": ["aKey"], "from_state":{"other":"{blah}"}},
             template="example::basic"
         ))
@@ -165,14 +165,14 @@ class TestMatchExpansionAction:
 
     def test_empty_matching(self, spec):
         obj = MatchExpansionAction()
-        assert(obj(spec, {"_task_name":TaskName("agroup::basic")}) is None)
+        assert(obj(spec, {"_task_name":TaskName("agroup::basic").to_uniq()}) is None)
 
     def test_match_call(self, spec, mocker, task_map):
         tasks = [factory.build({"name":x}) for x in ["example::bib.task", "example::txt.task", "example::other.task"]]
         mocker.patch("doot.loaded_tasks", {x.name:x for x in tasks})
         state = {
             "mapping"     : task_map,
-            "_task_name"  : TaskName("agroup::basic"),
+            "_task_name"  : TaskName("agroup::basic").to_uniq(),
             "inject"      : {"literal":["val"]},
             "update_"     : "specs",
             "from"        : [pl.Path(x) for x in ["blah.bib", "blah.txt", "other"]],
@@ -201,7 +201,7 @@ class TestMatchExpansionAction:
         mocker.patch("doot.loaded_tasks", {x.name:x for x in tasks})
         state = {
             "mapping"     : task_map,
-            "_task_name"  : TaskName("agroup::basic"),
+            "_task_name"  : TaskName("agroup::basic").to_uniq(),
             "inject"      : {"literal":["val"]},
             "update_"     : "specs",
             "from"        : [pl.Path(x) for x in ["blah.bib", "blah.txt", "other"]],
