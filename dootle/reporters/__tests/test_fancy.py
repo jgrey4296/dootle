@@ -59,7 +59,13 @@ L1_DEPTH : int       = 2
 L2_DEPTH : int       = 3
 # Body:
 
+@pytest.fixture(scope="function")
+def rep():
+    log = logmod.getLogger("doot.test.printer")
+    return FancyReporter(logger=log)
+
 class TestFancyReporter:
+
     @pytest.mark.skip
     def test_todo(self):
         pass
@@ -74,9 +80,9 @@ class TestFancyReporter:
             case x:
                  assert(False), x
 
-    def test_basic_trace(self, caplog):
-        obj = FancyReporter()
-        caplog.set_level(logmod.NOTSET, logger=obj.log.name)
+    def test_basic_trace(self, rep, caplog):
+        obj = rep.wf
+        caplog.set_level(logmod.NOTSET, logger=rep.log.name)
         obj.root()
         obj.act("test", "blah")
         obj.finished()
@@ -84,17 +90,17 @@ class TestFancyReporter:
         assert("┼◇  [test]  : blah" in caplog.text)
         assert("┻" in caplog.text)
 
-    def test_ctx_manager(self):
-        obj                    = FancyReporter()
+    def test_ctx_manager(self, rep):
+        obj = rep
         assert(obj.state.depth == L0_DEPTH)
         with obj:
             assert(obj.state.depth == L1_DEPTH)
 
         assert(obj.state.depth == L0_DEPTH)
 
-    def test_branch(self, caplog):
-        obj = FancyReporter()
-        caplog.set_level(logmod.NOTSET, logger=obj.log.name)
+    def test_branch(self, rep, caplog):
+        obj = rep.wf
+        caplog.set_level(logmod.NOTSET, logger=rep.log.name)
         with obj.branch("Test"):
             assert(obj.state.log_level > logmod.INFO)
             obj.act("Log", "blah")
@@ -106,8 +112,8 @@ class TestFancyReporter:
         assert("┢◀──╯   []      : blah" in caplog.text)
 
 
-    def test_double_branch(self, caplog):
-        obj = FancyReporter()
+    def test_double_branch(self, rep, caplog):
+        obj = rep.wf
         assert(obj.state.depth == L0_DEPTH)
         obj.root()
         obj.branch("first")
@@ -148,7 +154,7 @@ class TestFancyReporter_Tree:
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
 
-    def test_custom_tree(self, caplog):
+    def test_custom_tree(self, rep, caplog):
         data = [
             "First",
             "Second",
@@ -157,7 +163,7 @@ class TestFancyReporter_Tree:
             "Fifth",
         ]
 
-        obj = FancyReporter()
+        obj = rep.tree
         obj.tree(data)
 
         assert("┳" in caplog.text)
@@ -179,14 +185,45 @@ class TestFancyReporter_Tree:
         assert("┻" in caplog.text)
 
 
-    def test_nested_tree(self, caplog):
+    def test_multi_nested(self, rep, caplog):
+        data = [
+            "First",
+            "Second",
+            ("Third", ["a", ("b", ["aa", "bb", "cc"]), "c"]),
+            ("Fourth", ["d", "e", "f"]),
+            "Fifth",
+        ]
+
+        obj = rep.tree
+        obj.tree(data, title="Test Tree")
+
+        assert("┳" in caplog.text)
+        assert("┼◇  [Leaf]  : First" in caplog.text)
+        assert("┼◇  [Leaf]  : Second" in caplog.text)
+        assert("┣─▶─╮" in caplog.text)
+        assert("┊   ▼   [Branch] : Third" in caplog.text)
+        assert("┊   ┼◇  [Leaf]  : a" in caplog.text)
+        assert("┊   ┼◇  [Leaf]  : b" in caplog.text)
+        assert("┊   ┼◇  [Leaf]  : c" in caplog.text)
+        assert("┊   ┻" in caplog.text)
+        assert("┣─▶─╮" in caplog.text)
+        assert("┊   ▼   [Branch] : Fourth" in caplog.text)
+        assert("┊   ┼◇  [Leaf]  : d" in caplog.text)
+        assert("┊   ┼◇  [Leaf]  : e" in caplog.text)
+        assert("┊   ┼◇  [Leaf]  : f" in caplog.text)
+        assert("┊   ┻" in caplog.text)
+        assert("┼◇  [Leaf]  : Fifth" in caplog.text)
+        assert("┻" in caplog.text)
+
+
+    def test_nested_tree(self, rep, caplog):
         data = [
             "First",
             ("Middle", ["a", ("Nested", ["b", "c"]), "d"]),
             "Last",
         ]
 
-        obj = FancyReporter()
+        obj = rep.tree
         obj.tree(data)
 
         assert("┳" in caplog.text)
@@ -204,14 +241,14 @@ class TestFancyReporter_Tree:
         assert("┻" in caplog.text)
 
 
-    def test_tree_dict(self, caplog):
+    def test_tree_dict(self, rep, caplog):
         data = [
             "First",
             {"Middle" : ["a", {"Nested": ["b", "c"]}, "d"]},
             "Last",
         ]
 
-        obj = FancyReporter()
+        obj = rep.tree
         obj.tree(data)
 
         assert("┳" in caplog.text)

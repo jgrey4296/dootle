@@ -29,7 +29,7 @@ import faulthandler
 
 from jgdv import Proto, Mixin
 from doot.reporters import _interface as API  # noqa: N812
-from doot.reporters import BasicReporter, TraceFormatter
+from doot.reporters import BasicReporter, ReportFormatter
 
 from . import _interface as LAPI
 
@@ -67,7 +67,7 @@ logging = logmod.getLogger(__name__)
 
 # Body:
 
-@Proto(API.Reporter_i)
+@Proto(API.Reporter_p)
 class FancyReporter(BasicReporter):
     """ An alternative reporter.
 

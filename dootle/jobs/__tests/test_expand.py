@@ -171,11 +171,11 @@ class TestMatchExpansionAction:
         tasks = [factory.build({"name":x}) for x in ["example::bib.task", "example::txt.task", "example::other.task"]]
         mocker.patch("doot.loaded_tasks", {x.name:x for x in tasks})
         state = {
-            "mapping"     : task_map,
             "_task_name"  : TaskName("agroup::basic").to_uniq(),
+            "mapping"     : task_map,
             "inject"      : {"literal":["val"]},
-            "update_"     : "specs",
             "from"        : [pl.Path(x) for x in ["blah.bib", "blah.txt", "other"]],
+            "update_"     : "specs",
         }
 
         obj     = MatchExpansionAction()
