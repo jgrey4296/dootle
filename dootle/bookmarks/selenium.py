@@ -71,7 +71,7 @@ READER_PREFIX : Final[str] = "about:reader?url="
 
 def setup_firefox(spec:ActionSpec, state:dict) -> dict:
     """ Setups a selenium driven, headless firefox to print to pdf """
-    doot.report.trace("Setting up headless Firefox")
+    doot.report.gen.trace("Setting up headless Firefox")
     options = FirefoxOptions()
     # options.add_argument("--start-maximized")
     options.add_argument("--headless")
@@ -92,7 +92,7 @@ def setup_firefox(spec:ActionSpec, state:dict) -> dict:
 @DKeyed.types(FF_DRIVER)
 def save_pdf(spec:ActionSpec, state:dict, url, _to, _driver) -> None:
     """ prints a url to a pdf file using selenium """
-    doot.report.trace("Saving: %s", url)
+    doot.report.gen.trace("Saving: %s", url)
     print_ops = PrintOptions()
     print_ops.page_range = "all"
 
@@ -106,5 +106,5 @@ def save_pdf(spec:ActionSpec, state:dict, url, _to, _driver) -> None:
 
 @DKeyed.types(FF_DRIVER)
 def close_firefox(spec:ActionSpec, state:dict, _driver) -> None:
-    doot.report.trace("Closing Firefox")
+    doot.report.gen.trace("Closing Firefox")
     _driver.quit()

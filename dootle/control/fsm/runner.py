@@ -106,14 +106,14 @@ class FSMRunner(DootRunner):
                 case TaskArtifact():
                     self._notify_artifact(task)
                 case x:
-                    doot.report.error("Unknown Value provided to runner: %s", x)
+                    doot.report.gen.error("Unknown Value provided to runner: %s", x)
         except doot.errors.TaskError as err:
             err.task = task
             self.handle_failure(err)
         except doot.errors.DootError as err:
             self.handle_failure(err)
         except Exception as err:
-            doot.report.fail()
+            doot.report.wf.fail()
             self.tracker.clear()
             raise
         else:

@@ -234,6 +234,6 @@ class SummarizePostAction:
         data       = _DootPostBox.get(from_task)
         if full:
             for x in data:
-                doot.report.trace("Postbox %s: Item: %s", from_task, str(x))
+                doot.report.gen.trace("Postbox %s: Item: %s", from_task, str(x))
 
-        doot.report.trace("Postbox %s: Size: %s", from_task, len(data))
+        doot.report.gen.trace("Postbox %s: Size: %s", from_task, len(data))

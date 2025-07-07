@@ -417,7 +417,7 @@ class FSMTask:
                     group_result = ActRE.FAIL
                     break
                 case ActRE.SKIP:
-                    doot.report.line("Remaining Task Actions skipped by Action Result", char=".")
+                    doot.report.wf.line("Remaining Task Actions skipped by Action Result", char=".")
                     group_result = ActRE.SKIP
                     break
                 case x:
@@ -441,9 +441,9 @@ class FSMTask:
         _internal_state = ChainMap({ACTION_STEP_K : count}, self._internal_state)
         match group:
             case str():
-                doot.report.act(f"Action: {self.step}.{group}.{count}", action.do)
+                doot.report.wf.act(f"Action: {self.step}.{group}.{count}", action.do)
             case None:
-                doot.report.act(f"Action: {self.step}.{count}", action.do)
+                doot.report.wf.act(f"Action: {self.step}.{count}", action.do)
 
         logging.debug("Action Executing for Task: %s", self.spec.name[:])
         logging.debug("Action State: %s.%s: args=%s kwargs=%s. _internal_state(size)=%s", self.step, count, action.args, dict(action.kwargs), len(self._internal_state.keys()))
@@ -454,7 +454,7 @@ class FSMTask:
                 raise doot.errors.TaskFailed("Task %s: Action Failed: %s", self.spec.name[:], action.do, task=self.spec)
             case ActRE.SKIP:
                 # result will be returned, and expand_job/execute_task will handle it
-                doot.report.result(["Skip"])
+                doot.report.wf.result(["Skip"])
             case dict(): # update the task's _internal_state
                 _internal_state.update({str(k):v for k,v in result.items()})
                 result = ActRE.SUCCESS
@@ -551,7 +551,7 @@ class FSMJob(FSMTask):
                     group_result = ActRE.FAIL
                     break
                 case ActRE.SKIP:
-                    doot.report.line("Remaining Task Actions skipped by Action Result", char=".")
+                    doot.report.gen.line("Remaining Task Actions skipped by Action Result", char=".")
                     group_result = ActRE.SKIP
                     break
 

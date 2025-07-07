@@ -151,7 +151,7 @@ class MultiBackupAction:
         source_loc = _from
         pattern_key = DKey[pl.Path](pattern)
 
-        doot.report.trace("Backing up : %s", source_loc)
+        doot.report.gen.trace("Backing up : %s", source_loc)
         for shadow_path in shadow_paths:
             match pattern_key.expand({"shadow_path":shadow_path}, spec, state):
                 case pl.Path() as x if self._is_write_protected(x): # type: ignore[attr-defined]
@@ -175,11 +175,11 @@ class MultiBackupAction:
             difference      = int(max(source_ns, dest_ns) - min(source_ns, dest_ns))
             below_tolerance = difference <= tolerance
 
-            doot.report.detail("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
+            doot.report.gen.detail("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
             if (not source_newer) or below_tolerance:
                 continue
 
-            doot.report.trace("Destination: %s", dest_loc)
+            doot.report.gen.trace("Destination: %s", dest_loc)
             _DootPostBox.put(_name, dest_loc)
             shutil.copy2(source_loc,dest_loc)
 

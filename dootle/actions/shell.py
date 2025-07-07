@@ -70,16 +70,16 @@ class ShellBake:
                 case x:
                     raise TaskError("Bad pre-command for shell baking", _in, x)
         except sh.CommandNotFound as err:
-            doot.report.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
+            doot.report.gen.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
             return False
         except sh.ErrorReturnCode as err:
-            doot.report.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
+            doot.report.gen.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
             if bool(err.stdout):
-                doot.report.error("%s", err.stdout.decode())
+                doot.report.gen.error("%s", err.stdout.decode())
 
-            doot.report.gap()
+            doot.report.gen.gap()
             if bool(err.stderr):
-                doot.report.error("%s", err.stderr.decode())
+                doot.report.gen.error("%s", err.stderr.decode())
 
             return False
         else:
@@ -161,28 +161,28 @@ class ShellAction:
                            _iter=True)
 
         except sh.ForkException as err:
-            doot.report.error("Shell Command failed: %s", err)
+            doot.report.gen.error("Shell Command failed: %s", err)
             return False
         except sh.CommandNotFound as err:
-            doot.report.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
+            doot.report.gen.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
             return False
         except sh.ErrorReturnCode as err:
-            doot.report.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
+            doot.report.gen.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
 
             self._print_err(err.stderr.decode(), errlimit)
             return False
         else:
             for line in result:
-                doot.report.user("(Cmd): %s", line.strip())
+                doot.report.gen.user("(Cmd): %s", line.strip())
 
             self._print_err(result.stderr.decode(), errlimit)
 
             if result.exit_code not in exitcodes:
-                doot.report.user("Shell Command Failed: %s", result.exit_code)
+                doot.report.gen.user("Shell Command Failed: %s", result.exit_code)
                 return False
 
-            doot.report.detail("Shell Cwd: %s", cwd)
-            doot.report.detail("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, cmd_name, args[1:])
+            doot.report.gen.detail("Shell Cwd: %s", cwd)
+            doot.report.gen.detail("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, cmd_name, args[1:])
 
             match _update:
                 case None:
@@ -198,11 +198,11 @@ class ShellAction:
         if not bool(err):
             return
 
-        doot.report.user("-- Err: ")
+        doot.report.gen.user("-- Err: ")
         for errline in err.splitlines()[limit:]:
-            doot.report.user("(CmdErr): %s", errline)
+            doot.report.gen.user("(CmdErr): %s", errline)
         else:
-            doot.report.user("-- Err.")
+            doot.report.gen.user("-- Err.")
 
 @Proto(Action_p)
 class ShellInteractive:
@@ -229,23 +229,23 @@ class ShellInteractive:
             expanded                = [str(x.expand(spec, state)) for x in keys]
             result                  = cmd(*expanded, _return_cmd=True, _bg=False, _out=self.interact, _out_bufsize=0, _tty_in=True, _unify_ttys=True)
             assert(result.exit_code == 0)
-            doot.report.detail("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, spec.args[0], spec.args[1:])
-            doot.report.trace("%s", result, extra={"colour":"reset"})
+            doot.report.gen.detail("(%s) Shell Cmd: %s, Args: %s, Result:", result.exit_code, spec.args[0], spec.args[1:])
+            doot.report.gen.trace("%s", result, extra={"colour":"reset"})
 
         except sh.ForkException as err:
-            doot.report.error("Shell Command failed: %s", err)
+            doot.report.gen.error("Shell Command failed: %s", err)
             return False
         except sh.CommandNotFound as err:
-            doot.report.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
+            doot.report.gen.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
             return False
         except sh.ErrorReturnCode as err:
-            doot.report.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
+            doot.report.gen.error("Shell Command '%s' exited with code: %s", err.full_cmd, err.exit_code)
             if bool(err.stdout):
-                doot.report.error("%s", err.stdout.decode())
+                doot.report.gen.error("%s", err.stdout.decode())
 
-            doot.report.gap()
+            doot.report.gen.gap()
             if bool(err.stderr):
-                doot.report.error("%s", err.stderr.decode())
+                doot.report.gen.error("%s", err.stderr.decode())
 
             return False
         else:
@@ -255,7 +255,7 @@ class ShellInteractive:
         # TODO possibly add a custom interupt handler/logger
         self.aggregated += str(char)
         if self.aggregated.endswith("\n"):
-            doot.report.trace(self.aggregated.strip())
+            doot.report.gen.trace(self.aggregated.strip())
             self.aggregated = ""
 
         if self.aggregated.startswith(self.prompt) :

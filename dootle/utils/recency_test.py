@@ -73,7 +73,7 @@ def recency_test(spec, state, target):
     if not (TODAY <= mod_date):
         return None
 
-    doot.report.trace("%s is Stale", source.name)
+    doot.report.gen.trace("%s is Stale", source.name)
     return ActE.SKIP
 
 

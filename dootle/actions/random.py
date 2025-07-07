@@ -76,7 +76,7 @@ def rng_spawn(spec, state, _rng, num, _update):
 def rng_ints(spec, state, _rng, count, _min, _max, _update):
     """ Use the rng to get a count of integers from min to max """
     result = _rng.integers(_min or 0, _max or 10, num or 10)
-    doot.report.trace("Got: %s", result)
+    doot.report.gen.trace("Got: %s", result)
 
     return { _update : result }
 
@@ -94,7 +94,7 @@ def rng_draw(spec, state, _rng, dist, shape, args, _update):
     gen = getattr(_rng, dist)
     result = gen(*args, size=shape)
     assert(result is not None)
-    doot.report.detail("Generated Random (%s): %s", dist, result)
+    doot.report.gen.detail("Generated Random (%s): %s", dist, result)
     return { _update : result }
 
 @DKeyed.types(RNG_STATE_S, check=np.random.Generator)

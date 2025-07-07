@@ -86,7 +86,7 @@ class GodotTestAction:
             godot_b = godot.bake("--path", doot.locs.root, "--headless")
 
         except sh.ErrorReturnCode as err:
-            doot.report.error("Godot Failure: %s", err.stdout.decode())
+            doot.report.gen.error("Godot Failure: %s", err.stdout.decode())
             raise doot.errors.DootTaskFailed("Failed to connect") from err
 
 @Proto(Action_p)
@@ -103,11 +103,11 @@ class GodotRunSceneAction:
                 case _:
                     result = godot_b(str(scene))
 
-            doot.report.trace("Godot Result: %s", result.stdout.decode())
+            doot.report.gen.trace("Godot Result: %s", result.stdout.decode())
             return { "godot_result" : result.stdout.decode() }
 
         except sh.ErrorReturnCode as err:
-            doot.report.error("Godot Failure: %s", err.stdout.decode())
+            doot.report.gen.error("Godot Failure: %s", err.stdout.decode())
             raise doot.errors.DootTaskFailed("Godot Failed") from err
 
 @Proto(Action_p)
@@ -125,11 +125,11 @@ class GodotRunScriptAction:
                 case _:
                     result = godot_b(str(script))
 
-            doot.report.trace("Godot Result: %s", result.stdout.decode())
+            doot.report.gen.trace("Godot Result: %s", result.stdout.decode())
             return { _update : result.stdout.decode() }
 
         except sh.ErrorReturnCode as err:
-            doot.report.error("Godot Failure: %s", err.stdout.decode())
+            doot.report.gen.error("Godot Failure: %s", err.stdout.decode())
             raise doot.errors.DootTaskFailed("Godot Failed") from err
 
 @Proto(Action_p)
@@ -151,12 +151,12 @@ class GodotBuildAction:
         try:
             result      = godot_b(preset, str(path))
             stdout = result.stdout.decode()
-            doot.report.trace("Godot Result: %s", stdout)
+            doot.report.gen.trace("Godot Result: %s", stdout)
             return { _update: stdout }
         except sh.ErrorReturnCode as err:
             stdout = result.stdout.decode()
             stderr = err.stdout.decode()
-            doot.report.error("Godot Failure: %s", stderr)
+            doot.report.gen.error("Godot Failure: %s", stderr)
             raise doot.errors.DootTaskFailed("Godot Failed", stdout, stderr) from err
 
 @Proto(Action_p)
@@ -200,10 +200,10 @@ class GodotCheckScriptsAction:
         try:
             result      = godot_b("--check-only", "--script", str(target))
             stdout = result.stdout.decode()
-            doot.report.trace("Godot Result: %s", stdout)
+            doot.report.gen.trace("Godot Result: %s", stdout)
             return { _update : stdout }
         except sh.ErrorReturnCode as err:
             stdout = result.stdout.decode()
             stderr = result.stderr.decode()
-            doot.report.error("Godot Failure: %s", stderr)
+            doot.report.gen.error("Godot Failure: %s", stderr)
             raise doot.errors.DootTaskFailed("Godot Failed", stdout, stderr) from err
