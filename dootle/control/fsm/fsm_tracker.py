@@ -30,7 +30,7 @@ from uuid import UUID, uuid1
 import doot
 import doot.errors
 from doot.control.tracker import Tracker_abs
-from doot.control.tracker._interface import EdgeType_e, TaskTracker_p, Registry_d
+from doot.control.tracker._interface import EdgeType_e, WorkflowTracker_p, Registry_d
 from doot.control.tracker.network import TrackNetwork
 from doot.control.tracker.queue import TrackQueue
 from doot.control.tracker.registry import TrackRegistry
@@ -83,7 +83,7 @@ logging    = logmod.getLogger(__name__)
 
 ##--|
 
-@Proto(TaskTracker_p)
+@Proto(WorkflowTracker_p)
 class FSMTracker(Tracker_abs):
     """
     Tracks tasks by their FSM state

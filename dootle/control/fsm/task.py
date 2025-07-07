@@ -33,7 +33,7 @@ import doot
 from doot.util._interface import DelayedSpec
 from doot.workflow import (ActionSpec, DootTask, InjectSpec, RelationSpec,
                            TaskName, TaskSpec)
-from doot.workflow._interface import MUST_INJECT_K
+from doot.workflow._interface import MUST_INJECT_K, CLI_K
 from doot.workflow._interface import ActionResponse_e as ActRE
 from doot.workflow._interface import (Job_p, Task_i, Task_p, TaskMeta_e,
                                       TaskStatus_e, TaskName_p, TaskSpec_i)
@@ -59,7 +59,7 @@ from typing import no_type_check, final, override, overload
 from types import LambdaType
 
 if TYPE_CHECKING:
-    from doot.control.tracker._interface import TaskTracker_p
+    from doot.control.tracker._interface import WorkflowTracker_p
     from jgdv import Maybe, Lambda
     from typing import Final
     from typing import ClassVar, Any, LiteralString
@@ -91,13 +91,13 @@ class _Predicates_m:
 
     ##--| setup
 
-    def spec_missing(self, *, tracker:TaskTracker_p) -> bool:
+    def spec_missing(self, *, tracker:WorkflowTracker_p) -> bool:
         """ cancels the task if the spec is not registered """
         if self.spec is None or self.spec not in tracker.specs:
             return True
         return False
 
-    def should_disable(self, source:State, *, tracker:TaskTracker_p) -> bool:
+    def should_disable(self, source:State, *, tracker:WorkflowTracker_p) -> bool:
         """ cancels the task if the spec is disabled """
         spec_disabled : bool = self.spec.extra.on_fail(False).disabled()  # noqa: FBT003
         match source.value:
@@ -114,7 +114,7 @@ class _Predicates_m:
         """ Cancel if you've waited too long """
         return self.priority < 1
 
-    def should_wait(self, *, tracker:TaskTracker_p) -> bool:
+    def should_wait(self, *, tracker:WorkflowTracker_p) -> bool:
         """ if any dependencies have not run, delay this task  """
         should_wait : bool = False
         deps = tracker._dependency_states_of(self.spec.name)
@@ -141,7 +141,7 @@ class _Predicates_m:
             case _:
                 return False
 
-    def should_halt(self, *, tracker:TaskTracker_p) -> bool:
+    def should_halt(self, *, tracker:WorkflowTracker_p) -> bool:
         # check for failed and halted tasks
         deps = tracker._dependency_states_of(self.spec.name)
         for _, dep_state in deps:
@@ -156,7 +156,7 @@ class _Predicates_m:
     def should_fail(self) -> bool:
         return False
 
-    def state_is_needed(self, *, tracker:TaskTracker_p) -> bool:
+    def state_is_needed(self, *, tracker:WorkflowTracker_p) -> bool:
         """ delays exit from teardown _internal_state until it is safe to do so """
         injs : set
         match tracker.specs[self.name]:
@@ -177,7 +177,7 @@ class _Callbacks_m:
 
     ##--| Standard Callbacks
 
-    def on_enter_INIT(self, *, tracker:TaskTracker_p, parent:Maybe[TaskName_p]=None) -> None:  # noqa: N802
+    def on_enter_INIT(self, *, tracker:WorkflowTracker_p, parent:Maybe[TaskName_p]=None) -> None:  # noqa: N802
         """
         initialise _internal_state,
         possibly run injections?
@@ -185,25 +185,48 @@ class _Callbacks_m:
         _task : Task_p
         assert(hasattr(self, "param_specs"))
         ##--|
-        self._internal_state |= dict(self.spec.extra)
-        self._internal_state |= {
-            STATE_TASK_NAME_K  : self.spec.name,
-            ACTION_STEP_K      : 0,
-        }
-        self._apply_parent_state(tracker, parent)
-        self._apply_cli_args(tracker)
-        self._apply_injections(tracker)
+        internal_state = dict()
+        ##--| Get parent data (for cleanup tasks
+        match self._get_parent_data(tracker, parent):
+            case None:
+                pass
+            case dict() as pdata:
+                internal_state.update(pdata)
+        ##--| apply CLI params
+        match self._get_cli_data(tracker):
+            case None:
+                pass
+            case dict() as cdata:
+                # Apply CLI passed params, but only as the default
+                # So if override values have been injected, they are preferred
+                for x,y in cdata.items():
+                    internal_state.setdefault(x, y)
+
+        internal_state |= self._get_spec_data()
+
+        ##--| apply late injections
+        match self._get_inject_data(tracker):
+            case None:
+                pass
+            case dict() as idata:
+                internal_state.update(idata)
+
         ##--| validate
         match self.spec.extra.get(MUST_INJECT_K, None):
             case None:
                 pass
-            case [*xs] if bool(missing:=[x for x in xs if x not in self._internal_state]):
+            case [*xs] if bool(missing:=[x for x in xs if x not in internal_state]):
                 raise doot.errors.TrackingError("Task did not receive required injections", self.spec.name, xs, self._internal_state.keys())
+
+        if CLI_K in self._internal_state:
+            del self._internal_state[CLI_K]
+        ##--| Apply the state
+        self._internal_state |= internal_state
 
         ##--| build late actions
         self.prepare_actions() # type: ignore[attr-defined]
 
-    def on_enter_RUNNING(self, *, step:int, tracker:TaskTracker_p) -> None:  # noqa: N802
+    def on_enter_RUNNING(self, *, step:int, tracker:WorkflowTracker_p) -> None:  # noqa: N802
         count : int
         logmod.debug("-- Executing Task %s: %s", step, self.spec.name[:])
         match self._execute_action_group(group=API.SETUP_GROUP): # type: ignore[attr-defined]
@@ -222,11 +245,11 @@ class _Callbacks_m:
             case x:
                 raise TypeError(type(x))
 
-    def on_exit_RUNNING(self, *, step:int, tracker:TaskTracker_p) -> None:  # noqa: N802
+    def on_exit_RUNNING(self, *, step:int, tracker:WorkflowTracker_p) -> None:  # noqa: N802
         # TODO Report on the task's actions
         pass
 
-    def on_exit_TEARDOWN(self, *, source:Any, tracker:TaskTracker_p) -> None:  # noqa: N802
+    def on_exit_TEARDOWN(self, *, source:Any, tracker:WorkflowTracker_p) -> None:  # noqa: N802
         # source : the _internal_state the teardown was triggered from
         logmod.debug("-- Tearing Down Task : %s", self.spec.name[:])
         match self._execute_action_group(group=API.CLEANUP_GROUP): # type: ignore[attr-defined]
@@ -240,10 +263,10 @@ class _Callbacks_m:
 
     ##--| Branched callbacks
 
-    def on_enter_SUCCESS(self, *, tracker:TaskTracker_p) -> None:  # noqa: N802
+    def on_enter_SUCCESS(self, *, tracker:WorkflowTracker_p) -> None:  # noqa: N802
         pass
 
-    def on_enter_FAILED(self, *, tracker:TaskTracker_p) -> None:  # noqa: N802
+    def on_enter_FAILED(self, *, tracker:WorkflowTracker_p) -> None:  # noqa: N802
         # Propagate failure to upstream tasks (as HALTs?)
         ##--|
         # Perform fail actions
@@ -253,7 +276,7 @@ class _Callbacks_m:
             case x:
                 raise TypeError(type(x))
 
-    def on_enter_HALTED(self, *, tracker:TaskTracker_p) -> None:  # noqa: N802
+    def on_enter_HALTED(self, *, tracker:WorkflowTracker_p) -> None:  # noqa: N802
         # Propagate halt to other upstream tasks
         for _, _ in tracker._successor_states_of(self.name):
             pass
@@ -263,46 +286,41 @@ class _Callbacks_m:
     def on_enter_SKIPPED(self) -> None:  # noqa: N802
         pass
 
-
     ##--| internal
-    def _apply_parent_state(self, tracker:TaskTracker_p, parent:Maybe[TaskName_p]) -> None:
-        ##--| apply parent data
+
+    def _get_parent_data(self, tracker:WorkflowTracker_p, parent:Maybe[TaskName_p]) -> Maybe[dict]:
+        _task : Task_p
         match tracker.specs.get(parent, None):
             case TrAPI.SpecMeta_d(task=Task_p() as _task):
                 logging.info("Applying Parent State")
-                self._internal_state.update(_task._internal_state)
+                return _task.internal_state
             case _:
-                pass
+                return None
 
-    def _apply_cli_args(self, tracker:TaskTracker_p) -> None:
-        match self.param_specs():
-            case []:
-                pass
-            case [*xs]:
-                logging.info("Applying CLI Args")
-                # Apply CLI passed params, but only as the default
-                # So if override values have been injected, they are preferred
-                target     = self.spec.name.pop(top=True)[:,:]
-                task_args  = doot.args.on_fail({}).sub[target]()
-                for cli in xs:
-                    self._internal_state.setdefault(cli.name, task_args.get(cli.name, cli.default))
+    def _get_cli_data(self, tracker:WorkflowTracker_p) -> Maybe[dict]:
+        idx : int  = 0
+        target     = self.spec.name.pop()[:,:]
+        cli_args   = doot.args.on_fail({}).subs[target]()
+        return cli_args
 
-                if API.CLI_K in self._internal_state:
-                    del self._internal_state[API.CLI_K]
+    def _get_spec_data(self) -> dict:
+        data = dict(self.spec.extra)
+        data |= {
+            STATE_TASK_NAME_K  : self.spec.name,
+            ACTION_STEP_K      : 0,
+        }
+        return data
 
-    def _apply_injections(self, tracker:TaskTracker_p) -> None:
+    def _get_inject_data(self, tracker:WorkflowTracker_p) -> Maybe[dict]:
         match tracker.specs[self.spec.name]:
             case TaskName_p() as control, InjectSpec() as inj:
                 logging.info("Applying Late Injections")
                 control_task = tracker.specs[control].task
-                self._internal_state |= inj.apply_from_state(control_task)
-                if not inj.validate(control_task, self):
-                    raise doot.errors.TrackingError("Late Injection Failed")
-
                 # remove the injection from the registry
                 tracker.specs[control].injection_targets.remove(self.spec.name)
+                return inj.apply_from_state(control_task)
             case _:
-                pass
+                return None
 
 ##--|
 
@@ -335,7 +353,6 @@ class FSMTask:
     @property
     def name(self) -> TaskName:
         return self.spec.name
-
 
     @property
     def internal_state(self) -> dict:
@@ -378,7 +395,7 @@ class FSMTask:
         group_result    : ActRE = ActRE.SUCCESS
         executed_count  : int = 0
         ##--|
-        match self._get_action_group(group):
+        match self.get_action_group(group):
             case []:
                 return executed_count, group_result
             case list() as actions:
@@ -454,7 +471,7 @@ class FSMTask:
 
         return result
 
-    def _get_action_group(self, group_name:str) -> list[ActionSpec]:
+    def get_action_group(self, group_name:str) -> list[ActionSpec]:
         if hasattr(self, group_name):
             return getattr(self, group_name) # type: ignore[no-any-return]
         if hasattr(self.spec, group_name):
@@ -476,7 +493,7 @@ class FSMJob(FSMTask):
     Extends an FSMTask for running a job
     """
 
-    def on_enter_RUNNING(self, step:int, tracker:TaskTracker_p) -> None:  # noqa: N802
+    def on_enter_RUNNING(self, step:int, tracker:WorkflowTracker_p) -> None:  # noqa: N802
         """ Modifies how the object runs,
 
         requires the main action group return a list of tasks/specs
@@ -510,7 +527,7 @@ class FSMJob(FSMTask):
         to_queue        : list[TaskSpec]  = []
         executed_count  : int             = 0
         ##--|
-        match self._get_action_group(group):
+        match self.get_action_group(group):
             case []:
                 return executed_count, to_queue
             case list() as actions:

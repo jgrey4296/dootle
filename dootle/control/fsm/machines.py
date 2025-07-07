@@ -45,7 +45,7 @@ from typing import Protocol, runtime_checkable
 from typing import no_type_check, final, override, overload
 
 if TYPE_CHECKING:
-    from doot.control.tracker._interface import TaskTracker_p
+    from doot.control.tracker._interface import WorkflowTracker_p
     from jgdv import Maybe
     from typing import Final
     from typing import ClassVar, Any, LiteralString
@@ -152,18 +152,18 @@ class TaskMachine(StateMachine):
         else:
             return self.current_state_value
 
-    def run_until_init(self, tracker:TaskTracker_p, **kwargs) -> None:
+    def run_until_init(self, tracker:WorkflowTracker_p, **kwargs) -> None:
         targets = [TaskStatus_e.INIT]
         self(until=targets, tracker=tracker, **kwargs)
 
-    def run_until_ready(self, tracker:TaskTracker_p, **kwargs) -> None:
+    def run_until_ready(self, tracker:WorkflowTracker_p, **kwargs) -> None:
         targets = [TaskStatus_e.READY,
                    TaskStatus_e.WAIT,
                    TaskStatus_e.TEARDOWN,
                    ]
         self(until=targets, tracker=tracker, **kwargs)
 
-    def run_until_dead(self, tracker:TaskTracker_p, **kwargs) -> None:
+    def run_until_dead(self, tracker:WorkflowTracker_p, **kwargs) -> None:
         self(tracker=tracker, **kwargs)
 
     def before_transition(self, source:Any, event:Any, target:Any) -> None:

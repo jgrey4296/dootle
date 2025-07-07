@@ -2,7 +2,6 @@
 """
 An workflow runner for doot that uses the FSM backed tasks/tracker
 """
-# ruff: noqa: N812
 # mypy: disable-error-code="attr-defined"
 # Imports:
 from __future__ import annotations
@@ -63,8 +62,8 @@ if TYPE_CHECKING:
 
 ##--|
 from doot.workflow._interface import (Action_p, Job_p, Task_p)
-from doot.control.runner._interface import TaskRunner_p
-from doot.control.tracker._interface import TaskTracker_p
+from doot.control.runner._interface import WorkflowRunner_p
+from doot.control.tracker._interface import WorkflowTracker_p
 
 from typing import ContextManager
 # isort: on
@@ -83,7 +82,7 @@ RUN_STATES  : Final[list[TaskStatus_e]]  = [
 ]
 ##--|
 
-@Proto(TaskRunner_p, check=False)
+@Proto(WorkflowRunner_p, check=False)
 class FSMRunner(DootRunner):
     """ Doot Runner which accepts FSM wrapped Tasks/Jobs/Artifacts """
 
@@ -100,7 +99,7 @@ class FSMRunner(DootRunner):
                 case Task_p() as task:
                     fsm = self.tracker.machines[task.name]
                     assert(fsm.current_state_value in RUN_STATES), fsm.current_state_value
-                    fsm(step=self.step, tracker=self.tracker)
+                    fsm(step=self.large_step, tracker=self.tracker)
                     if fsm.current_state_value != TaskStatus_e.DEAD:
                         # Re-queue the task till its dead
                         self.tracker.queue(fsm.model.name)
@@ -120,7 +119,7 @@ class FSMRunner(DootRunner):
         else:
             self.handle_task_success(task)
             self.sleep_after(task)
-            self.step += 1
+            self.large_step += 1
 
     def handle_task_success[T:Maybe[Task_p|TaskArtifact]](self, task:T) -> None:
         # progress the teardown

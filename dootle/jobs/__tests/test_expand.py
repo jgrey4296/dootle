@@ -34,7 +34,7 @@ from jgdv.structs.strang import CodeReference
 
 # ##-- end 3rd party imports
 
-from dootle.jobs.expansion import JobExpandAction, MatchExpansionAction, JobQueueAction
+from dootle.jobs.expand import JobExpandAction, MatchExpansionAction, JobQueueAction
 from doot.workflow._interface import TaskName_p
 
 logging = logmod.root
@@ -146,7 +146,7 @@ class TestMatchExpansionAction:
 
     @pytest.fixture(scope="function")
     def spec(self):
-        return ActionSpec.build({"do": "dootle.jobs.expansion:MatchExpansionAction"})
+        return ActionSpec.build({"do": "dootle.jobs.expand:MatchExpansionAction"})
 
     @pytest.fixture(scope="function")
     def task_map(self):
@@ -207,7 +207,36 @@ class TestMatchExpansionAction:
             "from"        : [pl.Path(x) for x in ["blah.bib", "blah.txt", "other"]],
         }
 
-        state['prepfn']  = "fn::dootle.jobs.__tests.test_expansion:static_mapping"
+        state['prepfn']  = static_mapping
+        obj              = MatchExpansionAction()
+        result           = obj(spec, state)
+        assert(result is not None)
+        assert("specs" in result)
+        # Now they are all targeted to example::other.task
+        for x in result['specs']:
+            match x:
+                case DelayedSpec() as spec:
+                    assert(spec.base == expectation)
+                case x:
+                    assert(False), x
+
+
+    def test_custom_prepfn_coderef(self, spec, mocker, task_map):
+        """
+        a custom prepfn that always maps to "example::other.task"
+        """
+        expectation  = static_mapping("")
+        tasks        = [factory.build({"name":x}) for x in ["example::bib.task", "example::txt.task", "example::other.task"]]
+        mocker.patch("doot.loaded_tasks", {x.name:x for x in tasks})
+        state = {
+            "mapping"     : task_map,
+            "_task_name"  : TaskName("agroup::basic").to_uniq(),
+            "inject"      : {"literal":["val"]},
+            "update_"     : "specs",
+            "from"        : [pl.Path(x) for x in ["blah.bib", "blah.txt", "other"]],
+        }
+
+        state['prepfn']  = "fn::dootle.jobs.__tests.test_expand:static_mapping"
         obj              = MatchExpansionAction()
         result           = obj(spec, state)
         assert(result is not None)

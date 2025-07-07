@@ -51,7 +51,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Callable, Generator
     from collections.abc import Sequence, Mapping, MutableMapping, Hashable
 
-    from doot.control.tracker._interface import TaskTracker_p
+    from doot.control.tracker._interface import WorkflowTracker_p
     from statemachine import State
 
 ##--|
@@ -81,11 +81,11 @@ ALIASES_UPDATE  : Final[dict]        = {
 class TaskModel_Conditions_p(Protocol):
     """ The conditions a TaskTrackFSM calls """
 
-    def spec_missing(self, *, tracker:TaskTracker_p) -> bool: ...
+    def spec_missing(self, *, tracker:WorkflowTracker_p) -> bool: ...
 
-    def should_disable(self, source:State, *, tracker:TaskTracker_p) -> bool: ...
+    def should_disable(self, source:State, *, tracker:WorkflowTracker_p) -> bool: ...
 
-    def should_wait(self, *, tracker:TaskTracker_p) -> bool: ...
+    def should_wait(self, *, tracker:WorkflowTracker_p) -> bool: ...
 
     def should_timeout(self) -> bool: ...
 
@@ -95,7 +95,7 @@ class TaskModel_Conditions_p(Protocol):
 
     def should_fail(self) -> bool: ...
 
-    def state_is_needed(self, *, tracker:TaskTracker_p) -> bool: ...
+    def state_is_needed(self, *, tracker:WorkflowTracker_p) -> bool: ...
 
 @runtime_checkable
 class TaskModel_Callbacks_p(Protocol):
@@ -103,13 +103,13 @@ class TaskModel_Callbacks_p(Protocol):
     Describes the callbacks for the FSM of a task
     """
 
-    def on_enter_INIT(self, *, tracker:TaskTracker_p) -> None: ...  # noqa: N802
+    def on_enter_INIT(self, *, tracker:WorkflowTracker_p) -> None: ...  # noqa: N802
 
-    def on_enter_RUNNING(self, *, step:int, tracker:TaskTracker_p) -> None: ...  # noqa: N802
+    def on_enter_RUNNING(self, *, step:int, tracker:WorkflowTracker_p) -> None: ...  # noqa: N802
 
-    def on_enter_HALTED(self, *, tracker:TaskTracker_p) -> None: ...  # noqa: N802
+    def on_enter_HALTED(self, *, tracker:WorkflowTracker_p) -> None: ...  # noqa: N802
 
-    def on_enter_FAILED(self, *, tracker:TaskTracker_p) -> None: ...  # noqa: N802
+    def on_enter_FAILED(self, *, tracker:WorkflowTracker_p) -> None: ...  # noqa: N802
 
     def on_exit_TEARDOWN(self) -> None: ...  # noqa: N802
 

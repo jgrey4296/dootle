@@ -5,28 +5,30 @@ TEST File updated
 """
 # ruff: noqa: ANN201, ARG001, ANN001, ARG002, ANN202, B011, ERA001
 
-# Imports
+# Imports:
 from __future__ import annotations
 
 # ##-- stdlib imports
 import logging as logmod
 import pathlib as pl
 import warnings
+
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
 import pytest
-# ##-- end 3rd party imports
-
-
-##--|
-from ..fsm_tracker import FSMTracker
-from ..runner import FSMRunner
-from ..task import FSMTask
-from ..machines import TaskMachine
 from doot.util.factory import TaskFactory
 from doot.workflow import TaskSpec
 from doot.workflow._interface import TaskStatus_e
+
+# ##-- end 3rd party imports
+
+##--|
+from ..fsm_tracker import FSMTracker
+from ..machines import TaskMachine
+from ..runner import FSMRunner
+from ..task import FSMTask
+
 ##--|
 
 # ##-- types

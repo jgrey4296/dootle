@@ -64,9 +64,9 @@ rng_draw            = "dootle.actions.random:rng_draw"
 "job.walk"                  = "dootle.jobs.walker:JobWalkAction"
 "job.inject.shadow"         = "dootle.jobs.shadow:InjectShadowAction"
 "job.limit"                 = "dootle.jobs.limit:JobLimitAction"
-"job.expand"                = "dootle.jobs.expansion:JobExpandAction"
-"job.queue"                 = "dootle.jobs.expansion:JobQueueAction"
-"job.match"                 = "dootle.jobs.expansion:JobMatchAction"
+"job.expand"                = "dootle.jobs.expand:JobExpandAction"
+"job.queue"                 = "dootle.jobs.expand:JobQueueAction"
+"job.match"                 = "dootle.jobs.expand:JobMatchAction"
 "job.inject.path.elements"  = "dootle.jobs.injection:JobInjectPathParts"
 
 ##-- end entry-points
