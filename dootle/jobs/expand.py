@@ -220,6 +220,7 @@ class MatchExpansionAction(JobExpandAction):
                                             state=state,
                                             ##
                                             overrides={"required_for" : [base_head]})
+            result.append(delayed)
         else:
             return { _update : result , "__expansion_count":  _count }
 
