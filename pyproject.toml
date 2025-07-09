@@ -100,7 +100,6 @@ dootle = ["**.rst"]
 # from https://github.com/pypa/setuptools/discussions/3348#discussioncomment-6556887
 egg_base = ".temp/egg-info"
 
-
 ##-- end build-system
 
 # Tools #######################################################################
@@ -144,7 +143,6 @@ tag                = false
 "dootle/__init__.py" = ['^__version__\s+=\s+"{version}"']
 "dootle/__docs/conf.py" = ['^release\s+=\s+"{version}"']
 
-
 ##-- end bumpver
 
 ##-- isort
@@ -180,20 +178,29 @@ add_imports            = []
 
 ##-- mypy
 # https://mypy.readthedocs.io/en/stable/config_file.html
-[tool.mypy]
+  [tool.mypy]
 strict                  = false
 python_version          = "3.12"
-follow_imports          = "skip"
-cache_dir               = ".temp/mypy_cache"
+python_executable       = ".venv/bin/python"
+cache_dir               = "~/_cache_/mypy"
+incremental             = true
+follow_imports          = "silent"
+follow_untyped_imports  = true
+ignore_missing_imports  = false
 enable_error_code       = [
-                        "explicit-override", "ignore-without-code",
-                        "possibly-undefined", "unreachable", "type-arg"
-                        ]
-disable_error_code      = []
-warn_return_any         = true
-warn_unused_configs     = true
-ignore_missing_imports  = true
-exclude                 = [] 
+    "explicit-override", "ignore-without-code",
+    "possibly-undefined", "unreachable",
+    "type-arg",
+    ]
+disable_error_code   = []
+
+warn_return_any      = true
+warn_unused_configs  = true
+
+# Per-module options:
+# [[tool.mypy.overrides]]
+# module             = "blah"
+# disallow_untyped_defs = true
 
 ##-- end mypy
 

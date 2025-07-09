@@ -2,7 +2,7 @@
 """
 
 """
-# ruff: noqa: E402, B011, ANN202, ERA001, ANN001, ANN002, ARG001, ARG003, ANN003
+# ruff: noqa: B011, ANN202, ANN001, ANN002, ARG001, ANN003
 # Imports:
 from __future__ import annotations
 
@@ -208,10 +208,11 @@ class TestStateTracker_NextFor:
                 assert(tracker.get_status(target=t_name)[0] is TaskStatus_e.WAIT)
 
     def test_dependency_success_produces_ready_state(self, tracker, specdep):
-        spec, dep = specdep
+        spec, dep          = specdep
+        expected_priority  = 10
         tracker.register(spec, dep)
         t_name = tracker.queue(spec.name, from_user=True)
-        assert(tracker.get_status(target=t_name)[1] == 10)
+        assert(tracker.get_status(target=t_name)[1] == expected_priority)
         tracker.build()
         # Get the dep and run it
         dep_inst = tracker.next_for()
@@ -401,7 +402,7 @@ class TestStateTracker_Pathways:
         tracker.machines[instance](step=2, tracker=tracker)
         assert(tracker.get_status(target=instance)[0] is TaskStatus_e.TEARDOWN)
         # Does not progress past teardown
-        for x in range(5):
+        for _ in range(5):
             tracker.machines[instance](tracker=tracker)
             assert(tracker.get_status(target=instance)[0] is TaskStatus_e.TEARDOWN)
         else:

@@ -70,8 +70,9 @@ if TYPE_CHECKING:
    from collections.abc import Sequence, Mapping, MutableMapping, Hashable
 
    import networkx as nx
-   type Abstract[T] = T
-   type Concrete[T] = T
+   type Abstract[T]  = T
+   type Concrete[T]  = T
+   type Priority     = int
 
 ##--|
 # isort: on
@@ -91,7 +92,7 @@ class FSMTracker(Tracker_abs):
     TODO modify default ctor's of specs to be FSMTask on register
 
     """
-    machines : dict[TaskName, TaskMachine]
+    machines : dict[TaskName|TaskName_p, TaskMachine]
 
     def __init__(self, **kwargs:Any) -> None:
         kwargs.setdefault("factory", FSMFactory)
@@ -110,11 +111,12 @@ class FSMTracker(Tracker_abs):
             or if theres nothing left in the queue
 
         """
-        focus   : TaskName|TaskArtifact
+        focus   : TaskName_p|Artifact_i
         count   : int
         idx     : int
         result  : Maybe[TaskMachine|Task_p|TaskArtifact]
         logging.info("[Next.For] (Active: %s)", len(self._queue.active_set))
+        assert(hasattr(self._registry, "specs"))
         if not self.is_valid:
             raise doot.errors.TrackingError("Network is in an invalid state")
 
@@ -133,13 +135,13 @@ class FSMTracker(Tracker_abs):
                     match fsm.current_state_value:
                         case TaskStatus_e.READY | TaskStatus_e.TEARDOWN | TaskStatus_e.RUNNING:
                             # Ready to be executed, pass to the runner
-                            result = fsm.model
+                            result = cast("TaskMachine", fsm.model)
                         case TaskStatus_e.DEAD:
                             # is dead, nothing to do
                             pass
                         case TaskStatus_e.WAIT | TaskStatus_e.INIT:
                             # not ready to execute yet
-                            fsm.run_until_ready(self)
+                            fsm.run_until_ready(self) # type: ignore[arg-type]
                             self.queue(x)
                         case x:
                             raise TypeError(type(x), x)
@@ -153,9 +155,10 @@ class FSMTracker(Tracker_abs):
             return result
 
     @override
-    def queue(self, name:str|TaskName_p|TaskSpec_i|Artifact_i, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, **kwargs:Any) -> Maybe[Concrete[TaskName_p|Artifact_i]]:
+    def queue(self, name:str|TaskName_p|TaskSpec_i|Artifact_i, *, from_user:bool=False, status:Maybe[TaskStatus_e]=None, **kwargs:Any) -> Maybe[Concrete[TaskName_p|Artifact_i]]: # type: ignore[override]
+        queued : TaskName_p
         match super().queue(name, from_user=from_user, status=status):
-            case TaskName() as queued if queued not in self.machines:
+            case TaskName_p() as queued if queued not in self.machines:
                 logging.debug("[Next.For] Queue run")
                 # instantiate FSM task
                 self._instantiate(queued, task=True)
@@ -168,6 +171,7 @@ class FSMTracker(Tracker_abs):
         """ when a task is created, create a state machine for it as well """
         parent : TaskName_p
         result : Maybe[TaskName_p]
+        assert(hasattr(self._registry, "specs"))
         ##--|
         parent  = kwargs.pop("parent", None)
         match super()._instantiate(target, *args, task=task, **kwargs):
@@ -175,7 +179,8 @@ class FSMTracker(Tracker_abs):
                 task_inst              = self._registry.specs[result].task
                 fsm                    = TaskMachine(task_inst)
                 self.machines[result]  = fsm
-                fsm.run_until_init(self)
+                fsm.run_until_init(self) # type: ignore[arg-type]
+                return result
             case TaskName_p() as result:
                 return result
             case None:
@@ -185,14 +190,14 @@ class FSMTracker(Tracker_abs):
 
     ##--| utils
 
-    def get_status(self, *, target:Maybe[TaskName_p]=None) -> tuple[TaskStatus_e, int]:
-        match self.machines.get(target, None):
+    def get_status(self, *, target:Maybe[TaskName_p]=None) -> tuple[TaskStatus_e, Priority]:
+        match self.machines.get(target, None): # type: ignore[arg-type]
             case None if target == self._root_node:
                 return TaskStatus_e.NAMED, self._declare_priority
             case None if target in self.specs:
                 return TaskStatus_e.DECLARED, self._declare_priority
             case TaskMachine() as x:
-                return x.current_state_value, x.model.priority
+                return x.current_state_value, cast("TaskMachine", x.model).priority
             case x:
                 raise TypeError(type(x))
 
