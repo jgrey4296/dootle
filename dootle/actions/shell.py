@@ -61,7 +61,7 @@ class ShellBake:
         keys     = [DKey(x) for x in args]
         expanded = [x.expand(spec, state) for x in keys]
         try:
-            cmd                     = getattr(env, expanded[0])
+            cmd = getattr(env, expanded[0])
             match _in.expand(spec, state, fallback=None, check=sh.Command|bool|None):
                 case False | None | DKey():
                     baked = cmd.bake(*expanded[1:], _return_cmd=True, _tty_out=False)

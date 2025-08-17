@@ -24,7 +24,7 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv.structs.dkey import DKey, DKeyed
-from jgdv.enums import LoopControl_e
+from jgdv.mixins.path_manip import LoopControl_e
 from jgdv.structs.strang import CodeReference
 import doot
 import doot.errors
