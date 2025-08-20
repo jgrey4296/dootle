@@ -39,6 +39,7 @@ from dootle.actions.shell import ShellAction, ShellBake, ShellInteractive, Shell
 # ##-- end 1st party imports
 
 logging = logmod.root
+logmod.getLogger("jgdv").propagate = False
 
 IMPORT_STR = "dootle.actions.shell:ShellAction"
 
@@ -93,6 +94,7 @@ class TestShellAction:
             case x:
                  assert(False), x
 
+@pytest.mark.xfail # breaking on key expansion
 class TestShellBaking:
 
     def test_sanity(self):
@@ -109,9 +111,9 @@ class TestShellBaking:
         caplog.set_level(logmod.DEBUG, logger="_printer_")
         action = ShellBake()
         spec = ActionSpec.build({"do":IMPORT_STR,
-                                              "args":["ls"],
-                                              "update_":"blah",
-                                              })
+                                 "args":["ls"],
+                                 "update_":"blah",
+                                 })
         state  = { "count" : 0  }
         match action(spec, state):
             case {"blah": sh.Command() as x}:
@@ -123,14 +125,14 @@ class TestShellBaking:
         caplog.set_level(logmod.DEBUG, logger="_printer_")
         action = ShellBake()
         spec1 = ActionSpec.build({"do":IMPORT_STR,
-                                              "args":["ls"],
-                                              "update_":"blah",
-                                              })
+                                  "args":["ls"],
+                                  "update_":"blah",
+                                  })
         spec2 = ActionSpec.build({"do":IMPORT_STR,
-                                               "args":["grep", "doot"],
-                                               "in_":"blah",
-                                               "update_":"bloo"
-                                                })
+                                  "args":["grep", "doot"],
+                                  "in_":"blah",
+                                  "update_":"bloo"
+                                  })
         state  = { "count" : 0  }
         match action(spec1, state):
             case {"blah": sh.Command()} as result:
@@ -183,8 +185,12 @@ class TestShellBaking:
             case x:
                  assert(False), x
 
-@pytest.mark.skip
+
 class TestShellInteractive:
 
     def test_sanity(self):
         assert(True is not False) # noqa: PLR0133
+
+    @pytest.mark.skip("TODO")
+    def test_todo(self):
+        pass

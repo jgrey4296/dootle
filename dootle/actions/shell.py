@@ -62,13 +62,16 @@ class ShellBake:
         expanded = [x.expand(spec, state) for x in keys]
         try:
             cmd = getattr(env, expanded[0])
-            match _in.expand(spec, state, fallback=None, check=sh.Command|bool|None):
-                case False | None | DKey():
-                    baked = cmd.bake(*expanded[1:], _return_cmd=True, _tty_out=False)
-                case sh.Command() as x:
-                    baked = cmd.bake(*expanded[1:], _in=x(), _return_cmd=True, _tty_out=False)
-                case x:
-                    raise TaskError("Bad pre-command for shell baking", _in, x)
+            if _in is None:
+                baked = cmd.bake(*expanded[1:], _return_cmd=True, _tty_out=False)
+            else:
+                match _in.expand(spec, state, fallback=None, check=sh.Command|bool|None):
+                    case False | None | DKey():
+                        baked = cmd.bake(*expanded[1:], _return_cmd=True, _tty_out=False)
+                    case sh.Command() as x:
+                        baked = cmd.bake(*expanded[1:], _in=x(), _return_cmd=True, _tty_out=False)
+                    case x:
+                        raise TaskError("Bad pre-command for shell baking", _in, x)
         except sh.CommandNotFound as err:
             doot.report.gen.error("Shell Commmand '%s' Not Action: %s", err.args[0], args)
             return False

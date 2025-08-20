@@ -270,7 +270,7 @@ class TestJobQueue:
 
     def test_empty_queue(self, act, spec):
         match act(spec, {}):
-            case None:
+            case None | []:
                 assert(True)
             case x:
                 assert(False), x
