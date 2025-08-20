@@ -44,7 +44,7 @@ from jgdv.structs.locator import Location
 from jgdv.structs.strang import CodeReference
 import doot
 import doot.errors
-from doot.util.factory import DelayedSpec, TaskFactory
+from doot.workflow.factory import DelayedSpec, TaskFactory
 from doot.workflow import InjectSpec, TaskName, TaskSpec
 from doot.workflow._interface import Action_p, InjectSpec_i, TaskName_p, TaskSpec_i
 from doot.workflow._interface import ActionResponse_e as ActRE
@@ -66,9 +66,10 @@ if TYPE_CHECKING:
 logging = logmod.getLogger(__name__)
 ##-- end logging
 
-FALLBACK_KEY      : Final[str] = "_"
-FALLBACK_MISSING  : Final[str] = f"Data->Source Mapping lacks a fallback value '{FALLBACK_KEY}'"
-MAPPING_TYPE_FAIL : Final[str] = "Mapping is not a dict"
+ZERO               : Final[int] = 0
+FALLBACK_KEY       : Final[str] = "_"
+FALLBACK_MISSING   : Final[str] = f"Data->Source Mapping lacks a fallback value '{FALLBACK_KEY}'"
+MAPPING_TYPE_FAIL  : Final[str] = "Mapping is not a dict"
 factory = TaskFactory()
 
 @Proto(Action_p)
@@ -90,7 +91,7 @@ class JobExpandAction(DootBaseAction):
     @DKeyed.types("template", check=str)
     @DKeyed.types("from", check=int|list|str|pl.Path)
     @DKeyed.types("inject", check=dict|ChainGuard)
-    @DKeyed.types("__expansion_count", fallback=0)
+    @DKeyed.types("__expansion_count", fallback=ZERO)
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, _basename, prefix, template, _from, inject, _count, _update) -> Maybe[dict]:  # noqa: ARG002
         result       : list[DelayedSpec]
@@ -98,12 +99,11 @@ class JobExpandAction(DootBaseAction):
         base_head    : TaskName_p
         build_queue  : list
         ##--|
+        base_head     = _basename.with_head()
+        base_subtask  = TaskName(_basename).push("subtasks")
         build_queue   = self._prep_data(_from)
         inject_spec   = InjectSpec.build(inject)
-        base_head     = _basename.with_head()
-        base_subtask  = _basename.push("subtasks")
         result        = []
-
         ##--| early exit
         if not bool(build_queue):
             return None
@@ -116,7 +116,7 @@ class JobExpandAction(DootBaseAction):
                                         template=template,
                                         inject=inject_spec,
                                         state=state,
-                                        overrides={"required_for"  : [base_head]},
+                                        overrides={"required_for":[base_head]},
                                         )
             result.append(delayed)
         else:
@@ -180,7 +180,7 @@ class MatchExpansionAction(JobExpandAction):
     @DKeyed.types("mapping")
     @DKeyed.types("from", check=int|list|str|pl.Path)
     @DKeyed.types("inject", check=dict|ChainGuard)
-    @DKeyed.types("__expansion_count", fallback=0)
+    @DKeyed.types("__expansion_count", fallback=ZERO)
     @DKeyed.redirects("update_")
     def __call__(self, spec, state, _basename, prepfn, mapping, _from, inject, _count, _update) -> Maybe[dict]:
         fn      : Callable
@@ -256,18 +256,29 @@ class JobQueueAction:
 
     @DKeyed.args
     @DKeyed.redirects("from_", fallback=None)
+    @DKeyed.types("__expansion_count", fallback=ZERO)
     @DKeyed.taskname
-    def __call__(self, spec, state, _args, _from, _basename) -> Maybe[list]:
+    def __call__(self, spec, state, _args, _from, _count, _basename) -> Maybe[list]:
+        x       : Any
+        xs      : Any
         result  : list[TaskName_p|TaskSpec_i|DelayedSpec]
-        match _from(spec, state), _args:
-            case DKey() | [], []: # Nothing to do
-                return None
-            case DKey(), [*xs]: # simple args provided
-                assert(all(isinstance(x, str) for x in xs))
-                return [TaskName(x) for x in xs]
-            case [*xs], [*ys]:
-                result = [*xs]
-                result += [TaskName(y) for y in ys]
+        ##--|
+        result = []
+        match _args:
+            case []:
+                pass
+            case [*xs]:
+                result += [TaskName(x) for i,x in enumerate(xs)]
+
+        match _from:
+            case None:
+                pass
+            case DKey() as k: # Nothing to do
+                match k(spec, state):
+                    case [*xs]:
+                        result += xs
+                    case x:
+                        result.append(x)
 
         assert(all(isinstance(x, TaskName_p|DelayedSpec|TaskSpec_i) for x in result))
         return result

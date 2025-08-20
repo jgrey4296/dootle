@@ -31,7 +31,7 @@ import pytest
 
 import doot.errors
 from doot.workflow import ActionSpec, TaskName
-from doot.util import DelayedSpec
+from doot.workflow._interface import DelayedSpec
 import dootle.jobs.injection as JI  # noqa: N812
 
 logging = logmod.root

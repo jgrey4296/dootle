@@ -59,8 +59,7 @@ from typing import Protocol, runtime_checkable
 from typing import no_type_check, final, override, overload
 
 if TYPE_CHECKING:
-   from doot.workflow._interface import TaskSpec_i, Artifact_i
-   from doot.util._interface import DelayedSpec
+   from doot.workflow._interface import TaskSpec_i, Artifact_i, DelayedSpec
    from jgdv import Maybe
    from typing import Final
    from typing import ClassVar, Any, LiteralString

@@ -29,7 +29,7 @@ import doot.errors
 import pytest
 from doot.util.dkey import DKey
 from doot.workflow import ActionSpec, TaskName, TaskSpec, InjectSpec
-from doot.util.factory import TaskFactory, DelayedSpec
+from doot.workflow.factory import TaskFactory, DelayedSpec
 from jgdv.structs.strang import CodeReference
 
 # ##-- end 3rd party imports

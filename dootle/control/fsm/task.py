@@ -30,13 +30,13 @@ from weakref import ref
 
 # ##-- 3rd party imports
 import doot
-from doot.util._interface import DelayedSpec
 from doot.workflow import (ActionSpec, DootTask, InjectSpec, RelationSpec,
                            TaskName, TaskSpec)
 from doot.workflow._interface import MUST_INJECT_K, CLI_K
 from doot.workflow._interface import ActionResponse_e as ActRE
 from doot.workflow._interface import (Job_p, Task_i, Task_p, TaskMeta_e,
-                                      TaskStatus_e, TaskName_p, TaskSpec_i)
+                                      TaskStatus_e, TaskName_p, TaskSpec_i,
+                                      DelayedSpec)
 from doot.workflow.task import _TaskActionPrep_m
 from jgdv import Maybe, Mixin, Proto
 

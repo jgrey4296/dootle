@@ -28,7 +28,7 @@ from dootle.control.fsm import machines as tm
 
 # ##-- end 1st party imports
 
-from doot.util.factory import TaskFactory
+from doot.workflow.factory import TaskFactory
 from doot.workflow import TaskSpec
 from ..task import FSMTask
 from .. import _interface as API # noqa: N812

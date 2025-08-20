@@ -17,7 +17,7 @@ import warnings
 
 # ##-- 3rd party imports
 import pytest
-from doot.util.factory import TaskFactory
+from doot.workflow.factory import TaskFactory
 from doot.workflow import TaskSpec
 from doot.workflow._interface import TaskStatus_e
 

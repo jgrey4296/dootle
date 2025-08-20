@@ -38,11 +38,11 @@ import doot
 import doot.errors
 # ##-- end 3rd party imports
 
-from doot.util._interface import TaskFactory_p, SubTaskFactory_p
-from doot.util.factory import TaskFactory, SubTaskFactory
 from doot.workflow import _interface as API
+from doot.workflow._interface import TaskFactory_p, SubTaskFactory_p
 from doot.workflow._interface import TaskSpec_i, Task_p, Job_p, Task_i, TaskMeta_e, RelationMeta_e, TaskName_p
 from doot.workflow import ActionSpec, InjectSpec, TaskArtifact, RelationSpec, TaskName, TaskSpec, DootTask, DootJob
+from doot.workflow.factory import TaskFactory, SubTaskFactory
 from .task import FSMTask, FSMJob
 
 # ##-- types

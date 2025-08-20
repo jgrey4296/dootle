@@ -48,7 +48,7 @@ from doot.mixins.path_manip import PathManip_m
 # isort: off
 if TYPE_CHECKING:
    from jgdv import Maybe
-   from doot.util._interface import DelayedSpec
+   from doot.workflow._interface import DelayedSpec
 
 # isort: on
 # ##-- end types
