@@ -55,12 +55,12 @@ TASK_NAME   : Final[DKey] = DKey[TaskName](STATE_TASK_NAME_K, implicit=True)
 def _validate_key(key:TaskName) -> tuple[str,str]:
     """ Validate and split a key into (box, subbox) """
     match key.args():
-        case [x]:
-            subbox = x
         case ["<uuid>", x]:
             subbox = x
-        case ["<uuid>"]:
+        case ["<uuid>"] if key.uuid() is not None:
             subbox = key.uuid()
+        case [x]:
+            subbox = x
         case _:
             subbox = _DootPostBox.default_subbox
     ##--|
@@ -79,11 +79,13 @@ class _DootPostBox:
       eg: example::task..key
       which corresponds to body[example::task][key]
     """
+    type Subboxes                      = dict[str, list[Any]]
+    type Boxes                         = dict[str, Subboxes]
 
-    boxes : ClassVar[dict[str,dict[str, list[Any]]]]  = defaultdict(lambda: defaultdict(list))
+    boxes           : ClassVar[Boxes]  = defaultdict(lambda: defaultdict(list))
 
-    default_subbox                                    = "-"
-    whole_box_key                                     = "*"
+    default_subbox  : Final[str]       = "-"
+    whole_box_key   : Final[str]       = "*"
 
     @staticmethod
     def put(key:TaskName, val:None|list|set|Any) -> None:
@@ -100,7 +102,9 @@ class _DootPostBox:
     def get(key:TaskName) -> list|dict:
         box, subbox = _validate_key(key)
         match subbox:
-            case "*" | None:
+            case None:
+                return _DootPostBox.boxes[box].copy()
+            case str() as x if x == _DootPostBox.whole_box_key:
                 return _DootPostBox.boxes[box].copy()
             case _:
                 return _DootPostBox.boxes[box][subbox][:]
@@ -151,12 +155,13 @@ class PutPostAction:
         targets  : list[DKey]
         box_key  : DKey
         box      : TaskName
+        task_uuid = _basename.uuid()
 
         for box_str, statekey in kwargs.items():
             box_key = DKey(box_str).expand(spec, state)
             try:
                 # Explicit target
-                box = TaskName(box_key)
+                box = TaskName(box_key, uuid=task_uuid)
             except StrangError:
                 # Implicit
                 box = _basename.push(box_key)
