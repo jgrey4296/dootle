@@ -2,3 +2,4 @@ log.*
 .log
 *.auto
 dist/
+/dootle/_docs/_autoapi/
