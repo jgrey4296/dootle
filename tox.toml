@@ -11,8 +11,6 @@ skip_missing_interpreters  = false
 [env_run_base]
 description          = "base_env"
 runner               = "uv-venv-lock-runner"
-uv_sync_locked       = false
-# uv_sync_flags      = ["--no-editable", "--no-sources"]
 allowlist_externals  = ["echo", "mkdir"]
 set_env.PKGNAME      = {replace="env", name="PKGNAME", default="dootle"}
 pass_env             = ["UV_*"]
@@ -72,6 +70,8 @@ commands  = [
 
 [env.docs]
 description        = "build documentation"
+uv_sync_locked       = false
+uv_sync_flags      = ["--no-editable", "--no-sources"]
 dependency_groups  = ["docs"]
 skip_install       = true
 set_env            = [
