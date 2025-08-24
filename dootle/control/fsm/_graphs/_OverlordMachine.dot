@@ -1,0 +1,31 @@
+digraph list {
+label=OverlordMachine;
+fontname=Arial;
+fontsize=10;
+rankdir=LR;
+i [shape=circle, style=filled, fontsize=1, fixedsize=true, width=0.2, height=0.2, fillcolor=black];
+i -> init [label="", color=blue, fontname=Arial, fontsize=9];
+init [label=Init, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, penwidth=2, fillcolor=turquoise];
+init -> constants [label=progress, color=blue, fontname=Arial, fontsize=9];
+constants [label=Constants, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+constants -> config_file [label=progress, color=blue, fontname=Arial, fontsize=9];
+constants -> failed [label=fail, color=blue, fontname=Arial, fontsize=9];
+config_file [label="Config file", shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+config_file -> logging [label=progress, color=blue, fontname=Arial, fontsize=9];
+config_file -> failed [label=fail, color=blue, fontname=Arial, fontsize=9];
+logging [label=Logging, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+logging -> locations [label=progress, color=blue, fontname=Arial, fontsize=9];
+logging -> failed [label=fail, color=blue, fontname=Arial, fontsize=9];
+locations [label=Locations, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+locations -> shared [label=progress, color=blue, fontname=Arial, fontsize=9];
+locations -> failed [label=fail, color=blue, fontname=Arial, fontsize=9];
+shared [label=Shared, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+shared -> ready [label=progress, color=blue, fontname=Arial, fontsize=9];
+shared -> failed [label=fail, color=blue, fontname=Arial, fontsize=9];
+ready [label=Ready, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+ready -> finished [label=progress, color=blue, fontname=Arial, fontsize=9];
+ready -> failed [label=fail, color=blue, fontname=Arial, fontsize=9];
+failed [label=Failed, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+failed -> finished [label=progress, color=blue, fontname=Arial, fontsize=9];
+finished [label=Finished, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=2, fillcolor=white];
+}

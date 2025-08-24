@@ -29,14 +29,14 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto, Mixin
-from jgdv.structs.dkey import DKey, DKeyed
+from jgdv.structs.strang import CodeReference
 import doot
 import doot.errors
-from doot._abstract import Action_p
-from doot.actions.core.action import DootBaseAction
+from doot.workflow._interface import Action_p
+from doot.workflow import TaskName, TaskSpec
+from doot.workflow.actions import DootBaseAction
 from doot.mixins.path_manip import Walker_m
-from doot.structs import TaskName, TaskSpec
-from jgdv.structs.strang import CodeReference
+from doot.util.dkey import DKey, DKeyed
 
 # ##-- end 3rd party imports
 
@@ -65,7 +65,7 @@ class JobWalkAction(DootBaseAction):
     def __call__(self, spec, state, roots, exts, recursive, fn, _update):
         exts    = {y for x in (exts or []) for y in [x.lower(), x.upper()]}
         rec     = recursive or False
-        roots   = [DKey(x, mark=DKey.Mark.PATH).expand(spec, state) for x in roots]
+        roots   = [DKey[pl.Path](x).expand(spec, state) for x in roots]
         match fn:
             case CodeReference():
                 match fn():
@@ -77,5 +77,5 @@ class JobWalkAction(DootBaseAction):
                 def accept_fn(x):
                     return True
 
-        results = [x for x in self.walk_all(roots, exts, rec=rec, fn=accept_fn)]
+        results = [x for x in self.walk_all(roots, exts=exts, rec=rec, fn=accept_fn)]
         return { _update : results }

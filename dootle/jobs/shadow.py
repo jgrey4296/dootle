@@ -30,14 +30,14 @@ from uuid import UUID, uuid1
 # ##-- end stdlib imports
 
 # ##-- 3rd party imports
-from jgdv import Proto, Mixin
+from jgdv import Proto, Mixin, Maybe
 from jgdv.structs.strang import CodeReference
 from jgdv.structs.dkey import DKey, DKeyed
 import doot
 import doot.errors
-from doot._abstract import Action_p
+from doot.workflow._interface import Action_p
+from doot.workflow import TaskName, TaskSpec
 from doot.mixins.path_manip import PathManip_m
-from doot.structs import TaskName, TaskSpec
 
 # ##-- end 3rd party imports
 
@@ -108,7 +108,7 @@ class InjectMultiShadow:
             case TaskSpec() as spec:
                 _onto = [spec]
 
-        roots = [DKey(x, mark=DKey.Mark.PATH).expand(spec, state) for x in _shadow_roots]
+        roots = [DKey[pl.Path](x).expand(spec, state) for x in _shadow_roots]
         for x in _onto:
             updates : list[pl.Path] = _shadow_paths(x.extra[_key], roots)
             x.model_extra.update(dict(**x.extra, **{"shadow_paths": updates}))
@@ -122,9 +122,10 @@ class CalculateShadowDirs:
     """
 
     @DKeyed.types("shadow_roots")
-    @DKeyed.paths("rpath", relative=True)
+    @DKeyed.paths("rpath")
     def __call__(self, spec, state, _sroots, rpath):
-        _sroots = [DKey(x, mark=DKey.Mark.PATH).expand(spec, state) for x in _sroots]
+        assert(not rpath.is_absolute())
+        _sroots = [DKey[pl.Path](x).expand(spec, state) for x in _sroots]
         result : list[pl.Path] = _shadow_paths(rpath,  _sroots)
         return { "shadow_paths" : result}
 
@@ -146,14 +147,14 @@ class MultiBackupAction:
     @DKeyed.types("shadow_paths", check=list)
     @DKeyed.types("tolerance", check=int, fallback=10_000_000)
     @DKeyed.taskname
-    def __call__(self, spec, state, _from, pattern, shadow_paths, tolerance, _name) -> dict|bool|None:
+    def __call__(self, spec, state, _from, pattern, shadow_paths, tolerance, _name) -> Maybe[dict|bool]:
         source_loc = _from
-        pattern_key = DKey(pattern, mark=DKey.Mark.PATH)
+        pattern_key = DKey[pl.Path](pattern)
 
-        doot.report.trace("Backing up : %s", source_loc)
+        doot.report.gen.trace("Backing up : %s", source_loc)
         for shadow_path in shadow_paths:
             match pattern_key.expand({"shadow_path":shadow_path}, spec, state):
-                case pl.Path() as x if self._is_write_protected(x):
+                case pl.Path() as x if self._is_write_protected(x): # type: ignore[attr-defined]
                     raise doot.errors.LocationError("Tried to write a protected location", x)
                 case pl.Path() as x:
                     dest_loc = x
@@ -174,10 +175,13 @@ class MultiBackupAction:
             difference      = int(max(source_ns, dest_ns) - min(source_ns, dest_ns))
             below_tolerance = difference <= tolerance
 
-            doot.report.detail("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
+            doot.report.gen.detail("Source Newer: %s, below tolerance: %s", source_newer, below_tolerance)
             if (not source_newer) or below_tolerance:
                 continue
 
-            doot.report.trace("Destination: %s", dest_loc)
+            doot.report.gen.trace("Destination: %s", dest_loc)
             _DootPostBox.put(_name, dest_loc)
             shutil.copy2(source_loc,dest_loc)
+
+        else:
+            return None

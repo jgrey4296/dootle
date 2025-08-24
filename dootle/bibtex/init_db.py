@@ -25,14 +25,14 @@ from uuid import UUID, uuid1
 # ##-- 3rd party imports
 from jgdv import Proto
 from jgdv.structs.strang import CodeReference
-from jgdv.structs.dkey import DKey, DKeyed
 import bibtexparser as b
 import bibtexparser.model as model
 from bibtexparser import middlewares as ms
 from bibtexparser.middlewares import BlockMiddleware
 from bibtexparser.middlewares.middleware import BlockMiddleware
 import doot
-from doot._abstract.task import Action_p
+from doot.util.dkey import DKey, DKeyed
+from doot.workflow._interface import Action_p
 
 # ##-- end 3rd party imports
 
@@ -87,5 +87,5 @@ class BibtexInitAction:
                 ctor = (db_base.safe_import() or b.Library)
 
         db = ctor()
-        doot.report.act(info="", msg="Bibtex Database Initialised", level=-10)
+        doot.report.wf.act(info="", msg="Bibtex Database Initialised", level=-10)
         return { _update : db }

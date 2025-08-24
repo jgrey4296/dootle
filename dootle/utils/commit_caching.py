@@ -24,13 +24,13 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv.structs.dkey import DKey, DKeyed
-from jgdv.enums import LoopControl_e
+from jgdv.mixins.path_manip import LoopControl_e
 from jgdv.structs.strang import CodeReference
 import doot
 import doot.errors
 import sh
 from doot.mixins.path_manip import PathManip_m
-from doot.structs import TaskName
+from doot.workflow import TaskName
 
 # ##-- end 3rd party imports
 
@@ -73,7 +73,7 @@ def _build_cache_path(cache:None|pl.Path, taskname:TaskName) -> pl.Path:
     if cache is not None and cache.exists() and cache.is_file():
         return cache
 
-    root_taskname   = taskname.root()
+    root_taskname   = taskname.pop(top=True)
     temp_dir        = temp_key.expand()
     return temp_dir / CACHE_PATTERN.format(root_taskname)
 
@@ -105,14 +105,14 @@ class GetChangedFilesByCommit:
         potentials : list[pl.Path] = []
         match _build_cache_path(cache, _taskname):
             case pl.Path() as x if x.exists() and x.is_file():
-                doot.report.trace("Reading Cache: %s", x)
+                doot.report.gen.trace("Reading Cache: %s", x)
                 cached_commit  = x.read_text().strip()
-                doot.report.trace("Diffing From %s to HEAD", cached_commit)
+                doot.report.gen.trace("Diffing From %s to HEAD", cached_commit)
                 text_result    = git_diff(cached_commit, "HEAD")
                 potentials     = [pl.Path(x) for x in text_result.split("\n")]
             case x:
-                doot.report.warn("Commit Cache not found for task, expected: %s, Found: %s", cache, x)
-                doot.report.warn("Using files from HEAD~%s -> HEAD", head_count)
+                doot.report.gen.warn("Commit Cache not found for task, expected: %s, Found: %s", cache, x)
+                doot.report.gen.warn("Using files from HEAD~%s -> HEAD", head_count)
                 text_result    = git_diff(f"HEAD~{head_count}", "HEAD")
                 potentials     = [pl.Path(x) for x in text_result.strip().split("\n")]
 
@@ -124,7 +124,7 @@ class GetChangedFilesByCommit:
           filter found potential files by roots, exts, and a test fn
         """
         exts    = {y for x in (exts or []) for y in [x.lower(), x.upper()]}
-        roots   = [DKey(x, mark=DKey.Mark.PATH).expand(spec, state) for x in (roots or [])]
+        roots   = [DKey[pl.Path](x).expand(spec, state) for x in (roots or [])]
         match fn:
             case CodeReference():
                 accept_fn = fn()

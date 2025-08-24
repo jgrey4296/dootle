@@ -27,7 +27,7 @@ import atexit # for @atexit.register
 import faulthandler
 # ##-- end stdlib imports
 
-from jgdv.structs.dkey import DKey, DKeyed
+from doot.util.dkey import DKey, DKeyed
 
 # ##-- types
 # isort: off

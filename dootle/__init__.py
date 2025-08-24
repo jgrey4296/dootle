@@ -2,4 +2,6 @@
 
 
 """
-__version__ = "0.3.2"
+from importlib import metadata
+
+__version__ = metadata.version("dootle")

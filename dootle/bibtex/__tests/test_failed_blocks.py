@@ -19,7 +19,7 @@ import pytest
 # ##-- end 3rd party imports
 
 import doot
-from doot._abstract import Action_p
+from doot.workflow._interface import Action_p
 from .. import failed_blocks as fb
 
 # ##-- types

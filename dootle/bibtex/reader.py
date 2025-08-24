@@ -24,14 +24,14 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto
-from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.structs.strang import CodeReference
 import bibtexparser as b
 from bibble import PairStack
 from bibble.io import Reader
 from bibtexparser import model
 import doot
-from doot._abstract.task import Action_p
+from doot.util.dkey import DKey, DKeyed
+from doot.workflow._interface import Action_p
 
 # ##-- end 3rd party imports
 
@@ -87,10 +87,10 @@ class BibtexReadAction:
             case pl.Path() as x:
                 file_list = [x]
             case str():
-                _from = [DKey(_from, mark=DKey.Mark.PATH)]
+                _from = [DKey[pl.Path](_from)]
                 file_list   = [x.expand(spec, state) for x in _from]
             case [*xs]:
-                _from = [DKey(x, mark=DKey.Mark.PATH) for x in xs]
+                _from = [DKey[pl.Path](x) for x in xs]
                 file_list   = [x.expand(spec, state) for x in _from]
             case x:
                 raise TypeError(type(x))
@@ -102,20 +102,21 @@ class BibtexReadAction:
             case b.Library() as x:
                 db = x
 
-        doot.report.detail("Starting to load %s files", len(file_list))
+        doot.report.gen.detail("Starting to load %s files", len(file_list))
         for loc in file_list:
-            doot.report.trace("Loading bibtex: %s", loc)
+            assert(isinstance(loc, pl.Path))
+            doot.report.gen.trace("Loading bibtex: %s", loc)
             try:
                 filelib = reader.read(loc, into=db)
-                doot.report.trace("Loaded: %s entries",  len(filelib.entries))
+                doot.report.gen.trace("Loaded: %s entries",  len(filelib.entries))
             except OSError as err:
-                doot.report.error("Bibtex File Loading Errored: %s : %s", loc, err)
+                doot.report.gen.error("Bibtex File Loading Errored: %s : %s", loc, err)
                 return False
 
-        doot.report.trace("Total DB Entry Count: %s", len(db.entries))
+        doot.report.gen.trace("Total DB Entry Count: %s", len(db.entries))
         if len(file_list) == 1:
             loc = file_list[0]
-            doot.report.trace("Current year: %s", loc.stem)
+            doot.report.gen.trace("Current year: %s", loc.stem)
             results.update({ year_key: loc.stem })
 
         return results

@@ -30,8 +30,8 @@ from jgdv.structs.chainguard import ChainGuard
 import doot
 import doot.errors
 import mastodon
-from doot._abstract import Task_p
-from doot.structs import ActionSpec
+from doot.workflow._interface import Task_p
+from doot.workflow import ActionSpec
 
 # ##-- end 3rd party imports
 
@@ -85,7 +85,7 @@ class MastodonSetup:
     @DKeyed.paths("mastodon_secrets")
     def __call__(self, spec, state, _data_key, _secrets) -> dict:
         if MastodonSetup._instance is None:
-            doot.report.trace("---------- Initialising Mastodon", extra={"colour": "green"})
+            doot.report.gen.trace("---------- Initialising Mastodon", extra={"colour": "green"})
             secrets = ChainGuard.load(_secrets)
             MastodonSetup._instance = mastodon.Mastodon(
                 access_token = secrets.mastodon.access_token,
@@ -93,7 +93,7 @@ class MastodonSetup:
             )
             doot.locs.ensure("image_temp", task=state['_task_name'])
         else:
-            doot.report.detail("Reusing Instance")
+            doot.report.gen.detail("Reusing Instance")
 
         return { _data_key : MastodonSetup._instance }
 
@@ -119,23 +119,23 @@ class MastodonPost:
                 with RESOLUTION_BLACKLIST.open('a') as f:
                     f.write("\n" + resolution[1])
 
-            doot.report.error("Mastodon Resolution Failure: %s", repr(err))
+            doot.report.gen.error("Mastodon Resolution Failure: %s", repr(err))
             return False
         except Exception as err:  # noqa: BLE001
-            doot.report.error("Mastodon Post Failed: %s", repr(err))
+            doot.report.gen.error("Mastodon Post Failed: %s", repr(err))
             return False
 
     def _post_text(self, _instance, text) -> bool:
-        doot.report.trace("Posting Text Toot: %s", text)
+        doot.report.gen.trace("Posting Text Toot: %s", text)
         if len(text) >= TOOT_SIZE:
-            doot.report.warn("Resulting Toot too long for mastodon: %s\n%s", len(text), text)
+            doot.report.gen.warn("Resulting Toot too long for mastodon: %s\n%s", len(text), text)
             return False
 
         result = _instance.status_post(text)
         return True
 
     def _post_image(self, _instance, text, _image_path, _image_desc) -> bool:
-        doot.report.trace("Posting Image Toot")
+        doot.report.gen.trace("Posting Image Toot")
 
         assert(_image_path.exists()), f"File Doesn't Exist {_image_path}"
         assert(_image_path.stat().st_size < TOOT_IMAGE_SIZE), "Image to large, needs to be smaller than 8MB"

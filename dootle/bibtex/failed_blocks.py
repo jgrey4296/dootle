@@ -22,7 +22,7 @@ from uuid import UUID, uuid1
 
 # ##-- end stdlib imports
 
-# ##-- 2rd party imports
+# ##-- 3rd party imports
 from jgdv import Proto, Maybe
 from jgdv.structs.dkey import DKey, DKeyed
 import bibtexparser as b
@@ -31,7 +31,7 @@ import doot
 from bibtexparser import middlewares as ms
 from bibtexparser import model
 from bibtexparser.middlewares.middleware import BlockMiddleware
-from doot._abstract.task import Action_p
+from doot.workflow._interface import Action_p
 
 # ##-- end 3rd party imports
 

@@ -24,11 +24,11 @@ from uuid import UUID, uuid1
 
 # ##-- 3rd party imports
 from jgdv import Proto
-from jgdv.structs.dkey import DKey, DKeyed
 from jgdv.files.bookmarks.collection import BookmarkCollection
 import doot
 import doot.errors
-from doot._abstract import Action_p
+from doot.util.dkey import DKey, DKeyed
+from doot.workflow._interface import Action_p
 
 # ##-- end 3rd party imports
 
@@ -76,9 +76,9 @@ class BookmarksPonyExtraction:
     def __call__(self, spec, state, _from, debug, _update) -> dict:
         db_loc         = _from
         try:
-            doot.report.trace("Starting Extraction")
+            doot.report.gen.trace("Starting Extraction")
             result       = pony_extract(db_loc, debug=debug)
-            doot.report.trace("Extraction Complete: %s results", len(result))
+            doot.report.gen.trace("Extraction Complete: %s results", len(result))
         except Exception as err:
             raise doot.errors.ActionError("Pony Errored: %s", str(err)) from err
         else:
@@ -92,9 +92,9 @@ class BookmarksLoad:
     def __call__(self, spec, state, _from, _update) -> dict:
         load_path = _from
         data_key  = _update
-        doot.report.trace("Loading Bookmarks from: %s", load_path)
+        doot.report.gen.trace("Loading Bookmarks from: %s", load_path)
         result    = BookmarkCollection.read(load_path)
-        doot.report.trace("Loaded %s Bookmarks", len(result))
+        doot.report.gen.trace("Loaded %s Bookmarks", len(result))
         return { data_key : result }
 
 @Proto(Action_p)
@@ -112,7 +112,7 @@ class BookmarksMerge:
                     pre_count = len(merged)
                     merged   += x
                     growth    = len(merged) - pre_count
-                    doot.report.trace("Added %s bookmarks, Total Growth: %s", len(x), growth)
+                    doot.report.gen.trace("Added %s bookmarks, Total Growth: %s", len(x), growth)
                 case _:
                     raise doot.errors.ActionError("Unknown type tried to merge into bookmarks", x)
 
@@ -127,7 +127,7 @@ class BookmarksToStr:
     def __call__(self, spec, state, _from, _update) -> dict:
         source_data : BookmarkCollection           = _from
 
-        doot.report.trace("Writing Bookmark Collection of size: %s", len(source_data))
+        doot.report.gen.trace("Writing Bookmark Collection of size: %s", len(source_data))
         return { _update : str(source_data) }
 
 @Proto(Action_p)
@@ -141,4 +141,4 @@ class BookmarksRemoveDuplicates:
         pre_count = len(source_data)
         source_data.merge_duplicates()
         post_count = len(source_data)
-        doot.report.trace("Merged %s entries", pre_count - post_count)
+        doot.report.gen.trace("Merged %s entries", pre_count - post_count)

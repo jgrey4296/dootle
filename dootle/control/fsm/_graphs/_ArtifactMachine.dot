@@ -1,0 +1,22 @@
+digraph list {
+label=ArtifactMachine;
+fontname=Arial;
+fontsize=10;
+rankdir=LR;
+i [shape=circle, style=filled, fontsize=1, fixedsize=true, width=0.2, height=0.2, fillcolor=black];
+i -> Declared [label="", color=blue, fontname=Arial, fontsize=9];
+Declared [label=Declared, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, penwidth=2, fillcolor=turquoise];
+Declared -> Stale [label="progress\n[is_stale]", color=blue, fontname=Arial, fontsize=9];
+Declared -> ToClean [label="progress\n[should_clean]", color=blue, fontname=Arial, fontsize=9];
+Declared -> Exists [label="progress\n[does_exist]", color=blue, fontname=Arial, fontsize=9];
+Declared -> Finished [label=progress, color=blue, fontname=Arial, fontsize=9];
+Stale [label=Stale, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+Stale -> Removed [label=progress, color=blue, fontname=Arial, fontsize=9];
+ToClean [label=Toclean, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+ToClean -> Removed [label=progress, color=blue, fontname=Arial, fontsize=9];
+Removed [label=Removed, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+Removed -> Declared [label=progress, color=blue, fontname=Arial, fontsize=9];
+Exists [label=Exists, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=1, fillcolor=white];
+Exists -> Finished [label=progress, color=blue, fontname=Arial, fontsize=9];
+Finished [label=Finished, shape=rectangle, style="rounded, filled", fontname=Arial, fontsize=10, peripheries=2, fillcolor=white];
+}

@@ -12,14 +12,6 @@ skip_plugin_search       = false
 empty_cmd                = "list"
 implicit_task_cmd        = "run"
 
-[startup.plugins]
-# Allows for defining shorthands
-command        = { tasks = "doot.cmds.list_cmd:ListCmd" }
-report-line    = {}
-reporter       = {}
-action         = {}
-task           = {}
-
 [shutdown]
 notify                   = { say-on-exit = false }
 defaulted_values         = { write=false, path=".defaulted_values.toml" }
