@@ -69,9 +69,10 @@ commands  = [
 ]
 
 [env.docs]
-description   = "build documentation"
-skip_install  = true
-set_env = [
+description        = "build documentation"
+dependency_groups  = ["docs"]
+skip_install       = true
+set_env            = [
     {replace="ref", of=["env_run_base", "set_env"]},
     {CONFDIR  = {replace="env", name="CONFDIR",  default="./dootle/_docs/"}},
     {OUTDIR   = {replace="env", name="OUTDIR",   default="./.temp/docs/"}},
