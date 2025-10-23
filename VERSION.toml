@@ -1,0 +1,11 @@
+version = "0.3.2"
+
+[[files]]
+file = "pyproject.toml"
+expr = 'version\s+=\s+"(.*)"'
+
+[[files]]
+file = "towncrier.toml"
+expr = 'version\s+=\s+"(.*)"'
+
+[package]

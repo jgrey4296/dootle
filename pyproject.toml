@@ -16,6 +16,7 @@ classifiers     = [
   "Programming Language :: Python"
 ]
 
+##-- dependencies
 dependencies   = [
     "doot>=1.0",
     "pony>=0.7",
@@ -25,6 +26,33 @@ dependencies   = [
     "mastodon-py>=2.0.1",
     "python-statemachine>=2.5.0",
 ]
+
+[dependency-groups]
+dev = [
+    "ipython>=9.4.0",
+    "sh>=2.2.2",
+    "towncrier>=24.8.0",
+    ]
+test =[
+    "pydot>=4.0.1",
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "tox>=4.28.4",
+    "tox-uv>=1.27.0",
+    "ruff>=0.12.8",
+]
+docs = [
+    "myst-parser>=4.0.1",
+    "sphinx>=8.2.3",
+    "sphinx-autoapi>=3.6.0",
+    "sphinx-rtd-theme>=3.0.2",
+    "pydot>=4.0.1",
+    "tox>=4.28.4",
+    "tox-uv>=1.27.0",
+]
+##-- end dependencies
+
 
 ##-- urls
 [project.urls]
@@ -73,34 +101,32 @@ rng_draw            = "dootle.actions.random:rng_draw"
 
 ##-- build-system
 [build-system]
-requires = [
-         "setuptools >= 63.1.0",
-         "wheel >= 0.37.1"
+requires       = ["hatchling>=1.13"]
+build-backend  = "hatchling.build"
+
+[tool.hatch.build]
+skip-excluded-dirs  = true
+# directory           = ".temp/build"  # or HATCH_BUILD_LOCATION
+
+[tool.hatch.build.targets.sdist]
+packages   = ["dootle"]
+artifacts  = ["*.so"]
+exclude    = [
+    ".temp", "**.rst",
+    "dootle/*/__tests", "dootle/_docs", "dootle/__tests",
 ]
 
-build-backend = "setuptools.build_meta"
-
-[tool.setuptools]
-include-package-data = true
-
-[tool.setuptools.packages.find]
-namespaces = true
-where      = ["."]
-include    = ["dootle*"]
-exclude    = ["dootle._docs*"]
-
-[tool.setuptools.package-data]
-"*" = ["*"]
-"dootle.__data"    = ["*.so"]
-
-[tool.setuptools.exclude-package-data]
-dootle = ["**.rst"]
-
-[tool.distutils.egg_info]
-# from https://github.com/pypa/setuptools/discussions/3348#discussioncomment-6556887
-egg_base = ".temp/egg-info"
+[tool.hatch.build.targets.wheel]
+packages   = ["dootle"]
+artifacts  = ["*.so"]
+exclude    = [
+    ".temp", "**.rst",
+    "dootle/*/__tests", "dootle/__tests",
+    "dootle/_docs",
+]
 
 ##-- end build-system
+
 
 # Tools #######################################################################
 
@@ -236,45 +262,3 @@ warn_unused_configs  = true
 
 ##-- end mypy
 
-##-- towncrier
-[tool.towncrier]
-package    = "dootle"
-directory  = "dootle/_docs/_changes"
-filename   = "CHANGELOG.md"
-template   = "dootle/_docs/_templates/news.md"
-create_add_extension = true
-
-##-- end towncrier
-
-##-- uv
-[tool.uv.sources]
-bibtex-bibble = { path = "../bibble", editable = true }
-doot = { path = "../../", editable = true }
-
-[dependency-groups]
-dev = [
-    "ipython>=9.4.0",
-    "sh>=2.2.2",
-    "towncrier>=24.8.0",
-    ]
-test =[
-    "pydot>=4.0.1",
-    "pytest>=8.3.5",
-    "pytest-cov>=6.0.0",
-    "pytest-mock>=3.14.0",
-    "tox>=4.28.4",
-    "tox-uv>=1.27.0",
-    "ruff>=0.12.8",
-]
-docs = [
-    "myst-parser>=4.0.1",
-    "sphinx>=8.2.3",
-    "sphinx-autoapi>=3.6.0",
-    "sphinx-rtd-theme>=3.0.2",
-    "pydot>=4.0.1",
-    "tox>=4.28.4",
-    "tox-uv>=1.27.0",
-]
-
-
-##-- end uv

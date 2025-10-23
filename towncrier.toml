@@ -1,0 +1,14 @@
+# towncrier.toml -*- mode: toml-mode -*-
+# Summary:
+#
+# Tags:
+#
+## https://towncrier.readthedocs.io/en/stable/configuration.html
+[tool.towncrier]
+name                  = "dootle"
+version               = "0.3.2"
+directory             = "dootle/_docs/_changes"
+filename              = "CHANGELOG.md"
+template              = "dootle/_docs/_templates/news.md"
+create_add_extension  = true
+
